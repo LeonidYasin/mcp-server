@@ -1,7 +1,6 @@
 """MCP tool: create_or_update_binary_file — создаёт/обновляет файл из base64."""
 
 import base64
-import json
 from mcp_server.core.registry import mcp_tool, registry
 from mcp_server.tools.github.client import GitHubClient
 
@@ -51,7 +50,7 @@ def create_or_update_binary_file(
             }]
         }
     
-    # 3. Вызываем create_or_update_file
+    # 3. Вызываем create_or_update_file и ВОЗВРАЩАЕМ ЕГО РЕЗУЛЬТАТ
     try:
         result = tool.handler(
             client=client,
@@ -63,24 +62,10 @@ def create_or_update_binary_file(
             branch=branch
         )
         
-        # result — это строка (текст) или dict
-        if isinstance(result, str):
-            text = result
-        elif isinstance(result, dict):
-            # Извлекаем текст из content
-            if "content" in result and isinstance(result["content"], list) and len(result["content"]) > 0:
-                text = result["content"][0].get("text", "✅ Файл успешно сохранён")
-            else:
-                text = "✅ Файл успешно сохранён"
-        else:
-            text = str(result)
+        # result УЖЕ в формате {"content": [{"type": "text", "text": "..."}]}
+        # Просто возвращаем его
+        return result
         
-        return {
-            "content": [{
-                "type": "text",
-                "text": text
-            }]
-        }
     except Exception as e:
         return {
             "content": [{
