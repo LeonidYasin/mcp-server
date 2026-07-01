@@ -8,7 +8,7 @@ from mcp_server.tools.github.client import GitHubClient
 
 @mcp_tool(
     name="create_or_update_binary_file",
-    description="Creates or updates a file in the repository from base64 string (no escaping issues).",
+    description="Creates or updates a file in the repository from base64 string.",
     parameters={
         "owner": {"type": "string", "description": "Repository owner"},
         "repo": {"type": "string", "description": "Repository name"},
@@ -30,14 +30,13 @@ def create_or_update_binary_file(
 ) -> dict:
     """Create or update a file from base64."""
     
-    print(f"[create_or_update_binary_file] owner={owner}, repo={repo}, path={path}, branch={branch}")
+    print(f"[create_or_update_binary_file] owner={owner}, repo={repo}, path={path}")
     
     # 1. Декодируем base64
     try:
         decoded_content = base64.b64decode(content).decode('utf-8')
         print(f"[create_or_update_binary_file] Base64 decoded OK")
     except Exception as e:
-        print(f"[create_or_update_binary_file] Base64 decode error: {e}")
         return {
             "content": [{
                 "type": "text",
@@ -48,7 +47,6 @@ def create_or_update_binary_file(
     # 2. Получаем инструмент create_or_update_file из реестра
     tool = registry.get("create_or_update_file")
     if not tool or not tool.handler:
-        print(f"[create_or_update_binary_file] Tool create_or_update_file not found")
         return {
             "content": [{
                 "type": "text",
@@ -70,11 +68,39 @@ def create_or_update_binary_file(
             branch=branch
         )
         
-        # Диагностика
+        # ПРОВЕРЯЕМ, ЧТО ВЕРНУЛОСЬ
         print(f"[create_or_update_binary_file] result type: {type(result)}")
+        print(f"[create_or_update_binary_file] result: {result}")
         
-        # Возвращаем результат
-        return result
+        # Если result — это строка, возвращаем её как текст
+        if isinstance(result, str):
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": result
+                }]
+            }
+        
+        # Если result — это dict с content, возвращаем как есть
+        if isinstance(result, dict) and "content" in result:
+            return result
+        
+        # Если result — это dict без content, преобразуем в JSON
+        if isinstance(result, dict):
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": json.dumps(result, ensure_ascii=False, indent=2)
+                }]
+            }
+        
+        # Всё остальное — просто str
+        return {
+            "content": [{
+                "type": "text",
+                "text": str(result)
+            }]
+        }
         
     except Exception as e:
         print(f"[create_or_update_binary_file] Exception: {e}")
