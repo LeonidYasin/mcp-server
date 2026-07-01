@@ -44,16 +44,21 @@ def create_or_update_binary_file(
         }
     
     # 2. Получаем инструмент create_or_update_file из реестра
+    # РЕЕСТР УЖЕ ЗАПОЛНЕН К ЭТОМУ МОМЕНТУ
     tool = registry.get("create_or_update_file")
     if not tool or not tool.handler:
-        print(f"[create_or_update_binary_file] create_or_update_file not found in registry")
-        print(f"[create_or_update_binary_file] Available tools: {[t for t in registry._tools.keys()]}")
-        return {
-            "content": [{
-                "type": "text",
-                "text": "Error: Tool create_or_update_file not found in registry"
-            }]
-        }
+        # Если не найден, пробуем принудительно обнаружить инструменты
+        print(f"[create_or_update_binary_file] create_or_update_file not found, trying to discover...")
+        registry.discover()
+        tool = registry.get("create_or_update_file")
+        if not tool or not tool.handler:
+            print(f"[create_or_update_binary_file] Still not found. Available tools: {[t for t in registry._tools.keys()]}")
+            return {
+                "content": [{
+                    "type": "text",
+                    "text": "Error: Tool create_or_update_file not found in registry"
+                }]
+            }
     
     print(f"[create_or_update_binary_file] Found create_or_update_file, calling handler...")
     
