@@ -30,33 +30,33 @@ def create_or_update_binary_file(
 ) -> dict:
     """Создать или обновить файл из base64."""
     
-    print(f"🔍 [create_or_update_binary_file] owner={owner}, repo={repo}, path={path}, branch={branch}")
+    print(f"[create_or_update_binary_file] owner={owner}, repo={repo}, path={path}, branch={branch}")
     
     # 1. Декодируем base64
     try:
         decoded_content = base64.b64decode(content).decode('utf-8')
-        print(f"✅ [create_or_update_binary_file] Base64 decoded, length={len(decoded_content)}")
+        print(f"[create_or_update_binary_file] Base64 decoded, length={len(decoded_content)}")
     except Exception as e:
-        print(f"❌ [create_or_update_binary_file] Base64 decode error: {e}")
+        print(f"[create_or_update_binary_file] Base64 decode error: {e}")
         return {
             "content": [{
                 "type": "text",
-                "text": f"❌ Ошибка декодирования base64: {str(e)}"
+                "text": f"Error decoding base64: {str(e)}"
             }]
         }
     
     # 2. Получаем инструмент create_or_update_file из реестра
     tool = registry.get("create_or_update_file")
     if not tool or not tool.handler:
-        print(f"❌ [create_or_update_binary_file] Tool create_or_update_file not found")
+        print(f"[create_or_update_binary_file] Tool create_or_update_file not found")
         return {
             "content": [{
                 "type": "text",
-                "text": "❌ Ошибка: Инструмент create_or_update_file не найден"
+                "text": "Error: Tool create_or_update_file not found"
             }]
         }
     
-    print(f"✅ [create_or_update_binary_file] Found create_or_update_file, calling handler...")
+    print(f"[create_or_update_binary_file] Found create_or_update_file, calling handler...")
     
     # 3. Вызываем create_or_update_file
     try:
@@ -70,25 +70,25 @@ def create_or_update_binary_file(
             branch=branch
         )
         
-        # ДИАГНОСТИКА
-        print(f"📊 [create_or_update_binary_file] RESULT TYPE: {type(result)}")
-        print(f"📊 [create_or_update_binary_file] RESULT: {result}")
+        # Диагностика без эмодзи
+        print(f"[create_or_update_binary_file] RESULT TYPE: {type(result)}")
+        print(f"[create_or_update_binary_file] RESULT: {result}")
         
         if isinstance(result, dict):
-            print(f"📊 [create_or_update_binary_file] result keys: {list(result.keys())}")
+            print(f"[create_or_update_binary_file] result keys: {list(result.keys())}")
             if "content" in result:
-                print(f"📊 [create_or_update_binary_file] content: {result['content']}")
+                print(f"[create_or_update_binary_file] content: {result['content']}")
         
-        # Просто возвращаем результат
+        # Возвращаем результат
         return result
         
     except Exception as e:
-        print(f"❌ [create_or_update_binary_file] Exception: {e}")
+        print(f"[create_or_update_binary_file] Exception: {e}")
         import traceback
         traceback.print_exc()
         return {
             "content": [{
                 "type": "text",
-                "text": f"❌ Ошибка при сохранении: {str(e)}"
+                "text": f"Error: {str(e)}"
             }]
         }
