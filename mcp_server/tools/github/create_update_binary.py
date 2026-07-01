@@ -63,20 +63,22 @@ def create_or_update_binary_file(
             branch=branch
         )
         
-        # ИЗВЛЕКАЕМ ТЕКСТ ИЗ РЕЗУЛЬТАТА
-        if isinstance(result, dict):
+        # result — это строка (текст) или dict
+        if isinstance(result, str):
+            text = result
+        elif isinstance(result, dict):
+            # Извлекаем текст из content
             if "content" in result and isinstance(result["content"], list) and len(result["content"]) > 0:
-                # Берём текст из content
-                text = result["content"][0].get("text", json.dumps(result))
+                text = result["content"][0].get("text", "✅ Файл успешно сохранён")
             else:
-                text = json.dumps(result, ensure_ascii=False)
+                text = "✅ Файл успешно сохранён"
         else:
             text = str(result)
         
         return {
             "content": [{
                 "type": "text",
-                "text": f"✅ Файл {path} успешно создан/обновлён в {owner}/{repo} (ветка: {branch})\n\n{text}"
+                "text": text
             }]
         }
     except Exception as e:
