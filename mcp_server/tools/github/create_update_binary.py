@@ -8,14 +8,14 @@ from mcp_server.tools.github.client import GitHubClient
 
 @mcp_tool(
     name="create_or_update_binary_file",
-    description="Создаёт или обновляет файл в репозитории из base64-строки (без экранирования).",
+    description="Creates or updates a file in the repository from base64 string (no escaping issues).",
     parameters={
-        "owner": {"type": "string", "description": "Владелец репозитория"},
-        "repo": {"type": "string", "description": "Имя репозитория"},
-        "path": {"type": "string", "description": "Путь к файлу в репозитории"},
-        "content": {"type": "string", "description": "Содержимое файла в формате base64"},
-        "message": {"type": "string", "description": "Сообщение коммита"},
-        "branch": {"type": "string", "description": "Ветка (по умолчанию main)"}
+        "owner": {"type": "string", "description": "Repository owner"},
+        "repo": {"type": "string", "description": "Repository name"},
+        "path": {"type": "string", "description": "Path to the file in the repository"},
+        "content": {"type": "string", "description": "File content in base64 format"},
+        "message": {"type": "string", "description": "Commit message"},
+        "branch": {"type": "string", "description": "Branch (default: main)"}
     },
     required=["owner", "repo", "path", "content", "message"]
 )
@@ -28,14 +28,14 @@ def create_or_update_binary_file(
     message: str,
     branch: str = "main"
 ) -> dict:
-    """Создать или обновить файл из base64."""
+    """Create or update a file from base64."""
     
     print(f"[create_or_update_binary_file] owner={owner}, repo={repo}, path={path}, branch={branch}")
     
     # 1. Декодируем base64
     try:
         decoded_content = base64.b64decode(content).decode('utf-8')
-        print(f"[create_or_update_binary_file] Base64 decoded, length={len(decoded_content)}")
+        print(f"[create_or_update_binary_file] Base64 decoded OK")
     except Exception as e:
         print(f"[create_or_update_binary_file] Base64 decode error: {e}")
         return {
@@ -56,7 +56,7 @@ def create_or_update_binary_file(
             }]
         }
     
-    print(f"[create_or_update_binary_file] Found create_or_update_file, calling handler...")
+    print(f"[create_or_update_binary_file] Calling create_or_update_file...")
     
     # 3. Вызываем create_or_update_file
     try:
@@ -70,22 +70,14 @@ def create_or_update_binary_file(
             branch=branch
         )
         
-        # Диагностика без эмодзи
-        print(f"[create_or_update_binary_file] RESULT TYPE: {type(result)}")
-        print(f"[create_or_update_binary_file] RESULT: {result}")
-        
-        if isinstance(result, dict):
-            print(f"[create_or_update_binary_file] result keys: {list(result.keys())}")
-            if "content" in result:
-                print(f"[create_or_update_binary_file] content: {result['content']}")
+        # Диагностика
+        print(f"[create_or_update_binary_file] result type: {type(result)}")
         
         # Возвращаем результат
         return result
         
     except Exception as e:
         print(f"[create_or_update_binary_file] Exception: {e}")
-        import traceback
-        traceback.print_exc()
         return {
             "content": [{
                 "type": "text",
