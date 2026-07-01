@@ -1,7 +1,7 @@
 """MCP tool: create_or_update_binary_file — создаёт/обновляет файл из base64."""
 
 import base64
-from mcp_server.core.registry import mcp_tool
+from mcp_server.core.registry import mcp_tool, registry
 from mcp_server.tools.github.client import GitHubClient
 
 
@@ -18,7 +18,7 @@ from mcp_server.tools.github.client import GitHubClient
     },
     required=["owner", "repo", "path", "content", "message"]
 )
-def create_or_update_binary_file(  # <--- Убираем async
+def create_or_update_binary_file(
     client: GitHubClient,
     owner: str,
     repo: str,
@@ -41,7 +41,6 @@ def create_or_update_binary_file(  # <--- Убираем async
         }
     
     # 2. Получаем инструмент create_or_update_file из реестра
-    from mcp_server.core.registry import registry
     tool = registry.get("create_or_update_file")
     if not tool or not tool.handler:
         return {
@@ -51,7 +50,7 @@ def create_or_update_binary_file(  # <--- Убираем async
             }]
         }
     
-    # 3. ВЫЗЫВАЕМ СИНХРОННО (без await)
+    # 3. Вызываем create_or_update_file
     try:
         result = tool.handler(
             client=client,
@@ -63,11 +62,17 @@ def create_or_update_binary_file(  # <--- Убираем async
             branch=branch
         )
         
-        # result — это уже готовый dict с ключом "content"
+        # result — это dict вида {"content": [{"type": "text", "text": "..."}]}
+        # Извлекаем текст из результата
+        if isinstance(result, dict) and "content" in result:
+            result_text = result["content"][0]["text"] if result["content"] else "✅ Файл сохранён"
+        else:
+            result_text = f"✅ Файл {path} успешно создан/обновлён в {owner}/{repo} (ветка: {branch})"
+        
         return {
             "content": [{
                 "type": "text",
-                "text": f"✅ Файл {path} успешно создан/обновлён в {owner}/{repo} (ветка: {branch})"
+                "text": result_text
             }]
         }
     except Exception as e:
