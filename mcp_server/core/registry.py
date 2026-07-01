@@ -59,3 +59,8 @@ def mcp_tool(name: str, description: str, parameters: dict[str, Any], required: 
         )
         return func
     return decorator
+
+
+# ============ ДОБАВЛЕНО ============
+# Создаём глобальный экземпляр реестра для удобного доступа
+registry = ToolRegistry()
