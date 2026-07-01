@@ -1,1 +1,1 @@
-"""MCP tools - add subpackages here for auto-discovery."""
+"""MCP tools - auto-discovered by ToolRegistry."""
