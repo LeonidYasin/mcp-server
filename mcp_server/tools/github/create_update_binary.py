@@ -18,7 +18,7 @@ from mcp_server.tools.github.client import GitHubClient
     },
     required=["owner", "repo", "path", "content", "message"]
 )
-async def create_or_update_binary_file(
+def create_or_update_binary_file(  # <--- Убираем async
     client: GitHubClient,
     owner: str,
     repo: str,
@@ -51,10 +51,9 @@ async def create_or_update_binary_file(
             }]
         }
     
-    # 3. ВЫЗЫВАЕМ ПРАВИЛЬНО — с await
+    # 3. ВЫЗЫВАЕМ СИНХРОННО (без await)
     try:
-        # tool.handler — это асинхронная функция, её нужно вызвать с await
-        result = await tool.handler(
+        result = tool.handler(
             client=client,
             owner=owner,
             repo=repo,
