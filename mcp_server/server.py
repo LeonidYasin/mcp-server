@@ -5,6 +5,7 @@ Token is passed via Authorization: Bearer <token> header.
 
 import logging
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # ДОБАВИТЬ ЭТУ СТРОКУ
 
 from mcp_server.core.registry import ToolRegistry
 from mcp_server.tools.github.client import GitHubClient
@@ -13,9 +14,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app)  # ДОБАВИТЬ ЭТУ СТРОКУ - разрешает все CORS-запросы
+
+# ИЛИ более строгий вариант (только для вашего расширения):
+# CORS(app, origins=["chrome-extension://bikejlmkiafpkoppifjmelhpfencmpka"])
+
 registry = ToolRegistry()
 registry.discover()
-
 
 @app.route("/mcp", methods=["POST"])
 def mcp_handler():
@@ -67,17 +72,14 @@ def mcp_handler():
 
     return jsonify({"jsonrpc": "2.0", "error": {"code": -32601, "message": "Method not found"}, "id": req_id})
 
-
 @app.route("/health")
 def health():
     tools = [t.name for t in registry.get_all()]
     return jsonify({"status": "ok", "tools": tools})
 
-
 def main():
     logger.info(f"Starting MCP GitHub Server v0.3.0 on port 3001")
     app.run(host="0.0.0.0", port=3001, debug=False)
-
 
 if __name__ == "__main__":
     main()
