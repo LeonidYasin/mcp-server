@@ -1,4 +1,4 @@
-"""MCP tool: create_or_update_binary_file — создаёт/обновляет бинарный файл из base64."""
+"""MCP tool: create_or_update_binary_file — создаёт/обновляет файл из base64."""
 
 import base64
 from mcp_server.core.registry import mcp_tool
@@ -29,9 +29,9 @@ async def create_or_update_binary_file(
 ) -> dict:
     """Создать или обновить файл из base64."""
     
-    # Декодируем base64 в байты
+    # 1. Декодируем base64
     try:
-        decoded_content = base64.b64decode(content)
+        decoded_content = base64.b64decode(content).decode('utf-8')
     except Exception as e:
         return {
             "content": [{
@@ -40,7 +40,7 @@ async def create_or_update_binary_file(
             }]
         }
     
-    # Получаем инструмент create_or_update_file из реестра
+    # 2. Получаем инструмент create_or_update_file из реестра
     from mcp_server.core.registry import registry
     tool = registry.get("create_or_update_file")
     if not tool or not tool.handler:
@@ -51,19 +51,20 @@ async def create_or_update_binary_file(
             }]
         }
     
+    # 3. ВЫЗЫВАЕМ ПРАВИЛЬНО — с await
     try:
-        # Вызываем create_or_update_file с декодированным содержимым (как текст)
-        # Если файл бинарный, нужно использовать другой подход
-        # Но для текстовых файлов это работает
+        # tool.handler — это асинхронная функция, её нужно вызвать с await
         result = await tool.handler(
             client=client,
             owner=owner,
             repo=repo,
             path=path,
-            content=decoded_content.decode('utf-8'),
+            content=decoded_content,
             message=message,
             branch=branch
         )
+        
+        # result — это уже готовый dict с ключом "content"
         return {
             "content": [{
                 "type": "text",
@@ -74,6 +75,6 @@ async def create_or_update_binary_file(
         return {
             "content": [{
                 "type": "text",
-                "text": f"❌ Ошибка: {str(e)}"
+                "text": f"❌ Ошибка при сохранении: {str(e)}"
             }]
         }
