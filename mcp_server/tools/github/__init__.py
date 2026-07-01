@@ -13,6 +13,7 @@ from mcp_server.tools.github.workflows import get_workflow_run_logs
 from mcp_server.tools.github.workflows import get_full_workflow_logs
 from mcp_server.tools.github.workflows import get_workflow_by_file
 from mcp_server.tools.github.create_update_binary import create_or_update_binary_file
+from mcp_server.tools.github.file_sha_ops import create_or_update_file_with_sha
 
 __all__ = [
     "GitHubClient",
@@ -26,4 +27,5 @@ __all__ = [
     "get_full_workflow_logs",
     "get_workflow_by_file",
     "create_or_update_binary_file",
+    "create_or_update_file_with_sha",
 ]
