@@ -1,6 +1,7 @@
 """MCP tool: create_or_update_binary_file — создаёт/обновляет файл из base64."""
 
 import base64
+import json
 from mcp_server.core.registry import mcp_tool, registry
 from mcp_server.tools.github.client import GitHubClient
 
@@ -29,10 +30,14 @@ def create_or_update_binary_file(
 ) -> dict:
     """Создать или обновить файл из base64."""
     
+    print(f"🔍 [create_or_update_binary_file] owner={owner}, repo={repo}, path={path}, branch={branch}")
+    
     # 1. Декодируем base64
     try:
         decoded_content = base64.b64decode(content).decode('utf-8')
+        print(f"✅ [create_or_update_binary_file] Base64 decoded, length={len(decoded_content)}")
     except Exception as e:
+        print(f"❌ [create_or_update_binary_file] Base64 decode error: {e}")
         return {
             "content": [{
                 "type": "text",
@@ -43,6 +48,7 @@ def create_or_update_binary_file(
     # 2. Получаем инструмент create_or_update_file из реестра
     tool = registry.get("create_or_update_file")
     if not tool or not tool.handler:
+        print(f"❌ [create_or_update_binary_file] Tool create_or_update_file not found")
         return {
             "content": [{
                 "type": "text",
@@ -50,7 +56,9 @@ def create_or_update_binary_file(
             }]
         }
     
-    # 3. Вызываем create_or_update_file и ВОЗВРАЩАЕМ ЕГО РЕЗУЛЬТАТ
+    print(f"✅ [create_or_update_binary_file] Found create_or_update_file, calling handler...")
+    
+    # 3. Вызываем create_or_update_file
     try:
         result = tool.handler(
             client=client,
@@ -62,11 +70,22 @@ def create_or_update_binary_file(
             branch=branch
         )
         
-        # result УЖЕ в формате {"content": [{"type": "text", "text": "..."}]}
-        # Просто возвращаем его
+        # ДИАГНОСТИКА
+        print(f"📊 [create_or_update_binary_file] RESULT TYPE: {type(result)}")
+        print(f"📊 [create_or_update_binary_file] RESULT: {result}")
+        
+        if isinstance(result, dict):
+            print(f"📊 [create_or_update_binary_file] result keys: {list(result.keys())}")
+            if "content" in result:
+                print(f"📊 [create_or_update_binary_file] content: {result['content']}")
+        
+        # Просто возвращаем результат
         return result
         
     except Exception as e:
+        print(f"❌ [create_or_update_binary_file] Exception: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "content": [{
                 "type": "text",
