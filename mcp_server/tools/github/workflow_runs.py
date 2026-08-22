@@ -1,4 +1,4 @@
-"""Workflow runs tools: list_workflow_runs, get_latest_run_id, get_run_logs_by_step."""
+"""Workflow runs tools: list_workflow_runs, get_latest_run_id, get_run_logs_by_step, get_workflow_run_steps."""
 
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
@@ -87,6 +87,48 @@ def get_latest_run_id(client: GitHubClient, owner: str, repo: str) -> str:
 
 
 @mcp_tool(
+    name="get_workflow_run_steps",
+    description="Получает список всех шагов для указанного запуска workflow с их статусами",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+    },
+    required=["owner", "repo", "run_id"],
+)
+def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: int) -> str:
+    """Get list of all steps for a workflow run with their statuses."""
+    try:
+        jobs = client.get_workflow_jobs(owner, repo, run_id)
+        if not jobs:
+            return _safe_utf8(f"❌ Нет jobs для запуска #{run_id}")
+
+        lines = [
+            f"📋 Шаги для запуска #{run_id}:",
+            "",
+        ]
+
+        for job in jobs:
+            job_name = job.get("name", "unknown")
+            job_status = job.get("status", "unknown")
+            job_conclusion = job.get("conclusion", "pending")
+            lines.append(f"📦 Job: {job_name} ({job_status}/{job_conclusion})")
+
+            for step in job.get("steps", []):
+                step_name = step.get("name", "unknown")
+                step_status = step.get("status", "unknown")
+                step_conclusion = step.get("conclusion", "pending")
+                icon = {"success": "✅", "failure": "❌", "cancelled": "⚠️"}.get(step_conclusion, "⏳")
+                lines.append(f"  {icon} {step_name} - {step_status}/{step_conclusion}")
+
+            lines.append("")
+
+        return _safe_utf8("\n".join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
+
+
+@mcp_tool(
     name="get_run_logs_by_step",
     description="Получает логи конкретного шага workflow по имени шага",
     parameters={
@@ -102,22 +144,22 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
     """Get logs for a specific step by name."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
-        
+
         for job in jobs:
             for step in job.get("steps", []):
                 if step_name.lower() in step.get("name", "").lower():
                     job_id = job.get("id")
                     if not job_id:
                         continue
-                    
+
                     logs = client.get_job_logs(owner, repo, job_id)
                     log_lines = logs.split("\n")
-                    
+
                     # Ищем начало шага по имени
                     step_logs = []
                     in_step = False
                     step_found = False
-                    
+
                     for line in log_lines:
                         if step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
                             in_step = True
@@ -127,16 +169,16 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
                             break
                         elif in_step:
                             step_logs.append(line)
-                    
+
                     # Если не нашли по маркерам, берём все логи job
                     if not step_found:
                         step_logs = log_lines
-                    
+
                     # Обрезаем до max_lines
                     if len(step_logs) > max_lines:
                         step_logs = step_logs[:max_lines]
                         step_logs.append(f"... (обрезано, всего {len(log_lines)} строк, показано {max_lines})")
-                    
+
                     lines = [
                         f"📋 Логи шага '{step.get('name')}' (job: {job.get('name')})",
                         f"📦 Job ID: {job_id}",
@@ -146,9 +188,9 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
                         "",
                     ]
                     lines.extend(step_logs)
-                    
+
                     return _safe_utf8("\n".join(lines))
-        
+
         return _safe_utf8(f"❌ Шаг '{step_name}' не найден в запуске #{run_id}")
     except Exception as e:
         return _safe_utf8(f"❌ Ошибка: {e}")
