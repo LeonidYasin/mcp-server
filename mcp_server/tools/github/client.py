@@ -1,347 +1,79 @@
-"""GitHub API client for MCP server."""
+"""GitHub API client using httpx with improved error handling and encoding support."""
 
+from typing import Any, Optional, List, Dict
+import httpx
+import base64
 import json
-import os
-from typing import Any, Dict, List, Optional
-
-import requests
 
 
 class GitHubClient:
-    """Client for GitHub API."""
+    """Sync GitHub API client with improved error handling and UTF-8 support."""
 
-    def __init__(self, token: Optional[str] = None):
-        """Initialize GitHub client.
+    BASE_URL = "https://api.github.com"
 
-        Args:
-            token: GitHub personal access token. If not provided, will try to read
-                  from GITHUB_TOKEN environment variable.
-        """
-        self.token = token or os.environ.get("GITHUB_TOKEN")
-        if not self.token:
-            raise ValueError("GitHub token is required. Set GITHUB_TOKEN environment variable.")
-        self.base_url = "https://api.github.com"
-        self.headers = {
-            "Authorization": f"Bearer {self.token}",
+    def __init__(self, token: str):
+        self._headers = {
+            "Authorization": f"Bearer {token}",
             "Accept": "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
+            "Content-Type": "application/json; charset=utf-8",
         }
-        self.session = requests.Session()
-        self.session.headers.update(self.headers)
-
-    def _make_request(
-        self,
-        method: str,
-        path: str,
-        params: Optional[Dict[str, Any]] = None,
-        data: Optional[Dict[str, Any]] = None,
-    ) -> Any:
-        """Make a request to GitHub API.
-
-        Args:
-            method: HTTP method (GET, POST, PUT, DELETE, PATCH)
-            path: API path (will be appended to base_url)
-            params: Query parameters
-            data: Request body
-
-        Returns:
-            JSON response or None for 204 responses
-
-        Raises:
-            Exception: If API returns error status
-        """
-        url = f"{self.base_url}{path}"
-        response = self.session.request(
-            method=method,
-            url=url,
-            params=params,
-            json=data,
-            timeout=30,
+        self._client = httpx.Client(
+            timeout=30.0,
+            follow_redirects=True,
         )
 
-        if response.status_code >= 400:
-            error_msg = f"HTTP error {response.status_code}: {response.text}"
-            raise Exception(error_msg)
+    def _request(self, method: str, url: str, **kwargs) -> httpx.Response:
+        """Execute HTTP request with error handling."""
+        try:
+            if "json" in kwargs:
+                kwargs["json"] = self._ensure_utf8_dict(kwargs["json"])
+            
+            resp = self._client.request(method, url, headers=self._headers, **kwargs)
+            resp.raise_for_status()
+            return resp
+        except httpx.HTTPStatusError as e:
+            try:
+                error_data = e.response.json()
+                error_msg = error_data.get("message", str(e))
+                raise Exception(f"GitHub API error: {error_msg}")
+            except:
+                raise Exception(f"HTTP error {e.response.status_code}: {e.response.text[:200]}")
+        except httpx.TimeoutException:
+            raise Exception("Request timeout after 30 seconds")
+        except Exception as e:
+            raise Exception(f"Request failed: {str(e)}")
 
-        if response.status_code == 204:
-            return None
-
-        return response.json()
-
-    def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
-        """Make GET request."""
-        return self._make_request("GET", path, params)
-
-    def post(self, path: str, data: Optional[Dict[str, Any]] = None) -> Any:
-        """Make POST request."""
-        return self._make_request("POST", path, data=data)
-
-    def put(self, path: str, data: Optional[Dict[str, Any]] = None) -> Any:
-        """Make PUT request."""
-        return self._make_request("PUT", path, data=data)
-
-    def patch(self, path: str, data: Optional[Dict[str, Any]] = None) -> Any:
-        """Make PATCH request."""
-        return self._make_request("PATCH", path, data=data)
-
-    def delete(self, path: str) -> Any:
-        """Make DELETE request."""
-        return self._make_request("DELETE", path)
-
-    def get_paginated(self, path: str, params: Optional[Dict[str, Any]] = None) -> List[Any]:
-        """Make paginated GET request.
-
-        Args:
-            path: API path
-            params: Query parameters
-
-        Returns:
-            List of all items from paginated results
-        """
-        items = []
-        page = 1
-        per_page = 100
-
-        if params is None:
-            params = {}
-        params["per_page"] = per_page
-
-        while True:
-            params["page"] = page
-            result = self.get(path, params)
-
-            if isinstance(result, list):
-                items.extend(result)
-                if len(result) < per_page:
-                    break
+    def _ensure_utf8_dict(self, data: dict) -> dict:
+        """Ensure all string values in dict are properly encoded as UTF-8."""
+        if not data:
+            return data
+        result = {}
+        for key, value in data.items():
+            if isinstance(value, str):
+                result[key] = value.encode('utf-8', errors='replace').decode('utf-8')
+            elif isinstance(value, dict):
+                result[key] = self._ensure_utf8_dict(value)
+            elif isinstance(value, list):
+                result[key] = [self._ensure_utf8_dict(item) if isinstance(item, dict) else item for item in value]
             else:
-                # If response is not a list (some endpoints return object with items)
-                if isinstance(result, dict) and "items" in result:
-                    items.extend(result["items"])
-                    if len(result["items"]) < per_page:
-                        break
-                else:
-                    # Single page response
-                    items.append(result)
-                    break
+                result[key] = value
+        return result
 
-            page += 1
+    def _safe_json(self, data: dict) -> dict:
+        """Safely convert dict to JSON with UTF-8 support."""
+        try:
+            return data
+        except Exception:
+            return json.loads(json.dumps(data, ensure_ascii=False, default=str))
 
-        return items
-
-    def get_workflow_run_logs(self, owner: str, repo: str, run_id: int) -> Optional[bytes]:
-        """Download workflow run logs as bytes.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            run_id: Workflow run ID
-
-        Returns:
-            Raw log content as bytes
-        """
-        url = f"{self.base_url}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
-        response = self.session.get(url, headers=self.headers, stream=True, timeout=60)
-
-        if response.status_code >= 400:
-            error_msg = f"HTTP error {response.status_code}: {response.text}"
-            raise Exception(error_msg)
-
-        if response.status_code == 302:
-            # Follow redirect to get actual logs
-            redirect_url = response.headers.get("Location")
-            if redirect_url:
-                log_response = self.session.get(redirect_url, timeout=60)
-                if log_response.status_code == 200:
-                    return log_response.content
-                raise Exception(f"Failed to download logs from redirect: {log_response.status_code}")
-            raise Exception("Redirect URL not found in response")
-
-        return response.content
-
-    def get_workflow_run(self, owner: str, repo: str, run_id: int) -> Dict[str, Any]:
-        """Get workflow run details.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            run_id: Workflow run ID
-
-        Returns:
-            Workflow run details
-        """
-        path = f"/repos/{owner}/{repo}/actions/runs/{run_id}"
-        return self.get(path)
-
-    def get_workflow_run_jobs(self, owner: str, repo: str, run_id: int) -> List[Dict[str, Any]]:
-        """Get jobs for a workflow run.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            run_id: Workflow run ID
-
-        Returns:
-            List of jobs
-        """
-        path = f"/repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
-        result = self.get(path)
-        if isinstance(result, dict) and "jobs" in result:
-            return result["jobs"]
-        return []
-
-    def get_job_logs(self, owner: str, repo: str, job_id: int) -> Optional[bytes]:
-        """Download job logs as bytes.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            job_id: Job ID
-
-        Returns:
-            Raw log content as bytes
-        """
-        url = f"{self.base_url}/repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
-        response = self.session.get(url, headers=self.headers, stream=True, timeout=60)
-
-        if response.status_code >= 400:
-            error_msg = f"HTTP error {response.status_code}: {response.text}"
-            raise Exception(error_msg)
-
-        if response.status_code == 302:
-            redirect_url = response.headers.get("Location")
-            if redirect_url:
-                log_response = self.session.get(redirect_url, timeout=60)
-                if log_response.status_code == 200:
-                    return log_response.content
-                raise Exception(f"Failed to download logs from redirect: {log_response.status_code}")
-            raise Exception("Redirect URL not found in response")
-
-        return response.content
-
-    def get_workflow_runs(
-        self,
-        owner: str,
-        repo: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """List workflow runs.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            params: Query parameters (branch, event, status, etc.)
-
-        Returns:
-            List of workflow runs
-        """
-        path = f"/repos/{owner}/{repo}/actions/runs"
-        if params is None:
-            params = {}
-        result = self.get(path, params)
-        if isinstance(result, dict) and "workflow_runs" in result:
-            return result["workflow_runs"]
-        return []
-
-    def get_workflow_by_name(self, owner: str, repo: str, filename: str) -> Optional[Dict[str, Any]]:
-        """Get workflow by filename.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            filename: Workflow file name (e.g., 'build.yml')
-
-        Returns:
-            Workflow details or None if not found
-        """
-        path = f"/repos/{owner}/{repo}/actions/workflows"
-        result = self.get(path)
-        if isinstance(result, dict) and "workflows" in result:
-            for workflow in result["workflows"]:
-                if workflow.get("path", "").endswith(filename):
-                    return workflow
-        return None
-
-    def get_workflow_runs_by_file(
-        self,
-        owner: str,
-        repo: str,
-        filename: str,
-        limit: int = 5,
-    ) -> List[Dict[str, Any]]:
-        """Get workflow runs by filename.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            filename: Workflow file name
-            limit: Maximum number of runs to return
-
-        Returns:
-            List of workflow runs
-        """
-        workflow = self.get_workflow_by_name(owner, repo, filename)
-        if not workflow:
-            return []
-
-        workflow_id = workflow["id"]
-        path = f"/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs"
-        result = self.get(path, {"per_page": limit})
-        if isinstance(result, dict) and "workflow_runs" in result:
-            return result["workflow_runs"]
-        return []
-
-    def get_commit(self, owner: str, repo: str, sha: str) -> Dict[str, Any]:
-        """Get commit details.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            sha: Commit SHA
-
-        Returns:
-            Commit details
-        """
-        path = f"/repos/{owner}/{repo}/commits/{sha}"
-        return self.get(path)
-
-    def get_commit_statuses(self, owner: str, repo: str, sha: str) -> List[Dict[str, Any]]:
-        """Get commit statuses.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            sha: Commit SHA
-
-        Returns:
-            List of statuses
-        """
-        path = f"/repos/{owner}/{repo}/commits/{sha}/statuses"
-        return self.get_paginated(path)
-
-    def get_file_contents(
-        self,
-        owner: str,
-        repo: str,
-        path: str,
-        ref: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Get file contents from repository.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            path: Path to file
-            ref: Branch or commit SHA
-
-        Returns:
-            File contents
-        """
-        api_path = f"/repos/{owner}/{repo}/contents/{path}"
+    def get_file(self, owner: str, repo: str, path: str, ref: Optional[str] = None) -> dict:
+        """Get file contents from repository."""
         params = {}
         if ref:
             params["ref"] = ref
-        return self.get(api_path, params)
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}", params=params)
+        return self._safe_json(resp.json())
 
     def create_or_update_file(
         self,
@@ -350,212 +82,151 @@ class GitHubClient:
         path: str,
         content: str,
         message: str,
-        branch: str = "main",
-        sha: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Create or update a file.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            path: Path to file
-            content: File content (will be base64 encoded)
-            message: Commit message
-            branch: Branch name
-            sha: SHA of existing file (required for update)
-
-        Returns:
-            API response
-        """
-        import base64
-
-        encoded_content = base64.b64encode(content.encode("utf-8")).decode("utf-8")
-        data = {
+        branch: str,
+        sha: Optional[str] = None
+    ) -> dict:
+        """Create or update a file in the repository."""
+        content_encoded = content.encode('utf-8', errors='replace').decode('utf-8')
+        body = {
             "message": message,
-            "content": encoded_content,
+            "content": base64.b64encode(content_encoded.encode()).decode(),
             "branch": branch,
         }
         if sha:
-            data["sha"] = sha
+            body["sha"] = sha
+        resp = self._request("PUT", f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}", json=body)
+        return self._safe_json(resp.json())
 
-        api_path = f"/repos/{owner}/{repo}/contents/{path}"
-        return self.put(api_path, data)
+    def delete_file(self, owner: str, repo: str, path: str, message: str, branch: str, sha: str) -> dict:
+        """Delete a file from repository."""
+        body = {"message": message, "sha": sha, "branch": branch}
+        resp = self._request("DELETE", f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}", json=body)
+        return self._safe_json(resp.json())
 
-    def delete_file(
-        self,
-        owner: str,
-        repo: str,
-        path: str,
-        message: str,
-        branch: str = "main",
-        sha: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Delete a file.
+    def get_file_sha(self, owner: str, repo: str, path: str, ref: Optional[str] = None) -> Optional[str]:
+        """Get SHA of a file."""
+        try:
+            data = self.get_file(owner, repo, path, ref)
+            return data.get("sha")
+        except Exception:
+            return None
 
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            path: Path to file
-            message: Commit message
-            branch: Branch name
-            sha: SHA of file (required)
+    def list_commits(self, owner: str, repo: str, sha: Optional[str] = None, per_page: int = 10, page: int = 1) -> List[dict]:
+        """List commits with pagination support."""
+        params = {"per_page": per_page, "page": page}
+        if sha:
+            params["sha"] = sha
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits", params=params)
+        return self._safe_json(resp.json())
 
-        Returns:
-            API response
-        """
-        if not sha:
-            # Get file SHA first
-            try:
-                file_data = self.get_file_contents(owner, repo, path, ref=branch)
-                sha = file_data.get("sha")
-            except Exception:
-                raise Exception(f"File {path} not found on branch {branch}")
+    def get_workflow_runs(self, owner: str, repo: str, per_page: int = 5, page: int = 1, status: Optional[str] = None) -> List[dict]:
+        """Get workflow runs with optional status filter."""
+        params = {"per_page": per_page, "page": page}
+        if status:
+            params["status"] = status
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs", params=params)
+        return self._safe_json(resp.json()).get("workflow_runs", [])
 
-        data = {
-            "message": message,
-            "sha": sha,
-            "branch": branch,
-        }
+    def get_workflow_run(self, owner: str, repo: str, run_id: int) -> dict:
+        """Get specific workflow run details."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}")
+        return self._safe_json(resp.json())
 
-        api_path = f"/repos/{owner}/{repo}/contents/{path}"
-        return self.delete(api_path, data)
+    def get_workflow_jobs(self, owner: str, repo: str, run_id: int, per_page: int = 50) -> List[dict]:
+        """Get jobs for a workflow run."""
+        params = {"per_page": per_page}
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/jobs", params=params)
+        return self._safe_json(resp.json()).get("jobs", [])
 
-    def get_check_runs_for_commit(
-        self,
-        owner: str,
-        repo: str,
-        sha: str,
-    ) -> List[Dict[str, Any]]:
-        """Get check runs for a commit.
+    def get_job_logs(self, owner: str, repo: str, job_id: int) -> str:
+        """Get logs for a specific job."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/jobs/{job_id}/logs")
+        try:
+            return resp.text
+        except UnicodeDecodeError:
+            return resp.content.decode('utf-8', errors='replace')
 
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            sha: Commit SHA
-
-        Returns:
-            List of check runs
-        """
-        path = f"/repos/{owner}/{repo}/commits/{sha}/check-runs"
-        result = self.get(path)
-        if isinstance(result, dict) and "check_runs" in result:
-            return result["check_runs"]
-        return []
-
-    def get_check_run_annotations(
-        self,
-        owner: str,
-        repo: str,
-        check_run_id: int,
-    ) -> List[Dict[str, Any]]:
-        """Get check run annotations.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            check_run_id: Check run ID
-
-        Returns:
-            List of annotations
-        """
-        path = f"/repos/{owner}/{repo}/check-runs/{check_run_id}/annotations"
-        return self.get_paginated(path)
-
-    def get_repo(self, owner: str, repo: str) -> Dict[str, Any]:
-        """Get repository details.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-
-        Returns:
-            Repository details
-        """
-        path = f"/repos/{owner}/{repo}"
-        return self.get(path)
-
-    def get_workflow_run_attempts(
-        self,
-        owner: str,
-        repo: str,
-        run_id: int,
-    ) -> List[Dict[str, Any]]:
-        """Get workflow run attempts.
-
+    def get_workflow_run_logs(self, owner: str, repo: str, run_id: int) -> bytes:
+        """Download workflow run logs as bytes.
+        
         Args:
             owner: Repository owner
             repo: Repository name
             run_id: Workflow run ID
-
+            
         Returns:
-            List of attempts
+            Raw log content as bytes
         """
-        path = f"/repos/{owner}/{repo}/actions/runs/{run_id}/attempts"
-        return self.get_paginated(path)
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
+        
+        # First request to get redirect URL
+        resp = self._client.get(url, headers=self._headers, follow_redirects=False)
+        
+        if resp.status_code == 302:
+            redirect_url = resp.headers.get("Location")
+            if redirect_url:
+                # Download logs from redirect URL
+                log_resp = self._client.get(redirect_url, follow_redirects=True)
+                if log_resp.status_code == 200:
+                    return log_resp.content
+                raise Exception(f"Failed to download logs: {log_resp.status_code}")
+            raise Exception("Redirect URL not found")
+        elif resp.status_code == 200:
+            return resp.content
+        else:
+            raise Exception(f"Failed to download logs: {resp.status_code}")
 
-    def get_check_run(self, owner: str, repo: str, check_run_id: int) -> Dict[str, Any]:
-        """Get a specific check run.
+    def get_workflows(self, owner: str, repo: str) -> List[dict]:
+        """Get all workflows in repository."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/workflows")
+        return self._safe_json(resp.json()).get("workflows", [])
 
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            check_run_id: Check run ID
+    def get_workflow_runs_by_id(self, owner: str, repo: str, workflow_id: int, per_page: int = 5) -> List[dict]:
+        """Get workflow runs by workflow ID."""
+        params = {"per_page": per_page}
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs", params=params)
+        return self._safe_json(resp.json()).get("workflow_runs", [])
 
-        Returns:
-            Check run details
-        """
-        path = f"/repos/{owner}/{repo}/check-runs/{check_run_id}"
-        return self.get(path)
+    def get_commit_status(self, owner: str, repo: str, sha: str) -> dict:
+        """Get commit status."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{sha}/status")
+        return self._safe_json(resp.json())
 
-    def list_commits(
-        self,
-        owner: str,
-        repo: str,
-        sha: Optional[str] = None,
-        per_page: int = 30,
-        page: int = 1,
-    ) -> List[Dict[str, Any]]:
-        """List commits in repository.
+    def get_check_runs(self, owner: str, repo: str, sha: str) -> List[dict]:
+        """Get check runs for a commit."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{sha}/check-runs")
+        return self._safe_json(resp.json()).get("check_runs", [])
 
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            sha: Branch or commit SHA
-            per_page: Results per page
-            page: Page number
+    def get_check_run_annotations(self, owner: str, repo: str, check_run_id: int) -> List[dict]:
+        """Get check run annotations."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/check-runs/{check_run_id}/annotations")
+        return self._safe_json(resp.json())
 
-        Returns:
-            List of commits
-        """
-        path = f"/repos/{owner}/{repo}/commits"
-        params = {"per_page": per_page, "page": page}
-        if sha:
-            params["sha"] = sha
-        return self.get_paginated(path, params)
+    def get_repo(self, owner: str, repo: str) -> dict:
+        """Get repository details."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}")
+        return self._safe_json(resp.json())
+
+    def get_workflow_run_attempts(self, owner: str, repo: str, run_id: int) -> List[dict]:
+        """Get workflow run attempts."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/attempts")
+        return self._safe_json(resp.json())
+
+    def get_check_run(self, owner: str, repo: str, check_run_id: int) -> dict:
+        """Get a specific check run."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/check-runs/{check_run_id}")
+        return self._safe_json(resp.json())
 
     def get_latest_run_id(self, owner: str, repo: str, workflow_name: Optional[str] = None) -> Optional[int]:
-        """Get the latest workflow run ID.
-
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            workflow_name: Optional workflow name filter
-
-        Returns:
-            Latest run ID or None
-        """
-        params = {"per_page": 1, "status": "completed"}
-        if workflow_name:
-            # Try to find workflow by name
-            workflows = self.get("/repos/{owner}/{repo}/actions/workflows")
-            if isinstance(workflows, dict) and "workflows" in workflows:
-                for wf in workflows["workflows"]:
-                    if wf.get("name") == workflow_name:
-                        params["workflow_id"] = wf["id"]
-                        break
-
-        path = f"/repos/{owner}/{repo}/actions/runs"
-        result = self.get(path, params)
-        if isinstance(result, dict) and "workflow_runs" in result and result["workflow_runs"]:
-            return result["workflow_runs"][0]["id"]
+        """Get the latest workflow run ID."""
+        runs = self.get_workflow_runs(owner, repo, per_page=1)
+        if runs:
+            return runs[0].get("id")
         return None
+
+    def get_workflow_runs_with_params(self, owner: str, repo: str, params: Optional[Dict[str, Any]] = None) -> List[dict]:
+        """Get workflow runs with custom parameters."""
+        if params is None:
+            params = {}
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs", params=params)
+        return self._safe_json(resp.json()).get("workflow_runs", [])
