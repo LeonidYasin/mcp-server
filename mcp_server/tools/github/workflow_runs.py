@@ -131,7 +131,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
 
 @mcp_tool(
     name="get_run_logs_by_step",
-    description="Получает логи конкретного шага workflow по имени шага, используя маркеры ##[group] и ##[endgroup]",
+    description="Получает логи конкретного шага workflow по имени шага",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
@@ -144,13 +144,12 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
     """Get logs for a specific step by name using ##[group] and ##[endgroup] markers."""
     try:
-        # Получаем список jobs для run_id
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
         target_job = None
         target_job_id = None
 
-        # Находим нужный шаг
+        # Находим нужный шаг по имени из API
         for job in jobs:
             for step in job.get("steps", []):
                 if step_name.lower() in step.get("name", "").lower():
@@ -168,20 +167,36 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         logs = client.get_job_logs(owner, repo, target_job_id)
         log_lines = logs.split("\n")
 
-        step_name_clean = target_step.get("name", "")
+        step_name_from_api = target_step.get("name", "")
+        
+        # Ищем логи шага по маркерам ##[group] и ##[endgroup]
         step_logs = []
         in_step = False
         found_step = False
         
+        # Пробуем найти по имени из API (может отличаться от текста в логе)
+        search_patterns = [
+            step_name_from_api,
+            step_name,  # то, что передал пользователь
+            # Для checkout часто используется "Run actions/checkout@v4"
+            "Run actions/checkout",
+            "Checkout code",
+            "actions/checkout",
+        ]
+        
         for line in log_lines:
-            # Проверяем начало группы шага: ##[group]Run actions/checkout@v4
-            if "##[group]" in line and step_name_clean.lower() in line.lower():
-                in_step = True
-                found_step = True
-                step_logs.append(line)
-                continue
+            # Проверяем начало группы шага
+            if "##[group]" in line:
+                line_lower = line.lower()
+                for pattern in search_patterns:
+                    if pattern.lower() in line_lower:
+                        in_step = True
+                        found_step = True
+                        step_logs.append(line)
+                        break
+                if in_step:
+                    continue
             elif in_step and "##[endgroup]" in line:
-                # Добавляем строку с маркером конца
                 step_logs.append(line)
                 in_step = False
                 break
@@ -191,12 +206,17 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         # Если не нашли по маркерам, пробуем найти по имени в логе
         if not found_step:
             in_step = False
-            for line in log_lines:
-                if step_name_clean.lower() in line.lower() and "##[group]" in line:
-                    in_step = True
-                    found_step = True
-                    step_logs.append(line)
-                    continue
+            for i, line in enumerate(log_lines):
+                if "##[group]" in line:
+                    line_lower = line.lower()
+                    for pattern in search_patterns:
+                        if pattern.lower() in line_lower:
+                            in_step = True
+                            found_step = True
+                            step_logs.append(line)
+                            break
+                    if in_step:
+                        continue
                 elif in_step and "##[endgroup]" in line:
                     step_logs.append(line)
                     in_step = False
@@ -208,6 +228,7 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         if not found_step or not step_logs:
             step_logs = log_lines
             step_logs.append("\n⚠️ Не удалось выделить конкретный шаг, показаны все логи job")
+            step_logs.append(f"ℹ️ Искали: {step_name_from_api}")
 
         # Обрезаем до max_lines
         total_lines = len(step_logs)
