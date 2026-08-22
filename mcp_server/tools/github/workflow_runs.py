@@ -142,7 +142,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by name using ##[group] markers."""
+    """Get logs for a specific step by searching for the Run command."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
@@ -169,42 +169,36 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
 
         step_name_clean = target_step.get("name", "")
         
-        # Ищем логи шага по маркерам ##[group] и ##[endgroup]
+        # Ищем логи шага по команде "Run"
         step_logs = []
         in_step = False
         found_step = False
         
+        # Ищем строку с "Run" и названием шага
         for line in log_lines:
-            # Проверяем начало группы шага
-            if "##[group]" in line and step_name_clean.lower() in line.lower():
+            # Проверяем, является ли строка началом шага (Run command)
+            if "Run" in line and step_name_clean.lower() in line.lower():
                 in_step = True
                 found_step = True
                 step_logs.append(line)
                 continue
-            elif in_step and "##[endgroup]" in line:
-                step_logs.append(line)
-                in_step = False
-                break
             elif in_step:
+                # Добавляем строки до тех пор, пока не встретим следующую команду Run
+                if "Run" in line and not found_step:
+                    break
                 step_logs.append(line)
 
-        # Если не нашли по маркерам, пробуем найти по началу шага (Run ...)
+        # Если не нашли по "Run", пробуем найти по маркеру ##[group]
         if not found_step:
             in_step = False
-            # Ищем строку с командой, которая запускает шаг
-            run_marker = f"Run {step_name_clean}"
-            if len(run_marker) > 50:
-                # Если имя шага слишком длинное, используем начало
-                run_marker = run_marker[:40]
-            
             for line in log_lines:
-                if "Run" in line and step_name_clean.lower() in line.lower():
+                if "##[group]" in line and step_name_clean.lower() in line.lower():
                     in_step = True
                     found_step = True
                     step_logs.append(line)
                     continue
-                elif in_step and line.strip() and not line.startswith(" ") and "##[" in line:
-                    # Если начинается новая секция, заканчиваем
+                elif in_step and "##[endgroup]" in line:
+                    step_logs.append(line)
                     break
                 elif in_step:
                     step_logs.append(line)
