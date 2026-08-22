@@ -1,4 +1,4 @@
-"""Workflow runs tools: list_workflow_runs, get_latest_run_id."""
+"""Workflow runs tools: list_workflow_runs, get_latest_run_id, get_run_logs_by_step."""
 
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
@@ -82,5 +82,73 @@ def get_latest_run_id(client: GitHubClient, owner: str, repo: str) -> str:
             f"  время: {(run.get('created_at') or '')[:16].replace('T', ' ')}",
         ]
         return _safe_utf8("\n".join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
+
+
+@mcp_tool(
+    name="get_run_logs_by_step",
+    description="Получает логи конкретного шага workflow по имени шага",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        "step_name": {"type": "string", "description": "Название шага (часть имени, регистр не важен)"},
+        "max_lines": {"type": "integer", "description": "Максимум строк для вывода (по умолчанию 200)"},
+    },
+    required=["owner", "repo", "run_id", "step_name"],
+)
+def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
+    """Get logs for a specific step by name."""
+    try:
+        jobs = client.get_workflow_jobs(owner, repo, run_id)
+        
+        for job in jobs:
+            for step in job.get("steps", []):
+                if step_name.lower() in step.get("name", "").lower():
+                    job_id = job.get("id")
+                    if not job_id:
+                        continue
+                    
+                    logs = client.get_job_logs(owner, repo, job_id)
+                    log_lines = logs.split("\n")
+                    
+                    # Ищем начало шага по имени
+                    step_logs = []
+                    in_step = False
+                    step_found = False
+                    
+                    for line in log_lines:
+                        if step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
+                            in_step = True
+                            step_found = True
+                        elif in_step and ("##" in line or "::" in line) and step.get("name", "").lower() not in line.lower():
+                            # Следующий шаг начался
+                            break
+                        elif in_step:
+                            step_logs.append(line)
+                    
+                    # Если не нашли по маркерам, берём все логи job
+                    if not step_found:
+                        step_logs = log_lines
+                    
+                    # Обрезаем до max_lines
+                    if len(step_logs) > max_lines:
+                        step_logs = step_logs[:max_lines]
+                        step_logs.append(f"... (обрезано, всего {len(log_lines)} строк, показано {max_lines})")
+                    
+                    lines = [
+                        f"📋 Логи шага '{step.get('name')}' (job: {job.get('name')})",
+                        f"📦 Job ID: {job_id}",
+                        f"📊 Статус шага: {step.get('conclusion')}",
+                        "",
+                        "---",
+                        "",
+                    ]
+                    lines.extend(step_logs)
+                    
+                    return _safe_utf8("\n".join(lines))
+        
+        return _safe_utf8(f"❌ Шаг '{step_name}' не найден в запуске #{run_id}")
     except Exception as e:
         return _safe_utf8(f"❌ Ошибка: {e}")
