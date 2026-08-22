@@ -14,6 +14,7 @@ from mcp_server.tools.github.workflows import get_full_workflow_logs
 from mcp_server.tools.github.workflows import get_workflow_by_file
 from mcp_server.tools.github.workflow_runs import list_workflow_runs
 from mcp_server.tools.github.workflow_runs import get_latest_run_id
+from mcp_server.tools.github.workflow_runs import get_workflow_run_steps
 from mcp_server.tools.github.workflow_runs import get_run_logs_by_step
 from mcp_server.tools.github.create_update_binary import create_or_update_binary_file
 from mcp_server.tools.github.file_sha_ops import create_or_update_file_with_sha
@@ -31,6 +32,7 @@ __all__ = [
     "get_workflow_by_file",
     "list_workflow_runs",
     "get_latest_run_id",
+    "get_workflow_run_steps",
     "get_run_logs_by_step",
     "create_or_update_binary_file",
     "create_or_update_file_with_sha",
