@@ -7,6 +7,9 @@ import functools
 import inspect
 from typing import Callable, Any
 
+from mcp_server.core.tool import Tool
+
+
 # Ленивый импорт, чтобы избежать циклических зависимостей
 _TOOL_REGISTRY = None
 
@@ -21,7 +24,9 @@ def _get_registry():
         except ImportError:
             # Если реестр не доступен, создаем локальный
             class _DummyRegistry:
-                def register(self, name, handler, description, schema):
+                def register(self, tool):
+                    pass
+                def discover(self):
                     pass
             _TOOL_REGISTRY = _DummyRegistry()
     return _TOOL_REGISTRY
@@ -96,19 +101,22 @@ def mcp_tool(func: Callable) -> Callable:
             
             parameters[name] = param_info
         
-        schema = {
-            "type": "object",
-            "properties": parameters,
-            "required": required
-        }
+        # Создаем объект Tool
+        tool = Tool(
+            name=func.__name__,
+            description=description,
+            parameters=parameters,
+            required=required,
+            handler=func
+        )
+        
+        # Добавляем атрибут для auto-discovery
+        func._mcp_tool = tool
+        wrapper._mcp_tool = tool
         
         # Регистрируем в реестре
-        registry.register(
-            name=func.__name__,
-            handler=func,
-            description=description,
-            schema=schema
-        )
+        registry.register(tool)
+        
     except Exception as e:
         # Если регистрация не удалась, просто логируем ошибку
         print(f"[WARN] Failed to register tool {func.__name__}: {e}")
