@@ -2,8 +2,9 @@
 Декоратор для регистрации MCP-инструментов.
 """
 
-import sys
-from typing import Callable
+import functools
+from typing import Callable, Any
+
 
 # Глобальный реестр для хранения зарегистрированных инструментов
 _TOOL_REGISTRY = {}
@@ -11,27 +12,40 @@ _TOOL_REGISTRY = {}
 
 def mcp_tool(func: Callable) -> Callable:
     """
-    Декоратор для регистрации MCP-инструментов.
+    Декоратор для регистрации функции как MCP-инструмента.
+    
     Помечает функцию как MCP-инструмент и добавляет её в глобальный реестр.
+    Используется для автоматического обнаружения инструментов в папке tools.
+    
+    Пример:
+        @mcp_tool
+        def my_tool(param: str) -> dict:
+            '''Описание инструмента.'''
+            return {"result": param}
     """
-    func._is_mcp_tool = True
-    
     # Регистрируем функцию в глобальном реестре
-    module_name = func.__module__
-    func_name = func.__name__
+    _TOOL_REGISTRY[func.__name__] = func
     
-    if module_name not in _TOOL_REGISTRY:
-        _TOOL_REGISTRY[module_name] = {}
-    _TOOL_REGISTRY[module_name][func_name] = func
+    # Добавляем атрибут для обнаружения декоратором
+    func._is_mcp_tool = True
+    func._tool_name = func.__name__
     
-    return func
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    
+    # Копируем атрибуты на wrapper
+    wrapper._is_mcp_tool = True
+    wrapper._tool_name = func.__name__
+    
+    return wrapper
 
 
 def get_registered_tools() -> dict:
     """Возвращает словарь всех зарегистрированных инструментов."""
-    return _TOOL_REGISTRY
+    return _TOOL_REGISTRY.copy()
 
 
-def get_tools_by_module(module_name: str) -> dict:
-    """Возвращает инструменты для указанного модуля."""
-    return _TOOL_REGISTRY.get(module_name, {})
+def clear_registry() -> None:
+    """Очищает реестр инструментов (используется в тестах)."""
+    _TOOL_REGISTRY.clear()
