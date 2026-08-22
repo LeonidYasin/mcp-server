@@ -1,3 +1,5 @@
+"""GitHub workflow runs tools: list_workflow_runs, get_latest_run_id, get_run_logs_by_step, get_workflow_run_steps, get_step_logs_via_checks."""
+
 import os
 import requests
 import zipfile
@@ -5,7 +7,8 @@ import io
 import re
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from mcp_server.tools import mcp_tool
+from mcp_server.core.registry import mcp_tool
+from mcp_server.tools.github.client import GitHubClient
 
 
 def _parse_iso_time(time_str: str) -> datetime:
@@ -37,135 +40,186 @@ def _get_jobs_for_run(owner: str, repo: str, run_id: int, token: str) -> List[Di
     return data.get("jobs", [])
 
 
-@mcp_tool
+def _safe_utf8(text: str) -> str:
+    """Безопасно преобразует строку в UTF-8, заменяя проблемные символы."""
+    try:
+        return text.encode('utf-8', errors='replace').decode('utf-8')
+    except Exception:
+        return str(text)
+
+
+@mcp_tool(
+    name="list_workflow_runs",
+    description="Получает список последних запусков workflow с run_id, статусами и временем",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "limit": {"type": "integer", "description": "Количество запусков (по умолчанию 10)"},
+    },
+    required=["owner", "repo"],
+)
+def list_workflow_runs(client: GitHubClient, owner: str, repo: str, limit: int = 10) -> str:
+    """Get list of workflow runs with run_id, status, and time."""
+    try:
+        runs = client.get_workflow_runs(owner, repo, per_page=limit)
+        if not runs:
+            return _safe_utf8("Нет запусков workflow")
+
+        lines = [
+            f"📋 Последние {len(runs)} запусков workflow в {owner}/{repo}:",
+            "=" * 60,
+            ""
+        ]
+
+        for run in runs:
+            run_id = run.get("id")
+            status = run.get("status", "unknown")
+            conclusion = run.get("conclusion", "")
+            branch = run.get("head_branch", "")
+            created_at = run.get("created_at", "")
+            
+            status_icon = "✅" if conclusion == "success" else "❌" if conclusion == "failure" else "⏳"
+            lines.append(f"{status_icon} #{run_id} | {status} | {conclusion} | {branch} | {created_at}")
+
+        return _safe_utf8("\n".join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
+
+
+@mcp_tool(
+    name="get_latest_run_id",
+    description="Получает run_id последнего запуска workflow (успешного или нет)",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+    },
+    required=["owner", "repo"],
+)
+def get_latest_run_id(client: GitHubClient, owner: str, repo: str) -> str:
+    """Get the latest workflow run ID."""
+    try:
+        runs = client.get_workflow_runs(owner, repo, per_page=1)
+        if not runs:
+            return _safe_utf8("Нет запусков workflow")
+
+        run = runs[0]
+        run_id = run.get("id")
+        status = run.get("status", "unknown")
+        conclusion = run.get("conclusion", "")
+        
+        return _safe_utf8(f"✅ Последний запуск: #{run_id} | Статус: {status} | Результат: {conclusion}")
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
+
+
+@mcp_tool(
+    name="get_workflow_run_steps",
+    description="Получает список всех шагов для указанного запуска workflow с их статусами",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+    },
+    required=["owner", "repo", "run_id"],
+)
+def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: int) -> str:
+    """Get all steps for a workflow run with their statuses."""
+    try:
+        token = os.getenv("GITHUB_TOKEN")
+        if not token:
+            return _safe_utf8("❌ GITHUB_TOKEN не установлен")
+
+        jobs = _get_jobs_for_run(owner, repo, run_id, token)
+        if not jobs:
+            return _safe_utf8(f"Нет jobs для запуска #{run_id}")
+
+        lines = [
+            f"📋 Шаги для запуска #{run_id}:",
+            "=" * 60,
+            ""
+        ]
+
+        for job in jobs:
+            job_name = job.get("name", "unknown")
+            job_status = job.get("status", "unknown")
+            job_conclusion = job.get("conclusion", "")
+            
+            lines.append(f"📦 JOB: {job_name} [{job_status} / {job_conclusion}]")
+            
+            for step in job.get("steps", []):
+                step_name = step.get("name", "unknown")
+                step_status = step.get("status", "unknown")
+                step_conclusion = step.get("conclusion", "")
+                started_at = step.get("started_at", "")
+                
+                icon = "✅" if step_conclusion == "success" else "❌" if step_conclusion == "failure" else "⏳"
+                lines.append(f"  {icon} {step_name} [{step_status} / {step_conclusion}] {started_at}")
+            
+            lines.append("")
+
+        return _safe_utf8("\n".join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
+
+
+@mcp_tool(
+    name="get_run_logs_by_step",
+    description="Получает логи конкретного шага workflow по имени шага. Поддерживает фильтрацию по времени.",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        "step_name": {"type": "string", "description": "Название шага (часть имени, регистр не важен)"},
+        "max_lines": {"type": "integer", "description": "Максимум строк для вывода (по умолчанию 200)"},
+        "start_time": {"type": "string", "description": "ISO 8601 время начала (например 2026-08-22T10:30:00Z) - если указано, выводятся логи только после этого времени"},
+    },
+    required=["owner", "repo", "run_id", "step_name"],
+)
 def get_run_logs_by_step(
+    client: GitHubClient,
     owner: str,
     repo: str,
     run_id: int,
-    step_name: Optional[str] = None,
-    step_number: Optional[int] = None,
-    job_id: Optional[int] = None,
+    step_name: str,
     max_lines: int = 200,
     start_time: Optional[str] = None
-):
-    """
-    Gets logs for a specific workflow step.
-    
-    Either step_name OR step_number (+ optional job_id) must be provided.
-    
-    Args:
-        owner: Repository owner
-        repo: Repository name
-        run_id: Workflow run ID
-        step_name: Step name (partial match, case insensitive) - use if you don't know the exact step number
-        step_number: Step number (1-based index within the job) - more precise than name
-        job_id: Job ID - if provided together with step_number, finds the step in that specific job
-        max_lines: Maximum lines to return (default: 200)
-        start_time: ISO 8601 start time (e.g. '2026-08-22T10:30:00Z')
-                   - if provided, only logs after this time are returned
-    """
+) -> str:
+    """Get logs for a specific workflow step by step name."""
     token = os.getenv("GITHUB_TOKEN")
     if not token:
-        return {"error": "GITHUB_TOKEN not set"}
+        return _safe_utf8("❌ GITHUB_TOKEN не установлен")
     
-    # Validate parameters
-    if not step_name and step_number is None:
-        return {"error": "Either step_name or step_number must be provided"}
-    
-    # 1. Get job/step info to find the right log file
-    jobs = _get_jobs_for_run(owner, repo, run_id, token)
-    if not jobs:
-        return {"error": "No jobs found for this run"}
-    
-    target_file_pattern = None
-    found_job_name = None
-    
-    if step_number is not None:
-        # Find step by number
-        for job in jobs:
-            if job_id is not None and job.get("id") != job_id:
-                continue
-            steps = job.get("steps", [])
-            if 1 <= step_number <= len(steps):
-                step = steps[step_number - 1]
-                step_name_from_api = step.get("name", "")
-                target_file_pattern = step_name_from_api
-                found_job_name = job.get("name", "")
-                if not start_time:
-                    start_time = step.get("started_at")
-                break
-        
-        if not target_file_pattern:
-            return {"error": f"Step #{step_number} not found in the workflow run"}
-    else:
-        # Find step by name
-        for job in jobs:
-            steps = job.get("steps", [])
-            for step in steps:
-                step_name_from_api = step.get("name", "")
-                if step_name.lower() in step_name_from_api.lower():
-                    target_file_pattern = step_name_from_api
-                    found_job_name = job.get("name", "")
-                    if not start_time:
-                        start_time = step.get("started_at")
-                    break
-            if target_file_pattern:
-                break
-        
-        if not target_file_pattern:
-            return {"error": f"No step found with name containing: {step_name}"}
-    
-    # 2. Download the logs ZIP
-    logs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json"
-    }
-    
-    response = requests.get(logs_url, headers=headers)
-    if response.status_code != 200:
-        return {"error": f"Failed to download logs: {response.status_code}"}
-    
-    # 3. Extract logs from ZIP
-    log_lines = []
     try:
+        # 1. Download the logs ZIP
+        logs_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json"
+        }
+        
+        response = requests.get(logs_url, headers=headers)
+        if response.status_code != 200:
+            return _safe_utf8(f"❌ Не удалось скачать логи: {response.status_code}")
+        
+        # 2. Extract the ZIP
+        log_lines = []
+        found_file = None
+        
         with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-            # Try multiple ways to find the right file
-            found_file = None
-            
-            # First, try exact match with job name and step name
-            if found_job_name:
-                expected_pattern = f"{found_job_name}/{target_file_pattern}".lower()
-                for file_name in z.namelist():
-                    if expected_pattern in file_name.lower():
-                        found_file = file_name
-                        break
-            
-            # If not found, try partial match with step name
-            if not found_file and target_file_pattern:
-                for file_name in z.namelist():
-                    if target_file_pattern.lower() in file_name.lower():
-                        found_file = file_name
-                        break
-            
-            # If still not found, try to find any file containing the step name
-            if not found_file and target_file_pattern:
-                for file_name in z.namelist():
-                    if target_file_pattern.lower() in file_name.lower():
-                        found_file = file_name
-                        break
+            # Find file containing the step name
+            for file_name in z.namelist():
+                if step_name.lower() in file_name.lower():
+                    found_file = file_name
+                    break
             
             if not found_file:
-                return {
-                    "error": f"No log file found for step: {target_file_pattern}",
-                    "available_files": z.namelist()[:10]
-                }
+                return _safe_utf8(f"❌ Не найден файл с логами для шага: {step_name}")
             
             with z.open(found_file) as f:
                 content = f.read().decode('utf-8', errors='ignore')
                 lines = content.splitlines()
                 
-                # 4. Filter by time if start_time is provided
+                # 3. Filter by time if start_time is provided
                 if start_time:
                     try:
                         start_dt = _parse_iso_time(start_time)
@@ -183,107 +237,125 @@ def get_run_logs_by_step(
                         
                         lines = filtered_lines
                     except Exception as e:
-                        return {"error": f"Failed to parse start_time: {e}"}
+                        return _safe_utf8(f"❌ Ошибка парсинга start_time: {e}")
                 
                 log_lines = lines
+        
+        if not log_lines:
+            return _safe_utf8(f"❌ Нет логов для шага: {step_name}")
+        
+        # 4. Return first max_lines lines
+        result_lines = [
+            f"📄 Логи для шага '{step_name}' (запуск #{run_id})",
+            f"📊 Всего строк: {len(log_lines)}",
+            f"📊 Показано: {min(max_lines, len(log_lines))}",
+            f"🕐 С фильтром по времени: {start_time if start_time else 'нет'}",
+            "=" * 60,
+            ""
+        ]
+        
+        for line in log_lines[:max_lines]:
+            result_lines.append(_safe_utf8(line))
+        
+        if len(log_lines) > max_lines:
+            result_lines.append(f"\n... и еще {len(log_lines) - max_lines} строк")
+        
+        return _safe_utf8("\n".join(result_lines))
     except Exception as e:
-        return {"error": f"Failed to extract logs: {e}"}
-    
-    if not log_lines:
-        return {"error": f"No logs found for step: {target_file_pattern}"}
-    
-    # 5. Return first max_lines lines
-    return {
-        "run_id": run_id,
-        "step_name": target_file_pattern,
-        "job_name": found_job_name,
-        "step_number": step_number,
-        "job_id": job_id,
-        "start_time": start_time,
-        "total_lines": len(log_lines),
-        "returned_lines": min(max_lines, len(log_lines)),
-        "logs": log_lines[:max_lines]
-    }
+        return _safe_utf8(f"❌ Ошибка: {e}")
 
 
-@mcp_tool
+@mcp_tool(
+    name="get_step_logs_via_checks",
+    description="Получает логи шага через GitHub Checks API. Быстрый способ получить ошибки без скачивания всего ZIP-архива.",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        "step_name": {"type": "string", "description": "Название шага (часть имени, регистр не важен)"},
+    },
+    required=["owner", "repo", "run_id", "step_name"],
+)
 def get_step_logs_via_checks(
+    client: GitHubClient,
     owner: str,
     repo: str,
     run_id: int,
     step_name: str
-):
-    """
-    Gets step logs via GitHub Checks API.
-    Fast way to get errors without downloading the entire ZIP archive.
-    
-    Args:
-        owner: Repository owner
-        repo: Repository name
-        run_id: Workflow run ID
-        step_name: Step name (partial match, case insensitive)
-    """
+) -> str:
+    """Get step logs via GitHub Checks API."""
     token = os.getenv("GITHUB_TOKEN")
     if not token:
-        return {"error": "GITHUB_TOKEN not set"}
+        return _safe_utf8("❌ GITHUB_TOKEN не установлен")
     
-    # 1. Get run info to get commit SHA
-    run_info_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json"
-    }
-    
-    response = requests.get(run_info_url, headers=headers)
-    if response.status_code != 200:
-        return {"error": f"Failed to get run info: {response.status_code}"}
-    
-    run_data = response.json()
-    commit_sha = run_data.get("head_sha")
-    if not commit_sha:
-        return {"error": "No commit SHA found"}
-    
-    # 2. Get check-runs for this commit
-    checks_url = f"https://api.github.com/repos/{owner}/{repo}/commits/{commit_sha}/check-runs"
-    params = {"per_page": 100}
-    
-    response = requests.get(checks_url, headers=headers, params=params)
-    if response.status_code != 200:
-        return {"error": f"Failed to get check-runs: {response.status_code}"}
-    
-    checks_data = response.json()
-    check_runs = checks_data.get("check_runs", [])
-    
-    # 3. Find check-run with the step name
-    found_check = None
-    for check in check_runs:
-        check_name = check.get("name", "").lower()
-        if step_name.lower() in check_name:
-            found_check = check
-            break
-    
-    if not found_check:
-        return {
-            "error": f"No check-run found for step: {step_name}",
-            "available_checks": [c.get("name") for c in check_runs[:10]]
+    try:
+        # 1. Get run info to get commit SHA
+        run_info_url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json"
         }
-    
-    # 4. Return check-run data
-    return {
-        "run_id": run_id,
-        "step_name": step_name,
-        "check_run": {
-            "name": found_check.get("name"),
-            "status": found_check.get("status"),
-            "conclusion": found_check.get("conclusion"),
-            "started_at": found_check.get("started_at"),
-            "completed_at": found_check.get("completed_at"),
-            "output": {
-                "title": found_check.get("output", {}).get("title"),
-                "summary": found_check.get("output", {}).get("summary"),
-                "text": found_check.get("output", {}).get("text"),
-                "annotations_count": len(found_check.get("output", {}).get("annotations", []))
-            }
-        },
-        "note": "Checks API returns truncated output (up to 65535 characters). For full logs, use get_run_logs_by_step."
-    }
+        
+        response = requests.get(run_info_url, headers=headers)
+        if response.status_code != 200:
+            return _safe_utf8(f"❌ Не удалось получить информацию о запуске: {response.status_code}")
+        
+        run_data = response.json()
+        commit_sha = run_data.get("head_sha")
+        if not commit_sha:
+            return _safe_utf8("❌ Не найден SHA коммита")
+        
+        # 2. Get check-runs for this commit
+        checks_url = f"https://api.github.com/repos/{owner}/{repo}/commits/{commit_sha}/check-runs"
+        params = {"per_page": 100}
+        
+        response = requests.get(checks_url, headers=headers, params=params)
+        if response.status_code != 200:
+            return _safe_utf8(f"❌ Не удалось получить check-runs: {response.status_code}")
+        
+        checks_data = response.json()
+        check_runs = checks_data.get("check_runs", [])
+        
+        # 3. Find check-run with the step name
+        found_check = None
+        for check in check_runs:
+            check_name = check.get("name", "").lower()
+            if step_name.lower() in check_name:
+                found_check = check
+                break
+        
+        if not found_check:
+            available = [c.get("name") for c in check_runs[:10]]
+            return _safe_utf8(f"❌ Не найден check-run для шага: {step_name}\nДоступные проверки: {', '.join(available)}")
+        
+        # 4. Return check-run data
+        output = found_check.get("output", {})
+        lines = [
+            f"📋 Данные из Checks API для шага '{step_name}'",
+            "=" * 60,
+            f"📌 Название: {found_check.get('name')}",
+            f"📊 Статус: {found_check.get('status')}",
+            f"📊 Результат: {found_check.get('conclusion')}",
+            f"🕐 Начало: {found_check.get('started_at')}",
+            f"🕐 Завершение: {found_check.get('completed_at')}",
+            "",
+            f"📝 Заголовок: {output.get('title', 'нет')}",
+            "",
+            f"📄 Сводка:\n{_safe_utf8(output.get('summary', 'нет'))}",
+            "",
+        ]
+        
+        if output.get("text"):
+            lines.append(f"📄 Текст:\n{_safe_utf8(output.get('text'))}")
+        
+        if output.get("annotations"):
+            lines.append(f"\n📌 Аннотации ({len(output.get('annotations'))}):")
+            for ann in output.get("annotations", [])[:5]:
+                lines.append(f"  - {ann.get('message', '')}")
+        
+        lines.append("")
+        lines.append("ℹ️ Примечание: Checks API возвращает обрезанный вывод (до 65535 символов). Для полных логов используйте get_run_logs_by_step.")
+        
+        return _safe_utf8("\n".join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
