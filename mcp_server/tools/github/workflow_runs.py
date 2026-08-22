@@ -142,14 +142,14 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by name."""
+    """Get logs for a specific step by name using ##[group] markers."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
         target_job = None
         target_job_id = None
 
-        # Находим нужный шаг и job
+        # Находим нужный шаг
         for job in jobs:
             for step in job.get("steps", []):
                 if step_name.lower() in step.get("name", "").lower():
@@ -167,43 +167,46 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         logs = client.get_job_logs(owner, repo, target_job_id)
         log_lines = logs.split("\n")
 
-        # Получаем номер шага
-        step_number = target_step.get("number")
-        if step_number is None:
-            # Fallback: используем позицию в списке
-            step_number = target_job.get("steps", []).index(target_step) + 1
-
-        # Ищем логи для конкретного шага
+        step_name_clean = target_step.get("name", "")
+        
+        # Ищем логи шага по маркерам ##[group] и ##[endgroup]
         step_logs = []
         in_step = False
-        next_step_marker = f"{step_number + 1}." if step_number < len(target_job.get("steps", [])) else None
-        step_marker = f"{step_number}."
-
+        found_step = False
+        
         for line in log_lines:
-            # Проверяем начало шага
-            if line.strip().startswith(step_marker) and target_step.get("name", "").lower() in line.lower():
+            # Проверяем начало группы шага
+            if "##[group]" in line and step_name_clean.lower() in line.lower():
                 in_step = True
+                found_step = True
+                # Добавляем строку с маркером начала для контекста
+                step_logs.append(line)
                 continue
-            # Проверяем начало следующего шага
-            elif in_step and next_step_marker and line.strip().startswith(next_step_marker):
+            elif in_step and "##[endgroup]" in line:
+                # Добавляем строку с маркером конца
+                step_logs.append(line)
+                in_step = False
                 break
             elif in_step:
                 step_logs.append(line)
 
-        # Если не нашли по номеру, пробуем по имени
-        if not step_logs:
+        # Если не нашли по маркерам, пробуем найти по имени в логе
+        if not found_step:
             in_step = False
-            for line in log_lines:
-                if target_step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
+            for i, line in enumerate(log_lines):
+                if step_name_clean.lower() in line.lower() and ("##" in line or "::" in line):
                     in_step = True
+                    found_step = True
+                    step_logs.append(line)
                     continue
-                elif in_step and ("##" in line or "::" in line) and target_step.get("name", "").lower() not in line.lower():
+                elif in_step and ("##" in line or "::" in line) and step_name_clean.lower() not in line.lower():
+                    step_logs.append(line)
                     break
                 elif in_step:
                     step_logs.append(line)
 
         # Если всё равно не нашли, возвращаем все логи с предупреждением
-        if not step_logs:
+        if not found_step or not step_logs:
             step_logs = log_lines
             step_logs.append("\n⚠️ Не удалось выделить конкретный шаг, показаны все логи job")
 
@@ -217,7 +220,7 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
             f"📋 Логи шага '{target_step.get('name')}' (job: {target_job.get('name')})",
             f"📦 Job ID: {target_job_id}",
             f"📊 Статус шага: {target_step.get('conclusion')}",
-            f"🔢 Номер шага: {step_number}",
+            f"🔢 Номер шага: {target_step.get('number', '?')}",
             f"📄 Всего строк в логе шага: {total_lines}",
             "",
             "---",
