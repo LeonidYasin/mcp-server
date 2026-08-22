@@ -142,7 +142,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by name using ##[group] and ##[endgroup] markers."""
+    """Get logs for a specific step by name using ##[group] markers."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
@@ -179,11 +179,9 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
             if "##[group]" in line and step_name_clean.lower() in line.lower():
                 in_step = True
                 found_step = True
-                # Добавляем строку с маркером начала для контекста
                 step_logs.append(line)
                 continue
             elif in_step and "##[endgroup]" in line:
-                # Добавляем строку с маркером конца
                 step_logs.append(line)
                 in_step = False
                 break
@@ -193,14 +191,14 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         # Если не нашли по маркерам, пробуем найти по имени в логе
         if not found_step:
             in_step = False
-            for i, line in enumerate(log_lines):
-                if step_name_clean.lower() in line.lower() and ("##" in line or "::" in line):
+            for line in log_lines:
+                if step_name_clean.lower() in line.lower():
                     in_step = True
                     found_step = True
                     step_logs.append(line)
                     continue
-                elif in_step and ("##" in line or "::" in line) and step_name_clean.lower() not in line.lower():
-                    step_logs.append(line)
+                elif in_step and line.strip() and not line.startswith(" "):
+                    # Если строка не начинается с пробела, это начало нового шага
                     break
                 elif in_step:
                     step_logs.append(line)
