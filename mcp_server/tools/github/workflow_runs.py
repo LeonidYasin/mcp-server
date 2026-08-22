@@ -131,7 +131,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
 
 @mcp_tool(
     name="get_run_logs_by_step",
-    description="Получает логи конкретного шага workflow по имени шага",
+    description="Получает логи конкретного шага workflow по имени шага, используя маркеры ##[group] и ##[endgroup]",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
@@ -142,8 +142,9 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by name using ##[group] markers."""
+    """Get logs for a specific step by name using ##[group] and ##[endgroup] markers."""
     try:
+        # Получаем список jobs для run_id
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
         target_job = None
@@ -168,18 +169,15 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         log_lines = logs.split("\n")
 
         step_name_clean = target_step.get("name", "")
-        
-        # Ищем логи шага по маркерам ##[group] и ##[endgroup]
         step_logs = []
         in_step = False
         found_step = False
         
         for line in log_lines:
-            # Проверяем начало группы шага
+            # Проверяем начало группы шага: ##[group]Run actions/checkout@v4
             if "##[group]" in line and step_name_clean.lower() in line.lower():
                 in_step = True
                 found_step = True
-                # Добавляем строку с маркером начала для контекста
                 step_logs.append(line)
                 continue
             elif in_step and "##[endgroup]" in line:
@@ -193,14 +191,15 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
         # Если не нашли по маркерам, пробуем найти по имени в логе
         if not found_step:
             in_step = False
-            for i, line in enumerate(log_lines):
-                if step_name_clean.lower() in line.lower() and ("##" in line or "::" in line):
+            for line in log_lines:
+                if step_name_clean.lower() in line.lower() and "##[group]" in line:
                     in_step = True
                     found_step = True
                     step_logs.append(line)
                     continue
-                elif in_step and ("##" in line or "::" in line) and step_name_clean.lower() not in line.lower():
+                elif in_step and "##[endgroup]" in line:
                     step_logs.append(line)
+                    in_step = False
                     break
                 elif in_step:
                     step_logs.append(line)
