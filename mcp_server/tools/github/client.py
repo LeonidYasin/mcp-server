@@ -169,40 +169,69 @@ class GitHubClient:
 
     def get_check_runs(self, owner: str, repo: str, sha: str) -> List[dict]:
         """Get check runs for a commit."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{sha}/check-runs")
+        params = {"per_page": 100}
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{sha}/check-runs", params=params)
         return self._safe_json(resp.json()).get("check_runs", [])
 
-    def create_branch(self, owner: str, repo: str, branch: str, from_branch: str) -> dict:
-        """Create a new branch from existing branch."""
-        ref_resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/git/ref/heads/{from_branch}")
-        sha = ref_resp.json()["object"]["sha"]
-        resp = self._request(
-            "POST",
-            f"{self.BASE_URL}/repos/{owner}/{repo}/git/refs",
-            json={"ref": f"refs/heads/{branch}", "sha": sha}
-        )
-        return self._safe_json(resp.json())
-
-    def get_pull_requests(self, owner: str, repo: str, state: str = "open", per_page: int = 10) -> List[dict]:
-        """Get pull requests."""
-        params = {"state": state, "per_page": per_page}
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/pulls", params=params)
-        return self._safe_json(resp.json())
-
-    def create_issue(self, owner: str, repo: str, title: str, body: str, labels: Optional[List[str]] = None) -> dict:
-        """Create a new issue."""
-        data = {"title": title, "body": body}
-        if labels:
-            data["labels"] = labels
-        resp = self._request("POST", f"{self.BASE_URL}/repos/{owner}/{repo}/issues", json=data)
-        return self._safe_json(resp.json())
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._client.close()
-
-    def close(self):
-        """Close the HTTP client."""
-        self._client.close()
+    def get_step_logs_via_checks(
+        self,
+        owner: str,
+        repo: str,
+        run_id: int,
+        step_name: str
+    ) -> dict:
+        """
+        Get logs for a specific step via GitHub Checks API.
+        Fast way to get errors without downloading the entire ZIP archive.
+        
+        Args:
+            owner: Repository owner
+            repo: Repository name
+            run_id: Workflow run ID
+            step_name: Step name (partial match, case insensitive)
+            
+        Returns:
+            dict with check run data including output
+        """
+        # 1. Get run info to get commit SHA
+        run_data = self.get_workflow_run(owner, repo, run_id)
+        commit_sha = run_data.get("head_sha")
+        if not commit_sha:
+            raise Exception("No commit SHA found")
+        
+        # 2. Get check-runs for this commit
+        check_runs = self.get_check_runs(owner, repo, commit_sha)
+        
+        # 3. Find check-run with the step name
+        found_check = None
+        for check in check_runs:
+            check_name = check.get("name", "").lower()
+            if step_name.lower() in check_name:
+                found_check = check
+                break
+        
+        if not found_check:
+            raise Exception(
+                f"No check-run found for step: {step_name}"
+            )
+        
+        # 4. Return check-run data
+        return {
+            "run_id": run_id,
+            "step_name": step_name,
+            "commit_sha": commit_sha,
+            "check_run": {
+                "name": found_check.get("name"),
+                "status": found_check.get("status"),
+                "conclusion": found_check.get("conclusion"),
+                "started_at": found_check.get("started_at"),
+                "completed_at": found_check.get("completed_at"),
+                "output": {
+                    "title": found_check.get("output", {}).get("title"),
+                    "summary": found_check.get("output", {}).get("summary"),
+                    "text": found_check.get("output", {}).get("text"),
+                    "annotations_count": len(found_check.get("output", {}).get("annotations", []))
+                }
+            },
+            "note": "Checks API returns truncated output (up to 65535 characters). For full logs, use get_run_logs_by_step."
+        }
