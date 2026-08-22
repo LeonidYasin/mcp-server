@@ -346,5 +346,5 @@ def get_step_logs_via_checks(
                 "annotations_count": len(found_check.get("output", {}).get("annotations", []))
             }
         },
-        "note": "Checks API returns truncated output (up to 65535 characters). For full logs, use get_run_logs_by_step."
+        "note": "Checks API returns truncated output (up to 65535 characters). For full logs, use get_run_logs_by_step. "
     }
