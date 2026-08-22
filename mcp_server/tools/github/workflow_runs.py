@@ -142,7 +142,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by name using ##[group] markers."""
+    """Get logs for a specific step by name using ##[group] and ##[endgroup] markers."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
@@ -198,7 +198,6 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
                     step_logs.append(line)
                     continue
                 elif in_step and line.strip() and not line.startswith(" "):
-                    # Если строка не начинается с пробела, это начало нового шага
                     break
                 elif in_step:
                     step_logs.append(line)
