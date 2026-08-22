@@ -104,7 +104,7 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
 
 @mcp_tool(
     name="get_full_workflow_logs",
-    description="Получает ПОЛНЫЕ логи всех jobs для конкретного workflow run",
+    description="Получает ПОЛНЫЕ логи всех jobs для конкретного workflow run (без обрезания)",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
@@ -113,7 +113,7 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
     required=["owner", "repo", "run_id"],
 )
 def get_full_workflow_logs(client: GitHubClient, owner: str, repo: str, run_id: int) -> str:
-    """Get full workflow logs."""
+    """Get full workflow logs without truncation."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
 
@@ -130,12 +130,58 @@ def get_full_workflow_logs(client: GitHubClient, owner: str, repo: str, run_id: 
                 try:
                     logs = client.get_job_logs(owner, repo, job_id)
                     log_lines = logs.split("\n")
-                    lines.append(f"\n   📄 ЛОГИ (первые 50 строк из {len(log_lines)}):")
+                    lines.append(f"\n   📄 ЛОГИ (все {len(log_lines)} строк):")
                     lines.append("   " + "-" * 40)
-                    # Обрезаем логи до 50 строк и экранируем проблемные символы
-                    for line in log_lines[:50]:
+                    for line in log_lines:
                         lines.append(f"   {_safe_utf8(line)}")
-                    if len(log_lines) > 50:
+                    lines.append("   " + "-" * 40)
+                except Exception as e:
+                    lines.append(f"   ⚠️ Не удалось получить логи: {e}")
+
+            lines.append("")
+            lines.append("-" * 40)
+            lines.append("")
+
+        return _safe_utf8("\n".join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Ошибка: {e}")
+
+
+@mcp_tool(
+    name="get_workflow_logs_preview",
+    description="Получает первые N строк логов для конкретного workflow run (по умолчанию 50)",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        "limit": {"type": "integer", "description": "Количество строк для вывода (по умолчанию 50)"},
+    },
+    required=["owner", "repo", "run_id"],
+)
+def get_workflow_logs_preview(client: GitHubClient, owner: str, repo: str, run_id: int, limit: int = 50) -> str:
+    """Get first N lines of workflow logs."""
+    try:
+        jobs = client.get_workflow_jobs(owner, repo, run_id)
+
+        lines = [f"📋 ПРЕВЬЮ ЛОГОВ для запуска #{run_id} (первые {limit} строк)", f"Всего jobs: {len(jobs)}", "=" * 60, ""]
+
+        for job in jobs:
+            job_name = job.get("name") or "unknown"
+            lines.append(f"📦 JOB: {job_name}")
+            lines.append(f"   Статус: {job.get('status')}")
+            lines.append(f"   Результат: {job.get('conclusion')}")
+
+            job_id = job.get("id")
+            if job_id:
+                try:
+                    logs = client.get_job_logs(owner, repo, job_id)
+                    log_lines = logs.split("\n")
+                    preview = log_lines[:limit]
+                    lines.append(f"\n   📄 ЛОГИ (первые {len(preview)} из {len(log_lines)} строк):")
+                    lines.append("   " + "-" * 40)
+                    for line in preview:
+                        lines.append(f"   {_safe_utf8(line)}")
+                    if len(log_lines) > limit:
                         lines.append(f"   ... (обрезано, всего {len(log_lines)} строк)")
                     lines.append("   " + "-" * 40)
                 except Exception as e:
