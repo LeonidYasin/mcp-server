@@ -5,7 +5,7 @@ import io
 import re
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from mcp_server.decorators import mcp_tool
+from mcp_server.tools import mcp_tool
 
 
 def _parse_iso_time(time_str: str) -> datetime:
