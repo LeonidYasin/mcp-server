@@ -142,7 +142,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by searching for the Run command."""
+    """Get logs for a specific step by finding the Run command after all group sections."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
@@ -169,26 +169,42 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
 
         step_name_clean = target_step.get("name", "")
         
-        # Ищем логи шага по команде "Run"
+        # Ищем логи шага
         step_logs = []
-        in_step = False
         found_step = False
         
-        # Ищем строку с "Run" и названием шага
-        for line in log_lines:
-            # Проверяем, является ли строка началом шага (Run command)
-            if "Run" in line and step_name_clean.lower() in line.lower():
-                in_step = True
-                found_step = True
-                step_logs.append(line)
-                continue
-            elif in_step:
-                # Добавляем строки до тех пор, пока не встретим следующую команду Run
-                if "Run" in line and not found_step:
+        # Находим все строки с "Run" и выбираем ту, которая находится после всех ##[group] секций
+        run_lines = []
+        for i, line in enumerate(log_lines):
+            if "Run" in line and not line.strip().startswith("##[group]") and not line.strip().startswith("##[endgroup]"):
+                run_lines.append((i, line))
+        
+        # Находим строку с Run, которая содержит имя шага или находится рядом с ним
+        target_run_index = -1
+        for i, line in run_lines:
+            if step_name_clean.lower() in line.lower():
+                target_run_index = i
+                break
+        
+        # Если не нашли по имени, берём последнюю Run строку (обычно это и есть шаг)
+        if target_run_index == -1 and run_lines:
+            target_run_index = run_lines[-1][0]
+        
+        if target_run_index != -1:
+            # Собираем логи от Run строки до следующей ##[group] или до конца
+            found_step = True
+            in_step = False
+            for i in range(target_run_index, len(log_lines)):
+                line = log_lines[i]
+                if i == target_run_index:
+                    step_logs.append(line)
+                    continue
+                # Если встречаем ##[group] и это не первая строка, останавливаемся
+                if "##[group]" in line and i > target_run_index:
                     break
                 step_logs.append(line)
-
-        # Если не нашли по "Run", пробуем найти по маркеру ##[group]
+        
+        # Если не нашли через Run, пробуем через ##[group]
         if not found_step:
             in_step = False
             for line in log_lines:
