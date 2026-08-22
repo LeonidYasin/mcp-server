@@ -118,8 +118,9 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
                 step_name = step.get("name", "unknown")
                 step_status = step.get("status", "unknown")
                 step_conclusion = step.get("conclusion", "pending")
+                step_number = step.get("number", "?")
                 icon = {"success": "✅", "failure": "❌", "cancelled": "⚠️"}.get(step_conclusion, "⏳")
-                lines.append(f"  {icon} {step_name} - {step_status}/{step_conclusion}")
+                lines.append(f"  {icon} [{step_number}] {step_name} - {step_status}/{step_conclusion}")
 
             lines.append("")
 
@@ -152,27 +153,46 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
                     if not job_id:
                         continue
 
+                    # Получаем номер шага для точного поиска в логах
+                    step_number = step.get("number")
+                    if step_number is None:
+                        # Fallback: если номер не указан, используем позицию
+                        step_number = job.get("steps", []).index(step) + 1
+
                     logs = client.get_job_logs(owner, repo, job_id)
                     log_lines = logs.split("\n")
 
-                    # Ищем начало шага по имени
+                    # Ищем логи для конкретного шага по номеру
                     step_logs = []
                     in_step = False
-                    step_found = False
+                    step_marker = f"{step_number}."  # GitHub Actions использует "1. Step name"
 
                     for line in log_lines:
-                        if step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
+                        # Проверяем начало шага по номеру
+                        if line.strip().startswith(step_marker) and step.get("name", "").lower() in line.lower():
                             in_step = True
-                            step_found = True
-                        elif in_step and ("##" in line or "::" in line) and step.get("name", "").lower() not in line.lower():
-                            # Следующий шаг начался
+                            continue
+                        # Проверяем начало следующего шага (например "2. ")
+                        elif in_step and any(line.strip().startswith(f"{i}.") for i in range(step_number + 1, step_number + 10)):
                             break
                         elif in_step:
                             step_logs.append(line)
 
-                    # Если не нашли по маркерам, берём все логи job
-                    if not step_found:
+                    # Если не нашли по номеру, пробуем найти по имени шага
+                    if not step_logs:
+                        for line in log_lines:
+                            if step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
+                                in_step = True
+                                continue
+                            elif in_step and ("##" in line or "::" in line) and step.get("name", "").lower() not in line.lower():
+                                break
+                            elif in_step:
+                                step_logs.append(line)
+
+                    # Если всё равно не нашли, возвращаем все логи job
+                    if not step_logs:
                         step_logs = log_lines
+                        step_logs.append("\n⚠️ Не удалось выделить конкретный шаг, показаны все логи job")
 
                     # Обрезаем до max_lines
                     if len(step_logs) > max_lines:
@@ -183,6 +203,7 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
                         f"📋 Логи шага '{step.get('name')}' (job: {job.get('name')})",
                         f"📦 Job ID: {job_id}",
                         f"📊 Статус шага: {step.get('conclusion')}",
+                        f"🔢 Номер шага: {step_number}",
                         "",
                         "---",
                         "",
