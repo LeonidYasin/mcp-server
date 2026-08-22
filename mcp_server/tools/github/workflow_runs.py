@@ -145,73 +145,86 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
     """Get logs for a specific step by name."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
+        target_step = None
+        target_job = None
+        target_job_id = None
 
+        # Находим нужный шаг и job
         for job in jobs:
             for step in job.get("steps", []):
                 if step_name.lower() in step.get("name", "").lower():
-                    job_id = job.get("id")
-                    if not job_id:
-                        continue
+                    target_step = step
+                    target_job = job
+                    target_job_id = job.get("id")
+                    break
+            if target_step:
+                break
 
-                    # Получаем номер шага для точного поиска в логах
-                    step_number = step.get("number")
-                    if step_number is None:
-                        # Fallback: если номер не указан, используем позицию
-                        step_number = job.get("steps", []).index(step) + 1
+        if not target_step or not target_job_id:
+            return _safe_utf8(f"❌ Шаг '{step_name}' не найден в запуске #{run_id}")
 
-                    logs = client.get_job_logs(owner, repo, job_id)
-                    log_lines = logs.split("\n")
+        # Получаем полные логи job
+        logs = client.get_job_logs(owner, repo, target_job_id)
+        log_lines = logs.split("\n")
 
-                    # Ищем логи для конкретного шага по номеру
-                    step_logs = []
-                    in_step = False
-                    step_marker = f"{step_number}."  # GitHub Actions использует "1. Step name"
+        # Получаем номер шага
+        step_number = target_step.get("number")
+        if step_number is None:
+            # Fallback: используем позицию в списке
+            step_number = target_job.get("steps", []).index(target_step) + 1
 
-                    for line in log_lines:
-                        # Проверяем начало шага по номеру
-                        if line.strip().startswith(step_marker) and step.get("name", "").lower() in line.lower():
-                            in_step = True
-                            continue
-                        # Проверяем начало следующего шага (например "2. ")
-                        elif in_step and any(line.strip().startswith(f"{i}.") for i in range(step_number + 1, step_number + 10)):
-                            break
-                        elif in_step:
-                            step_logs.append(line)
+        # Ищем логи для конкретного шага
+        step_logs = []
+        in_step = False
+        next_step_marker = f"{step_number + 1}." if step_number < len(target_job.get("steps", [])) else None
+        step_marker = f"{step_number}."
 
-                    # Если не нашли по номеру, пробуем найти по имени шага
-                    if not step_logs:
-                        for line in log_lines:
-                            if step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
-                                in_step = True
-                                continue
-                            elif in_step and ("##" in line or "::" in line) and step.get("name", "").lower() not in line.lower():
-                                break
-                            elif in_step:
-                                step_logs.append(line)
+        for line in log_lines:
+            # Проверяем начало шага
+            if line.strip().startswith(step_marker) and target_step.get("name", "").lower() in line.lower():
+                in_step = True
+                continue
+            # Проверяем начало следующего шага
+            elif in_step and next_step_marker and line.strip().startswith(next_step_marker):
+                break
+            elif in_step:
+                step_logs.append(line)
 
-                    # Если всё равно не нашли, возвращаем все логи job
-                    if not step_logs:
-                        step_logs = log_lines
-                        step_logs.append("\n⚠️ Не удалось выделить конкретный шаг, показаны все логи job")
+        # Если не нашли по номеру, пробуем по имени
+        if not step_logs:
+            in_step = False
+            for line in log_lines:
+                if target_step.get("name", "").lower() in line.lower() and ("##" in line or "::" in line):
+                    in_step = True
+                    continue
+                elif in_step and ("##" in line or "::" in line) and target_step.get("name", "").lower() not in line.lower():
+                    break
+                elif in_step:
+                    step_logs.append(line)
 
-                    # Обрезаем до max_lines
-                    if len(step_logs) > max_lines:
-                        step_logs = step_logs[:max_lines]
-                        step_logs.append(f"... (обрезано, всего {len(log_lines)} строк, показано {max_lines})")
+        # Если всё равно не нашли, возвращаем все логи с предупреждением
+        if not step_logs:
+            step_logs = log_lines
+            step_logs.append("\n⚠️ Не удалось выделить конкретный шаг, показаны все логи job")
 
-                    lines = [
-                        f"📋 Логи шага '{step.get('name')}' (job: {job.get('name')})",
-                        f"📦 Job ID: {job_id}",
-                        f"📊 Статус шага: {step.get('conclusion')}",
-                        f"🔢 Номер шага: {step_number}",
-                        "",
-                        "---",
-                        "",
-                    ]
-                    lines.extend(step_logs)
+        # Обрезаем до max_lines
+        total_lines = len(step_logs)
+        if total_lines > max_lines:
+            step_logs = step_logs[:max_lines]
+            step_logs.append(f"\n... (обрезано, всего {total_lines} строк, показано {max_lines})")
 
-                    return _safe_utf8("\n".join(lines))
+        lines = [
+            f"📋 Логи шага '{target_step.get('name')}' (job: {target_job.get('name')})",
+            f"📦 Job ID: {target_job_id}",
+            f"📊 Статус шага: {target_step.get('conclusion')}",
+            f"🔢 Номер шага: {step_number}",
+            f"📄 Всего строк в логе шага: {total_lines}",
+            "",
+            "---",
+            "",
+        ]
+        lines.extend(step_logs)
 
-        return _safe_utf8(f"❌ Шаг '{step_name}' не найден в запуске #{run_id}")
+        return _safe_utf8("\n".join(lines))
     except Exception as e:
         return _safe_utf8(f"❌ Ошибка: {e}")
