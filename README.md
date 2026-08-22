@@ -4,7 +4,7 @@
 
 ## Возможности
 
-Сервер предоставляет **18 инструментов** для работы с GitHub:
+Сервер предоставляет **19 инструментов** для работы с GitHub:
 
 ### 📁 Работа с файлами (4)
 | Инструмент | Описание |
@@ -20,7 +20,7 @@
 | `list_commits` | Список последних коммитов |
 | `get_commit_status` | Статус проверок для коммита |
 
-### ⚙️ Workflow (6)
+### ⚙️ Workflow (7)
 | Инструмент | Описание |
 |-----------|----------|
 | `get_latest_workflow_error` | Ошибка последней сборки |
@@ -29,6 +29,7 @@
 | `get_workflow_by_file` | Запуски workflow по имени YAML-файла |
 | `list_workflow_runs` | Список запусков с run_id и статусами |
 | `get_latest_run_id` | run_id последнего запуска |
+| `get_workflow_run_steps` | Список всех шагов в запуске с их статусами |
 
 ### 🏗️ Сборка и отладка (6)
 | Инструмент | Описание |
@@ -88,7 +89,7 @@ mcp-server/
             ├── create_update_binary.py # create_or_update_binary_file
             ├── commits.py             # list_commits, get_commit_status
             ├── workflows.py           # workflow-инструменты (4 шт)
-            ├── workflow_runs.py       # list_workflow_runs, get_latest_run_id, get_run_logs_by_step
+            ├── workflow_runs.py       # list_workflow_runs, get_latest_run_id, get_workflow_run_steps, get_run_logs_by_step
             ├── build_logs.py          # watch_build
             ├── build_logs_loader.py   # auto_fix_build, get_android_build_error, get_ios_build_error
             └── build_logs_tools.py    # вспомогательные функции для сборки
@@ -230,4 +231,4 @@ curl -X POST http://127.0.0.1:3001/mcp \
 
 - **v0.1.0** — stdio-транспорт, базовая модульная архитектура
 - **v0.2.0** — Flask HTTP-транспорт, 10 инструментов, авто-обнаружение, инструкция для разработчиков
-- **v0.3.0** — Добавлены 8 новых инструментов: всего 18, включая работу с workflow, сборкой и отладкой
+- **v0.3.0** — Добавлены 9 новых инструментов: всего 19, включая работу с workflow, сборкой и отладкой
