@@ -142,7 +142,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
     required=["owner", "repo", "run_id", "step_name"],
 )
 def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str, max_lines: int = 200) -> str:
-    """Get logs for a specific step by finding the Run command."""
+    """Get logs for a specific step by name using ##[group] and ##[endgroup] markers."""
     try:
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         target_step = None
@@ -169,52 +169,37 @@ def get_run_logs_by_step(client: GitHubClient, owner: str, repo: str, run_id: in
 
         step_name_clean = target_step.get("name", "")
         
-        # Ищем логи шага
+        # Ищем логи шага по маркерам ##[group] и ##[endgroup]
         step_logs = []
+        in_step = False
         found_step = False
         
-        # Находим все строки с "Run" и выбираем ту, которая соответствует шагу
-        # Лучший способ: найти строку, которая содержит "Run" и находится после всех ##[group] секций
-        # или содержит команду из шага
-        
-        # Сначала ищем по имени шага в строке с Run
-        for i, line in enumerate(log_lines):
-            if "Run" in line and step_name_clean.lower() in line.lower():
-                # Нашли строку Run, которая содержит имя шага
-                target_run_index = i
+        for line in log_lines:
+            # Проверяем начало группы шага
+            if "##[group]" in line and step_name_clean.lower() in line.lower():
+                in_step = True
                 found_step = True
-                break
-        
-        # Если не нашли по имени, ищем последнюю строку с Run (обычно это последний шаг с командой)
-        if not found_step:
-            run_indices = [i for i, line in enumerate(log_lines) if "Run" in line and not line.strip().startswith("##[")]
-            if run_indices:
-                target_run_index = run_indices[-1]  # Берём последний Run
-                found_step = True
-        
-        if found_step:
-            # Собираем логи от Run строки до следующей ##[group] или до конца
-            in_step = False
-            for i in range(target_run_index, len(log_lines)):
-                line = log_lines[i]
-                if i == target_run_index:
-                    step_logs.append(line)
-                    continue
-                # Если встречаем ##[group] и это не первая строка, останавливаемся
-                if "##[group]" in line and i > target_run_index:
-                    break
+                # Добавляем строку с маркером начала для контекста
                 step_logs.append(line)
-        
-        # Если не нашли через Run, пробуем через ##[group]
-        if not found_step or not step_logs:
+                continue
+            elif in_step and "##[endgroup]" in line:
+                # Добавляем строку с маркером конца
+                step_logs.append(line)
+                in_step = False
+                break
+            elif in_step:
+                step_logs.append(line)
+
+        # Если не нашли по маркерам, пробуем найти по имени в логе
+        if not found_step:
             in_step = False
-            for line in log_lines:
-                if "##[group]" in line and step_name_clean.lower() in line.lower():
+            for i, line in enumerate(log_lines):
+                if step_name_clean.lower() in line.lower() and ("##" in line or "::" in line):
                     in_step = True
                     found_step = True
                     step_logs.append(line)
                     continue
-                elif in_step and "##[endgroup]" in line:
+                elif in_step and ("##" in line or "::" in line) and step_name_clean.lower() not in line.lower():
                     step_logs.append(line)
                     break
                 elif in_step:
