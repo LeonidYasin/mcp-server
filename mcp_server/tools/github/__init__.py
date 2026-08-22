@@ -19,6 +19,7 @@ from mcp_server.tools.github.workflow_runs import get_workflow_run_steps
 from mcp_server.tools.github.workflow_runs import get_run_logs_by_step
 from mcp_server.tools.github.create_update_binary import create_or_update_binary_file
 from mcp_server.tools.github.file_sha_ops import create_or_update_file_with_sha
+from mcp_server.tools.github.workflow_runs import get_step_logs_via_checks
 
 __all__ = [
     "GitHubClient",
