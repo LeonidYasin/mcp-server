@@ -1,21 +1,38 @@
 """
 Декоратор для регистрации MCP-инструментов.
+Автоматически регистрирует функции в ToolRegistry.
 """
 
 import functools
+import inspect
 from typing import Callable, Any
 
+# Ленивый импорт, чтобы избежать циклических зависимостей
+_TOOL_REGISTRY = None
 
-# Глобальный реестр для хранения зарегистрированных инструментов
-_TOOL_REGISTRY = {}
+
+def _get_registry():
+    """Получить глобальный экземпляр ToolRegistry."""
+    global _TOOL_REGISTRY
+    if _TOOL_REGISTRY is None:
+        try:
+            from mcp_server.core.registry import ToolRegistry
+            _TOOL_REGISTRY = ToolRegistry()
+        except ImportError:
+            # Если реестр не доступен, создаем локальный
+            class _DummyRegistry:
+                def register(self, name, handler, description, schema):
+                    pass
+            _TOOL_REGISTRY = _DummyRegistry()
+    return _TOOL_REGISTRY
 
 
 def mcp_tool(func: Callable) -> Callable:
     """
     Декоратор для регистрации функции как MCP-инструмента.
     
-    Помечает функцию как MCP-инструмент и добавляет её в глобальный реестр.
-    Используется для автоматического обнаружения инструментов в папке tools.
+    Автоматически регистрирует функцию в ToolRegistry с использованием
+    её сигнатуры для генерации схемы параметров.
     
     Пример:
         @mcp_tool
@@ -23,10 +40,7 @@ def mcp_tool(func: Callable) -> Callable:
             '''Описание инструмента.'''
             return {"result": param}
     """
-    # Регистрируем функцию в глобальном реестре
-    _TOOL_REGISTRY[func.__name__] = func
-    
-    # Добавляем атрибут для обнаружения декоратором
+    # Добавляем атрибуты для обнаружения
     func._is_mcp_tool = True
     func._tool_name = func.__name__
     
@@ -38,14 +52,84 @@ def mcp_tool(func: Callable) -> Callable:
     wrapper._is_mcp_tool = True
     wrapper._tool_name = func.__name__
     
+    # Регистрируем в ToolRegistry
+    try:
+        registry = _get_registry()
+        
+        # Извлекаем описание из docstring
+        doc = func.__doc__ or ""
+        description = doc.strip().split('\n')[0] if doc else func.__name__
+        
+        # Генерируем схему параметров из сигнатуры
+        sig = inspect.signature(func)
+        parameters = {}
+        required = []
+        
+        for name, param in sig.parameters.items():
+            # Пропускаем client и другие служебные параметры
+            if name in ('client', 'self', 'cls'):
+                continue
+            
+            param_info = {
+                "type": "string",
+                "description": name
+            }
+            
+            # Пытаемся определить тип из аннотации
+            if param.annotation != inspect.Parameter.empty:
+                if param.annotation == int:
+                    param_info["type"] = "integer"
+                elif param.annotation == bool:
+                    param_info["type"] = "boolean"
+                elif param.annotation == float:
+                    param_info["type"] = "number"
+                elif hasattr(param.annotation, "__origin__") and param.annotation.__origin__ == list:
+                    param_info["type"] = "array"
+                elif param.annotation == dict or (hasattr(param.annotation, "__origin__") and param.annotation.__origin__ == dict):
+                    param_info["type"] = "object"
+            
+            # Если есть значение по умолчанию, параметр не обязательный
+            if param.default == inspect.Parameter.empty:
+                required.append(name)
+            else:
+                param_info["default"] = param.default
+            
+            parameters[name] = param_info
+        
+        schema = {
+            "type": "object",
+            "properties": parameters,
+            "required": required
+        }
+        
+        # Регистрируем в реестре
+        registry.register(
+            name=func.__name__,
+            handler=func,
+            description=description,
+            schema=schema
+        )
+    except Exception as e:
+        # Если регистрация не удалась, просто логируем ошибку
+        print(f"[WARN] Failed to register tool {func.__name__}: {e}")
+    
     return wrapper
 
 
 def get_registered_tools() -> dict:
     """Возвращает словарь всех зарегистрированных инструментов."""
-    return _TOOL_REGISTRY.copy()
+    try:
+        registry = _get_registry()
+        return registry._tools if hasattr(registry, '_tools') else {}
+    except Exception:
+        return {}
 
 
 def clear_registry() -> None:
     """Очищает реестр инструментов (используется в тестах)."""
-    _TOOL_REGISTRY.clear()
+    try:
+        registry = _get_registry()
+        if hasattr(registry, '_tools'):
+            registry._tools.clear()
+    except Exception:
+        pass
