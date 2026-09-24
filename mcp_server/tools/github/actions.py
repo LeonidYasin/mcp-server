@@ -79,6 +79,28 @@ def rerun_workflow(client: GitHubClient, **kwargs) -> str:
 
 
 @mcp_tool(
+    name="rerun_failed_jobs",
+    description=(
+        "Перезапускает ТОЛЬКО упавшие jobs запуска (POST .../rerun-failed-jobs). "
+        "Позволяет перепроверить фикс без нового пуша (не плодит коммиты). "
+        "Эквивалент rerun_workflow(failed_only=true)."
+    ),
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "run_id": {"type": "integer"},
+    },
+    required=["owner", "repo", "run_id"],
+)
+def rerun_failed_jobs(client: GitHubClient, **kwargs) -> str:
+    client._request(
+        "POST",
+        f"/repos/{kwargs['owner']}/{kwargs['repo']}/actions/runs/{kwargs['run_id']}/rerun-failed-jobs",
+    )
+    return f"✅ Упавшие jobs run {kwargs['run_id']} перезапущены"
+
+
+@mcp_tool(
     name="cancel_workflow",
     description="Отменяет выполняющийся workflow run",
     parameters={

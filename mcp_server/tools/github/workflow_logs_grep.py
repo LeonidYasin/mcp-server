@@ -3,6 +3,9 @@
 Решает проблему пункта 9 отчёта: CI-лог 1000+ строк обрезается клиентом.
 Этот инструмент возвращает только совпавшие строки ±контекст — маленький
 ответ, который не режется.
+
+Важно: GitHub отдаёт логи run'а как ZIP. Используем
+client.get_workflow_run_logs_text(), который распаковывает архив.
 """
 
 import re
@@ -11,11 +14,11 @@ from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
 
-def _decode_logs(raw) -> str:
-    """Приводит логи к str (клиент возвращает bytes — ZIP-контент)."""
-    if isinstance(raw, bytes):
-        return raw.decode('utf-8', errors='replace')
-    return raw if isinstance(raw, str) else str(raw)
+def _safe_utf8(text: str) -> str:
+    try:
+        return text.encode('utf-8', errors='replace').decode('utf-8')
+    except Exception:
+        return str(text)
 
 
 @mcp_tool(
@@ -23,7 +26,7 @@ def _decode_logs(raw) -> str:
     description=(
         "Фильтрует логи workflow run по regex и возвращает только совпавшие строки "
         "с ±context строк контекста. Маленький ответ — не обрезается клиентом. "
-        "Идеально для больших CI-логов (1000+ строк)."
+        "Распаковывает ZIP-архив логов. Идеально для больших CI-логов (1000+ строк)."
     ),
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
@@ -33,16 +36,18 @@ def _decode_logs(raw) -> str:
         "context": {"type": "integer", "description": "Строк контекста до/после совпадения (по умолчанию 3)"},
         "max_matches": {"type": "integer", "description": "Максимум совпадений (по умолчанию 50, максимум 500)"},
         "case_sensitive": {"type": "boolean", "description": "Учитывать регистр (по умолчанию false)"},
+        "file_filter": {"type": "string", "description": "Искать только в файлах логов, чьё имя содержит эту подстроку (напр. имя job)"},
     },
     required=["owner", "repo", "run_id"],
 )
 def grep_workflow_logs(client: GitHubClient, **kwargs) -> str:
-    """Фильтрует логи workflow run по regex с контекстом."""
+    """Фильтрует логи workflow run по regex с контекстом (распаковывает ZIP)."""
     owner, repo, run_id = kwargs["owner"], kwargs["repo"], kwargs["run_id"]
     pattern = (kwargs.get("pattern") or r"error|FAILED|Exception|error:").strip()
     context = max(0, int(kwargs.get("context", 3)))
     max_matches = max(1, min(int(kwargs.get("max_matches", 50)), 500))
     flags = 0 if kwargs.get("case_sensitive") else re.IGNORECASE
+    file_filter = (kwargs.get("file_filter") or "").strip().lower()
 
     try:
         rx = re.compile(pattern, flags)
@@ -50,14 +55,28 @@ def grep_workflow_logs(client: GitHubClient, **kwargs) -> str:
         return f"❌ Некорректный regex '{pattern}': {e}"
 
     try:
-        logs = _decode_logs(client.get_workflow_run_logs(owner, repo, run_id))
+        files = client.get_workflow_run_logs_files(owner, repo, run_id)
+        if not files:
+            return f"❌ В архиве логов run {run_id} нет файлов."
+
+        if file_filter:
+            files = {n: t for n, t in files.items() if file_filter in n.lower()}
+            if not files:
+                return f"❌ Нет файлов логов с '{file_filter}' в имени (run {run_id})."
+
+        # Склеиваем выбранные файлы, сохраняя заголовки
+        chunks = []
+        for name, text in files.items():
+            chunks.append(f"===== {name} =====")
+            chunks.append(text)
+        logs = "\n".join(chunks)
         lines = logs.split("\n")
 
         hits = [i for i, ln in enumerate(lines) if rx.search(ln)]
         if not hits:
             return (
                 f"🔍 По шаблону '{pattern}' ничего не найдено в логах run {run_id} "
-                f"(всего строк: {len(lines)})."
+                f"(файлов: {len(files)}, строк: {len(lines)})."
             )
 
         # Собираем блоки [start, end) с контекстом, схлопывая перекрытия
@@ -74,7 +93,7 @@ def grep_workflow_logs(client: GitHubClient, **kwargs) -> str:
 
         out = [
             f"🔍 Шаблон: {pattern} | совпадений: {len(hits)} "
-            f"(показаны первые {min(len(hits), max_matches)}), строк всего: {len(lines)}"
+            f"(показаны первые {min(len(hits), max_matches)}), файлов: {len(files)}, строк: {len(lines)}"
         ]
         for start, end in blocks:
             out.append(f"--- строки {start + 1}..{end} ---")
@@ -84,10 +103,3 @@ def grep_workflow_logs(client: GitHubClient, **kwargs) -> str:
         return "\n".join(out)
     except Exception as e:
         return f"❌ Ошибка grep_workflow_logs: {e}"
-
-
-def _safe_utf8(text: str) -> str:
-    try:
-        return text.encode('utf-8', errors='replace').decode('utf-8')
-    except Exception:
-        return str(text)

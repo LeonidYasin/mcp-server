@@ -59,16 +59,20 @@ def get_latest_workflow_error(client: GitHubClient, owner: str, repo: str) -> st
 
 @mcp_tool(
     name="get_workflow_run_logs",
-    description="Получает логи и причину падения конкретного workflow run",
+    description=(
+        "Получает логи и причину падения конкретного workflow run: "
+        "список проваленных шагов + последние строки их логов (распаковывает ZIP)."
+    ),
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        "tail_lines": {"type": "integer", "description": "Сколько последних строк логов показать на упавший job (по умолчанию 15)"},
     },
     required=["owner", "repo", "run_id"],
 )
-def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: int) -> str:
-    """Get workflow run logs."""
+def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: int, tail_lines: int = 15) -> str:
+    """Get workflow run logs (with failing-step tail from unzipped archive)."""
     try:
         run = client.get_workflow_run(owner, repo, run_id)
         jobs = client.get_workflow_jobs(owner, repo, run_id)
@@ -83,19 +87,41 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
             "",
         ]
 
-        if failed:
-            lines.append("❌ НАЙДЕНЫ ОШИБКИ:")
-            for job in failed:
-                job_name = job.get('name') or 'unknown'
-                lines.append(f"\n📦 Job: {job_name}")
-                lines.append(f"   Статус: {job.get('status')}")
-                lines.append("   🔍 Проваленные шаги:")
-                for step in job.get("steps", []):
-                    if step.get("conclusion") == "failure":
-                        step_name = step.get('name') or 'unknown step'
-                        lines.append(f"   ❌ {step_name}")
-        else:
+        if not failed:
             lines.append("✅ Все проверки прошли успешно!")
+            return _safe_utf8("\n".join(lines))
+
+        lines.append("❌ НАЙДЕНЫ ОШИБКИ:")
+        for job in failed:
+            job_name = job.get('name') or 'unknown'
+            lines.append(f"\n📦 Job: {job_name}")
+            lines.append(f"   Статус: {job.get('status')}")
+            lines.append("   🔍 Проваленные шаги:")
+            for step in job.get("steps", []):
+                if step.get("conclusion") == "failure":
+                    step_name = step.get('name') or 'unknown step'
+                    lines.append(f"   ❌ {step_name}")
+
+        # Текст ошибки: тянем из распакованных логов run'а (файлы вида "<job>/<N>_<step>.txt")
+        try:
+            files = client.get_workflow_run_logs_files(owner, repo, run_id)
+            tail_n = max(1, min(int(tail_lines), 100))
+            for job in failed:
+                job_name = (job.get('name') or '').strip()
+                if not job_name:
+                    continue
+                matched = [(n, t) for n, t in files.items() if job_name.lower() in n.lower()]
+                if not matched:
+                    continue
+                lines.append(f"\n   📄 Текст ошибки ({job_name}, последние {tail_n} строк):")
+                # Собираем хвост из всех совпавших файлов job'а
+                for name, text in matched:
+                    tail = [ln for ln in text.strip().split("\n") if ln.strip()][-tail_n:]
+                    lines.append(f"     ── {name} ──")
+                    for tl in tail:
+                        lines.append(f"     {_safe_utf8(tl)}")
+        except Exception as e:
+            lines.append(f"   ⚠️ Не удалось получить текст логов: {e}")
 
         return _safe_utf8("\n".join(lines))
     except Exception as e:

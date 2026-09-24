@@ -89,75 +89,78 @@ def _detect_ios_error(logs: str) -> dict:
 
 @mcp_tool(
     name="watch_build",
-    description="Monitor a workflow build and return result when completed",
+    description=(
+        "Мгновенный снимок статуса сборки (НЕ блокирующий). "
+        "Транспорт MCP ограничивает запрос ~60 сек, поэтому длинные сборки "
+        "ждать здесь нельзя — вызывай инструмент повторно или используй "
+        "get_workflow_run_status."
+    ),
     parameters={
         "owner": {"type": "string", "description": "Repository owner"},
         "repo": {"type": "string", "description": "Repository name"},
-        "run_id": {"type": "integer", "description": "Workflow run ID to watch"},
-        "interval": {"type": "integer", "description": "Check interval in seconds (default: 10)"},
-        "timeout": {"type": "integer", "description": "Max wait time in seconds (default: 600)"},
+        "run_id": {"type": "integer", "description": "Workflow run ID"},
+        "interval": {"type": "integer", "description": "(deprecated, игнорируется) — оставлен для совместимости"},
+        "timeout": {"type": "integer", "description": "(deprecated, игнорируется) — оставлен для совместимости"},
     },
     required=["owner", "repo", "run_id"],
 )
 def watch_build(client: GitHubClient, owner: str, repo: str, run_id: int, interval: int = 10, timeout: int = 600) -> str:
-    """Watch build progress and return result."""
-    elapsed = 0
-    last_status = None
+    """Мгновенный снимок статуса сборки (без polling).
 
-    result_lines = [
-        f"🔍 Watching build #{run_id}",
-        f"📦 Repository: {owner}/{repo}",
-        f"⏱️ Check interval: {interval}s, Timeout: {timeout}s",
-        ""
-    ]
+    NB: раньше здесь был while-цикл с time.sleep(), из-за чего инструмент
+    упирался в 60-секундный лимит транспорта MCP и падал с
+    'MCP request exceeded 60000 ms' даже при timeout=900. Polling в MCP
+    принципиально невозможен — теперь один снимок, мониторинг на клиенте.
+    """
+    try:
+        info = _get_build_status(client, owner, repo, run_id)
+        status = info['status']
+        conclusion = info['conclusion']
 
-    while elapsed < timeout:
-        try:
-            info = _get_build_status(client, owner, repo, run_id)
-            status = info['status']
-            conclusion = info['conclusion']
+        running = len(info['running'])
+        success = len(info['success'])
+        failed = len(info['failed'])
+        pending = max(0, info['total_jobs'] - running - success - failed)
 
-            if status != last_status:
-                running = len(info['running'])
-                success = len(info['success'])
-                failed = len(info['failed'])
-                pending = max(0, info['total_jobs'] - running - success - failed)
-                parts = []
-                if failed:
-                    parts.append(f"❌ {failed} failed")
-                if running:
-                    parts.append(f"🏃 {running} running")
-                if success:
-                    parts.append(f"✅ {success} passed")
-                if pending:
-                    parts.append(f"⏳ {pending} pending")
-                summary = ", ".join(parts) if parts else "нет job'ов"
-                result_lines.append(f"⏳ Status: {status} (elapsed: {elapsed}s) — {summary}")
-                last_status = status
+        parts = []
+        if failed:
+            parts.append(f"❌ {failed} failed")
+        if running:
+            parts.append(f"🏃 {running} running")
+        if success:
+            parts.append(f"✅ {success} passed")
+        if pending:
+            parts.append(f"⏳ {pending} pending")
+        summary = ", ".join(parts) if parts else "нет job'ов"
 
-            if status == 'completed':
-                result_lines.append("")
-                if conclusion == 'success':
-                    result_lines.append("🎉 BUILD SUCCESSFUL!")
-                    result_lines.append(f"✅ {len(info['success'])} jobs passed")
-                else:
-                    result_lines.append("❌ BUILD FAILED!")
-                    result_lines.append(f"❌ Failed jobs: {len(info['failed'])}")
-                    for job in info['failed']:
-                        result_lines.append(f"   📦 {job.get('name')} - {job.get('conclusion')}")
+        lines = [
+            f"🔍 Build #{run_id} @ {owner}/{repo}",
+            f"⏳ Status: {status} — {summary}",
+        ]
 
-                result_lines.append("")
-                result_lines.append(f"📊 Total jobs: {info['total_jobs']}")
-                result_lines.append(f"🔄 Run URL: https://github.com/{owner}/{repo}/actions/runs/{run_id}")
-                return _safe_utf8('\n'.join(result_lines))
+        if status == 'completed':
+            lines.append("")
+            if conclusion == 'success':
+                lines.append("🎉 BUILD SUCCESSFUL!")
+                lines.append(f"✅ {success} jobs passed")
+            else:
+                lines.append("❌ BUILD FAILED!")
+                lines.append(f"❌ Failed jobs: {failed}")
+                for job in info['failed']:
+                    lines.append(f"   📦 {job.get('name')} - {job.get('conclusion')}")
+        else:
+            lines.append("")
+            lines.append("ℹ️ Сборка ещё идёт. Транспорт MCP режет запрос на ~60 сек,")
+            lines.append("   поэтому дождаться её тут нельзя. Варианты:")
+            lines.append(f"   • get_workflow_run_status(run_id={run_id}) — мгновенный снимок")
+            lines.append(f"   • list_workflow_runs(status='in_progress') — список активных")
 
-            time.sleep(interval)
-            elapsed += interval
-
-        except Exception as e:
-            return _safe_utf8(f"❌ Error watching build: {e}")
-
-    return _safe_utf8(f"⏰ Timeout ({timeout}s) reached. Build still in progress. Check manually: https://github.com/{owner}/{repo}/actions/runs/{run_id}")
+        lines.append("")
+        lines.append(f"📊 Total jobs: {info['total_jobs']}")
+        lines.append(f"🔄 Run URL: https://github.com/{owner}/{repo}/actions/runs/{run_id}")
+        return _safe_utf8('\n'.join(lines))
+    except Exception as e:
+        return _safe_utf8(f"❌ Error watching build: {e}")
 
 
 def _create_or_update_file_with_sha(client: GitHubClient, owner: str, repo: str, path: str, content: str, message: str, branch: str = "main") -> dict:

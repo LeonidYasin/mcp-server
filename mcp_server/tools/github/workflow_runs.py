@@ -13,11 +13,7 @@ def _safe_utf8(text: str) -> str:
 
 
 def _decode_logs(raw) -> str:
-    """Приводит логи к str: клиент может вернуть bytes (ZIP-контент).
-
-    Без этого logs.split('\\n') падает с TypeError
-    'a bytes-like object is required, not str'.
-    """
+    """Приводит логи к str, если это plain text (не ZIP)."""
     if isinstance(raw, bytes):
         return raw.decode('utf-8', errors='replace')
     return raw if isinstance(raw, str) else str(raw)
@@ -101,6 +97,62 @@ def get_latest_run_id(client: GitHubClient, owner: str, repo: str):
 
 
 @mcp_tool(
+    name="get_workflow_run_status",
+    description=(
+        "Мгновенный (неблокирующий) снимок статуса запуска workflow: "
+        "status, conclusion, jobs[] со статусами/результатами и список "
+        "проваленных шагов. Заменяет polling в watch_build."
+    ),
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "run_id": {"type": "integer", "description": "ID запуска workflow"},
+    },
+    required=["owner", "repo", "run_id"],
+)
+def get_workflow_run_status(client: GitHubClient, owner: str, repo: str, run_id: int):
+    """Мгновенный снимок статуса workflow run (без polling)."""
+    try:
+        run = client.get_workflow_run(owner, repo, run_id)
+        jobs = client.get_workflow_jobs(owner, repo, run_id)
+
+        job_list = []
+        failed_steps = []
+        for job in jobs:
+            steps = []
+            for step in job.get("steps", []):
+                steps.append({
+                    "name": step.get("name"),
+                    "status": step.get("status"),
+                    "conclusion": step.get("conclusion"),
+                })
+                if step.get("conclusion") == "failure":
+                    failed_steps.append(f"{job.get('name')} / {step.get('name')}")
+            job_list.append({
+                "name": job.get("name"),
+                "status": job.get("status"),
+                "conclusion": job.get("conclusion"),
+                "steps": steps,
+            })
+
+        return {
+            "owner": owner,
+            "repo": repo,
+            "run_id": run_id,
+            "status": run.get("status"),
+            "conclusion": run.get("conclusion"),
+            "head_branch": run.get("head_branch"),
+            "head_sha": run.get("head_sha"),
+            "html_url": run.get("html_url"),
+            "total_jobs": len(job_list),
+            "failed_steps": failed_steps,
+            "jobs": job_list,
+        }
+    except Exception as e:
+        return {"error": _safe_utf8(str(e))}
+
+
+@mcp_tool(
     name="get_workflow_run_steps",
     description="Получает список всех шагов для указанного запуска workflow с их статусами.",
     parameters={
@@ -146,7 +198,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
 
 @mcp_tool(
     name="get_run_logs_by_step",
-    description="Получает логи конкретного шага workflow по имени шага.",
+    description="Получает логи конкретного шага workflow по имени шага (распаковывает ZIP-логи).",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
@@ -166,9 +218,25 @@ def get_run_logs_by_step(
     max_lines: int = 200,
     start_time: str = None
 ):
-    """Получает логи конкретного шага workflow по имени шага."""
+    """Получает логи конкретного шага workflow, распаковывая ZIP."""
     try:
-        logs = _decode_logs(client.get_workflow_run_logs(owner, repo, run_id))
+        # Логи run'а — это ZIP с файлами вида "<job>/<N>_<step>.txt"
+        files = client.get_workflow_run_logs_files(owner, repo, run_id)
+        if not files:
+            return {"error": "No log files found in run archive"}
+
+        needle = step_name.lower()
+        matched = {name: text for name, text in files.items() if needle in name.lower()}
+        if not matched:
+            return {
+                "error": f"No log file matched step: {step_name}",
+                "available_files": sorted(files.keys())[:30],
+            }
+
+        # Склеиваем совпавшие файлы
+        logs = "\n".join(
+            f"===== {name} =====\n{text}" for name, text in matched.items()
+        )
         log_lines = logs.split('\n')
 
         if start_time:
@@ -181,26 +249,17 @@ def get_run_logs_by_step(
                     filtered_lines.append(line)
             log_lines = filtered_lines
 
-        step_lines = []
-        in_step = False
-        for line in log_lines:
-            if step_name.lower() in line.lower():
-                in_step = True
-            if in_step:
-                step_lines.append(line)
-                if len(step_lines) >= max_lines:
-                    break
-
-        if not step_lines:
+        if not log_lines:
             return {"error": f"No logs found for step: {step_name}"}
 
         return {
             "run_id": run_id,
             "step_name": step_name,
-            "total_lines": len(step_lines),
-            "returned_lines": min(max_lines, len(step_lines)),
+            "matched_files": list(matched.keys()),
+            "total_lines": len(log_lines),
+            "returned_lines": min(max_lines, len(log_lines)),
             "start_time": start_time,
-            "logs": step_lines[:max_lines]
+            "logs": log_lines[:max_lines]
         }
     except Exception as e:
         return {"error": _safe_utf8(str(e))}
