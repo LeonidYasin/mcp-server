@@ -21,8 +21,35 @@ from mcp_server.tools.github.workflow_runs import get_step_logs_via_checks
 from mcp_server.tools.github.create_update_binary import create_or_update_binary_file
 from mcp_server.tools.github.file_sha_ops import create_or_update_file_with_sha
 
+# --- batch 1 additions ---
+from mcp_server.tools.github.pull_requests import (
+    create_pull_request,
+    list_pull_requests,
+    get_pull_request,
+    merge_pull_request,
+    close_pull_request,
+    add_pr_comment,
+    request_pr_review,
+)
+from mcp_server.tools.github.issues import (
+    create_issue,
+    list_issues,
+    get_issue,
+    close_issue,
+    add_issue_comment,
+    add_labels,
+)
+from mcp_server.tools.github.releases import (
+    list_releases,
+    create_release,
+    get_latest_release,
+)
+from mcp_server.tools.github.tags import list_tags, create_tag
+from mcp_server.tools.github.batch import push_multiple_files
+
 __all__ = [
     "GitHubClient",
+    # existing
     "get_file_contents",
     "create_or_update_file",
     "delete_file",
@@ -40,4 +67,24 @@ __all__ = [
     "get_step_logs_via_checks",
     "create_or_update_binary_file",
     "create_or_update_file_with_sha",
+    # batch 1
+    "create_pull_request",
+    "list_pull_requests",
+    "get_pull_request",
+    "merge_pull_request",
+    "close_pull_request",
+    "add_pr_comment",
+    "request_pr_review",
+    "create_issue",
+    "list_issues",
+    "get_issue",
+    "close_issue",
+    "add_issue_comment",
+    "add_labels",
+    "list_releases",
+    "create_release",
+    "get_latest_release",
+    "list_tags",
+    "create_tag",
+    "push_multiple_files",
 ]
