@@ -8,6 +8,7 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+from mcp_server import __version__
 from mcp_server.core.registry import ToolRegistry
 from mcp_server.tools.github.client import GitHubClient
 
@@ -24,7 +25,8 @@ SUPPORTED_PROTOCOL_VERSIONS = [
 LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]
 
 SERVER_NAME = "mcp-github-server"
-SERVER_VERSION = "0.4.2"
+# Version is defined once, in mcp_server/__init__.py (__version__).
+SERVER_VERSION = __version__
 
 # Tools that don't need a GitHub token (pure functions / meta / web)
 TOKENLESS_PREFIXES = ("base64_", "hash_", "json_", "uuid_", "timestamp_", "date_", "regex_", "text_")
