@@ -80,6 +80,13 @@ from mcp_server.tools.github.repo import (
     list_repo_contributors,
 )
 
+# --- batch 3 additions ---
+from mcp_server.tools.github.commits_extra import (
+    get_commit_diff,
+    list_directory,
+    get_file_blame,
+)
+
 __all__ = [
     "GitHubClient",
     # existing
@@ -142,4 +149,8 @@ __all__ = [
     "get_repo_topics",
     "get_repo_languages",
     "list_repo_contributors",
+    # batch 3
+    "get_commit_diff",
+    "list_directory",
+    "get_file_blame",
 ]
