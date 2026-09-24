@@ -6,29 +6,34 @@ from mcp_server.tools.github.client import GitHubClient
 
 @mcp_tool(
     name="list_releases",
-    description="Список релизов репозитория",
+    description="Список релизов репозитория (с пагинацией)",
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
-        "limit": {"type": "integer", "description": "Сколько вернуть (по умолчанию 10)"},
+        "limit": {"type": "integer", "description": "Сколько вернуть на странице (по умолчанию 10, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
     },
     required=["owner", "repo"],
 )
 def list_releases(client: GitHubClient, **kwargs) -> str:
+    page = max(int(kwargs.get("page", 1) or 1), 1)
+    per_page = min(int(kwargs.get("limit", 10)), 100)
     resp = client._request(
         "GET",
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/releases",
-        params={"per_page": min(int(kwargs.get("limit", 10)), 100)},
+        params={"per_page": per_page, "page": page},
     )
     items = resp.json()
     if not items:
-        return "Релизов нет"
-    lines = [f"Релизы ({len(items)}):"]
+        return f"Релизов нет (страница {page})"
+    lines = [f"Релизы ({len(items)}) — страница {page}:"]
     for r in items:
         lines.append(
             f"  {r['tag_name']} — {r.get('name') or ''} "
             f"({'draft' if r.get('draft') else 'published'}, {r.get('published_at') or '-'})"
         )
+    if len(items) == per_page:
+        lines.append(f"... возможно, есть ещё — вызови с page={page + 1}")
     return "\n".join(lines)
 
 
