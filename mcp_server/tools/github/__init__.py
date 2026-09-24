@@ -53,6 +53,7 @@ from mcp_server.tools.github.batch import push_multiple_files
 from mcp_server.tools.github.branches import (
     list_branches,
     get_branch,
+    create_branch,
     delete_branch,
     compare_branches,
     merge_branches,
@@ -137,6 +138,7 @@ __all__ = [
     # batch 2
     "list_branches",
     "get_branch",
+    "create_branch",
     "delete_branch",
     "compare_branches",
     "merge_branches",
