@@ -47,6 +47,39 @@ from mcp_server.tools.github.releases import (
 from mcp_server.tools.github.tags import list_tags, create_tag
 from mcp_server.tools.github.batch import push_multiple_files
 
+# --- batch 2 additions ---
+from mcp_server.tools.github.branches import (
+    list_branches,
+    get_branch,
+    delete_branch,
+    compare_branches,
+    merge_branches,
+)
+from mcp_server.tools.github.gists import (
+    create_gist,
+    list_gists,
+    get_gist,
+    update_gist,
+)
+from mcp_server.tools.github.actions import (
+    list_workflows,
+    dispatch_workflow,
+    rerun_workflow,
+    cancel_workflow,
+    list_artifacts,
+)
+from mcp_server.tools.github.security import (
+    list_dependabot_alerts,
+    list_code_scanning_alerts,
+    list_secret_scanning_alerts,
+)
+from mcp_server.tools.github.repo import (
+    get_repo_info,
+    get_repo_topics,
+    get_repo_languages,
+    list_repo_contributors,
+)
+
 __all__ = [
     "GitHubClient",
     # existing
@@ -87,4 +120,26 @@ __all__ = [
     "list_tags",
     "create_tag",
     "push_multiple_files",
+    # batch 2
+    "list_branches",
+    "get_branch",
+    "delete_branch",
+    "compare_branches",
+    "merge_branches",
+    "create_gist",
+    "list_gists",
+    "get_gist",
+    "update_gist",
+    "list_workflows",
+    "dispatch_workflow",
+    "rerun_workflow",
+    "cancel_workflow",
+    "list_artifacts",
+    "list_dependabot_alerts",
+    "list_code_scanning_alerts",
+    "list_secret_scanning_alerts",
+    "get_repo_info",
+    "get_repo_topics",
+    "get_repo_languages",
+    "list_repo_contributors",
 ]
