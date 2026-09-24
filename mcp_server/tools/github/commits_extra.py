@@ -36,7 +36,6 @@ def get_commit_diff(client: GitHubClient, **kwargs) -> str:
         return _branch_hint(kwargs["owner"], kwargs["repo"], kwargs["sha"], exc)
     diff = resp.text
     limit = int(kwargs.get("max_files", 20))
-    # limit by number of "diff --git" blocks
     parts = diff.split("diff --git ")
     if len(parts) > limit + 1:
         diff = "diff --git ".join(parts[: limit + 1]) + f"\n\n[...ещё {len(parts) - limit - 1} файлов]"
@@ -56,8 +55,6 @@ def get_commit_diff(client: GitHubClient, **kwargs) -> str:
 )
 def list_directory(client: GitHubClient, **kwargs) -> str:
     path = (kwargs.get("path") or "").strip("/")
-    # Do NOT default to "main": many repos use "master" or another default.
-    # When ref is omitted, GitHub itself picks the repository default branch.
     ref = (kwargs.get("ref") or "").strip()
     url = f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/contents/{path}"
     params = {"ref": ref} if ref else None
@@ -79,6 +76,74 @@ def list_directory(client: GitHubClient, **kwargs) -> str:
     for it in items:
         icon = "📁" if it["type"] == "dir" else "📄"
         lines.append(f"  {icon} {it['name']} ({it.get('size', '-')} b)")
+    return "\n".join(lines)
+
+
+@mcp_tool(
+    name="get_repo_tree",
+    description=(
+        "Возвращает ВСЁ дерево репозитория одним вызовом (рекурсивно). "
+        "Использует Git Trees API с recursive=1 — надёжнее, чем обход "
+        "list_directory по каталогам, и не теряет файлы при неполном листинге."
+    ),
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию — дефолтная ветка репо)"},
+        "path_prefix": {"type": "string", "description": "Показать только пути с этим префиксом"},
+        "blobs_only": {"type": "boolean", "description": "Только файлы, без каталогов (по умолчанию true)"},
+        "max_entries": {"type": "integer", "description": "Ограничение на число строк (по умолчанию 2000)"},
+    },
+    required=["owner", "repo"],
+)
+def get_repo_tree(client: GitHubClient, **kwargs) -> str:
+    ref = (kwargs.get("ref") or "").strip()
+    prefix = (kwargs.get("path_prefix") or "").strip("/")
+    blobs_only = kwargs.get("blobs_only", True)
+    max_entries = max(int(kwargs.get("max_entries", 2000)), 1)
+
+    if not ref:
+        try:
+            info = client._request(
+                "GET", f"/repos/{kwargs['owner']}/{kwargs['repo']}"
+            ).json()
+            ref = info.get("default_branch") or "main"
+        except Exception as exc:
+            return f"❌ Не удалось определить дефолтную ветку: {exc}"
+
+    try:
+        resp = client._request(
+            "GET",
+            f"/repos/{kwargs['owner']}/{kwargs['repo']}/git/trees/{ref}",
+            params={"recursive": "1"},
+        )
+    except Exception as exc:
+        return _branch_hint(kwargs["owner"], kwargs["repo"], ref, exc)
+
+    data = resp.json()
+    tree = data.get("tree", [])
+    truncated = data.get("truncated", False)
+
+    rows = []
+    for it in tree:
+        p = it.get("path", "")
+        if blobs_only and it.get("type") != "blob":
+            continue
+        if prefix and not p.startswith(prefix):
+            continue
+        rows.append((p, it.get("type"), it.get("size")))
+
+    shown = rows[:max_entries]
+    header = (
+        f"Дерево {kwargs['owner']}/{kwargs['repo']} @ {ref} — "
+        f"{len(rows)} элементов" + (f" (показаны первые {len(shown)})" if len(rows) > len(shown) else "")
+    )
+    if truncated:
+        header += "\n⚠️ GitHub пометил дерево как truncated (очень большой репо) — часть путей может отсутствовать."
+    lines = [header]
+    for p, t, size in shown:
+        icon = "📄" if t == "blob" else "📁"
+        lines.append(f"  {icon} {p}" + (f" ({size} b)" if size is not None else ""))
     return "\n".join(lines)
 
 
