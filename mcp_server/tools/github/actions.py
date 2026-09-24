@@ -6,18 +6,31 @@ from mcp_server.tools.github.client import GitHubClient
 
 @mcp_tool(
     name="list_workflows",
-    description="Список workflows репозитория",
-    parameters={"owner": {"type": "string"}, "repo": {"type": "string"}},
+    description="Список workflows репозитория (с пагинацией)",
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "limit": {"type": "integer", "description": "Сколько на странице (по умолчанию 30, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
+    },
     required=["owner", "repo"],
 )
 def list_workflows(client: GitHubClient, **kwargs) -> str:
-    resp = client._request("GET", f"/repos/{kwargs['owner']}/{kwargs['repo']}/actions/workflows")
-    items = resp.json().get("workflows", [])
+    limit = max(1, min(int(kwargs.get("limit", 30)), 100))
+    page = max(1, int(kwargs.get("page", 1)))
+    resp = client._request(
+        "GET",
+        f"/repos/{kwargs['owner']}/{kwargs['repo']}/actions/workflows",
+        params={"per_page": limit, "page": page},
+    )
+    data = resp.json()
+    items = data.get("workflows", [])
+    total = data.get("total_count", len(items))
     if not items:
-        return "Workflows нет"
-    lines = [f"Workflows ({len(items)}):"]
+        return f"Workflows (стр. {page}): нет"
+    lines = [f"Workflows (стр. {page}, всего {total}, показано {len(items)}):"]
     for w in items:
-        lines.append(f"  [{w['state']}] {w['name']} — {w['path']}")
+        lines.append(f"  [{w['state']}] {w['name']} — {w['path']} (id={w['id']})")
     return "\n".join(lines)
 
 
@@ -103,5 +116,72 @@ def list_artifacts(client: GitHubClient, **kwargs) -> str:
     lines = [f"Артефакты ({len(items)}):"]
     for a in items:
         size_kb = a.get("size_in_bytes", 0) / 1024
-        lines.append(f"  {a['name']} — {size_kb:.1f} KB (expired={a.get('expired')})")
+        lines.append(f"  {a['name']} — {size_kb:.1f} KB (id={a['id']}, expired={a.get('expired')})")
     return "\n".join(lines)
+
+
+@mcp_tool(
+    name="download_artifact",
+    description=(
+        "Скачивание артефакта workflow: возвращает подписанную (временную) ссылку "
+        "archive_download_url на ZIP. Сам файл НЕ скачивается на диск. "
+        "Принимает artifact_id (из list_artifacts) или name — тогда id ищется по имени."
+    ),
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "artifact_id": {"type": "integer", "description": "ID артефакта (из list_artifacts)"},
+        "name": {"type": "string", "description": "Имя артефакта (если artifact_id не задан)"},
+        "run_id": {"type": "integer", "description": "ID запуска (нужен, если ищем по name)"},
+    },
+    required=["owner", "repo"],
+)
+def download_artifact(client: GitHubClient, **kwargs) -> str:
+    owner, repo = kwargs["owner"], kwargs["repo"]
+    artifact_id = kwargs.get("artifact_id")
+    name = (kwargs.get("name") or "").strip()
+    run_id = kwargs.get("run_id")
+
+    # Если id не передан — ищем по имени (в конкретном run или по всему репо)
+    if not artifact_id:
+        if not name:
+            return "❌ Нужен artifact_id или name (плюс run_id для поиска по имени)."
+        if run_id:
+            resp = client._request(
+                "GET",
+                f"/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts",
+                params={"name": name},
+            )
+        else:
+            resp = client._request(
+                "GET", f"/repos/{owner}/{repo}/actions/artifacts", params={"name": name}
+            )
+        found = resp.json().get("artifacts", [])
+        if not found:
+            return f"❌ Артефакт '{name}' не найден в {owner}/{repo}."
+        art = found[0]
+        artifact_id = art["id"]
+    else:
+        resp = client._request(
+            "GET", f"/repos/{owner}/{repo}/actions/artifacts/{artifact_id}"
+        )
+        art = resp.json()
+
+    if art.get("expired"):
+        return f"❌ Артефакт '{art.get('name')}' (id={artifact_id}) просрочен (expired) и недоступен."
+
+    size_mb = art.get("size_in_bytes", 0) / (1024 * 1024)
+    created = art.get("created_at", "?")
+    # archive_download_url — подписанная ссылка, действительна ограниченное время
+    url = art.get("archive_download_url") or (
+        f"{GitHubClient.BASE_URL}/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip"
+    )
+    return (
+        f"📦 Артефакт: {art.get('name')} (id={artifact_id})\n"
+        f"   Размер: {size_mb:.2f} MB\n"
+        f"   Создан: {created}\n"
+        f"   Expired: {art.get('expired')}\n"
+        f"   🔗 Скачать (ZIP, временная ссылка):\n{url}\n"
+        f"\nℹ️ Ссылка подписанная и временная — качай сразу. "
+        f"Требует заголовок Authorization: Bearer <token> (для приватных репо)."
+    )
