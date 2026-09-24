@@ -18,3 +18,7 @@ from mcp_server.tools import localgit  # noqa: F401
 # shell is DISABLED by default; its __init__ registers tools only when
 # ENABLE_LOCAL_SHELL is truthy. Most dangerous category — see SANDBOX.md.
 from mcp_server.tools import shell  # noqa: F401
+
+# synapse is DISABLED by default; its __init__ registers tools only when
+# ENABLE_SYNAPSE is truthy. People-findability layer (batch 7).
+from mcp_server.tools import synapse  # noqa: F401
