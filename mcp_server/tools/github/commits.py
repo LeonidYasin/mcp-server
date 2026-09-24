@@ -6,21 +6,26 @@ from mcp_server.tools.github.client import GitHubClient
 
 @mcp_tool(
     name="list_commits",
-    description="Получает список коммитов репозитория",
+    description="Получает список коммитов репозитория (с пагинацией)",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "sha": {"type": "string", "description": "Ветка или коммит (опционально)"},
+        "limit": {"type": "integer", "description": "Сколько на странице (по умолчанию 10, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
     },
     required=["owner", "repo"],
 )
-def list_commits(client: GitHubClient, owner: str, repo: str, sha: str | None = None) -> str:
-    """List commits."""
+def list_commits(client: GitHubClient, owner: str, repo: str, sha: str | None = None,
+                 limit: int = 10, page: int = 1) -> str:
+    """List commits with pagination."""
     try:
-        commits = client.list_commits(owner, repo, sha, per_page=10)
+        per_page = max(1, min(int(limit), 100))
+        page = max(1, int(page))
+        commits = client.list_commits(owner, repo, sha, per_page=per_page, page=page)
         if not commits:
-            return "Нет коммитов"
-        lines = []
+            return f"Нет коммитов (стр. {page})"
+        lines = [f"Коммиты, стр. {page}, {len(commits)} шт:"]
         for c in commits:
             sha_short = c.get("sha", "")[:7]
             msg = c.get("commit", {}).get("message", "").splitlines()[0][:80]
