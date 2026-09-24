@@ -14,6 +14,7 @@ MAX_READ_BYTES = int(os.environ.get("LOCAL_TOOLS_MAX_READ_BYTES", 1_000_000))   
 MAX_WRITE_BYTES = int(os.environ.get("LOCAL_TOOLS_MAX_WRITE_BYTES", 1_000_000))     # 1 MB
 MAX_LIST_ENTRIES = int(os.environ.get("LOCAL_TOOLS_MAX_LIST_ENTRIES", 1000))
 MAX_GREP_MATCHES = int(os.environ.get("LOCAL_TOOLS_MAX_GREP_MATCHES", 200))
+DOWNLOAD_PREVIEW_LINES = int(os.environ.get("LOCAL_TOOLS_DOWNLOAD_PREVIEW_LINES", 20))
 
 
 def _root() -> Path:
@@ -201,3 +202,111 @@ def search_in_files(client=None, **kwargs) -> str:
     if not results:
         return "Совпадений не найдено"
     return "\n".join(results)
+
+
+@mcp_tool(
+    name="download_file_to_disk",
+    description=(
+        "Скачивает файл из GitHub-репозитория в локальный workspace (sandbox) и возвращает "
+        "только метаданные: путь, blob SHA, размер, число строк и короткое превью. "
+        "Используйте вместо get_file_contents для больших файлов — контент не идёт через "
+        "tool-output и не обрезается клиентом. Дальше читайте локальную копию через "
+        "read_local_file / search_in_files."
+    ),
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "path": {"type": "string", "description": "Путь к файлу в репозитории"},
+        "ref": {"type": "string", "description": "Git ref (ветка, тег, коммит). По умолчанию — дефолтная ветка"},
+        "dest_path": {"type": "string", "description": "Куда сохранить внутри workspace (по умолчанию basename файла)"},
+        "overwrite": {"type": "boolean", "description": "Перезаписать, если существует (по умолчанию true)"},
+    },
+    required=["owner", "repo", "path"],
+)
+def download_file_to_disk(client=None, **kwargs) -> str:
+    """Download a file from GitHub into the local sandbox and return metadata only.
+
+    This exists specifically to bypass MCP client tool-output truncation for large
+    files: the file body never travels through the model context, only its path and
+    a short preview do.
+    """
+    import base64
+
+    if client is None:
+        return "❌ download_file_to_disk requires a GitHub client"
+
+    owner = kwargs["owner"]
+    repo = kwargs["repo"]
+    repo_path = kwargs["path"]
+    ref = kwargs.get("ref")
+
+    try:
+        data = client.get_file(owner, repo, repo_path, ref)
+    except Exception as e:
+        return f"❌ Не удалось получить файл {owner}/{repo}/{repo_path}: {e}"
+
+    if isinstance(data, list):
+        return (
+            f"❌ '{repo_path}' — это директория, а не файл. "
+            "Используйте list_directory / list_local_dir."
+        )
+    if "content" not in data:
+        return f"❌ Неожиданный ответ GitHub API: {str(data)[:200]}"
+
+    try:
+        raw = base64.b64decode(data["content"])
+    except Exception as e:
+        return f"❌ Не удалось декодировать base64: {e}"
+
+    blob_sha = data.get("sha", "?")
+    size = len(raw)
+
+    dest = kwargs.get("dest_path") or Path(repo_path).name
+    try:
+        dest_abs = _safe_path(dest)
+    except ValueError as e:
+        return f"❌ {e}"
+
+    if dest_abs.exists() and not kwargs.get("overwrite", True):
+        return f"❌ Файл уже существует и overwrite=false: {dest_abs}"
+
+    # Text vs binary: store bytes as-is either way, but only try to preview text.
+    try:
+        text = raw.decode("utf-8")
+        is_text = True
+    except UnicodeDecodeError:
+        text = None
+        is_text = False
+
+    dest_abs.parent.mkdir(parents=True, exist_ok=True)
+    if is_text:
+        dest_abs.write_text(text, encoding="utf-8")
+    else:
+        dest_abs.write_bytes(raw)
+
+    root = _root()
+    try:
+        rel_dest = dest_abs.relative_to(root)
+    except ValueError:
+        rel_dest = dest_abs
+
+    lines = [
+        f"✅ Сохранено в sandbox: {rel_dest}",
+        f"   источник: {owner}/{repo}/{repo_path}@{ref or 'default'}",
+        f"   blob SHA: {blob_sha}",
+        f"   размер: {size} байт ({'текст UTF-8' if is_text else 'бинарь'})",
+    ]
+
+    if is_text:
+        total_lines = len(text.splitlines())
+        lines.append(f"   строк: {total_lines}")
+        preview_lines = text.splitlines()[:DOWNLOAD_PREVIEW_LINES]
+        if preview_lines:
+            lines.append(f"--- превью ({len(preview_lines)} стр.) ---")
+            lines.extend(preview_lines)
+            if total_lines > len(preview_lines):
+                lines.append(f"... ещё {total_lines - len(preview_lines)} строк — читайте через read_local_file / search_in_files")
+    else:
+        lines.append("   превью недоступно (не текстовый файл)")
+
+    return "\n".join(lines)
