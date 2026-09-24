@@ -18,7 +18,11 @@ class GitHubClient:
             "X-GitHub-Api-Version": "2022-11-28",
             "Content-Type": "application/json; charset=utf-8",
         }
+        # base_url обязателен: часть инструментов передаёт относительные пути
+        # вида "/repos/..."; без base_url httpx падает с UnsupportedProtocol
+        # ("Request URL is missing an 'http://' or 'https://' protocol").
         self._client = httpx.Client(
+            base_url=self.BASE_URL,
             timeout=30.0,
             follow_redirects=True,
         )
@@ -171,62 +175,3 @@ class GitHubClient:
                     return log_resp.content
                 raise Exception(f"Failed to download logs: {log_resp.status_code}")
             raise Exception("Redirect URL not found")
-        elif resp.status_code == 200:
-            return resp.content
-        else:
-            raise Exception(f"Failed to download logs: {resp.status_code}")
-
-    def get_workflows(self, owner: str, repo: str) -> List[dict]:
-        """Get all workflows in repository."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/workflows")
-        return self._safe_json(resp.json()).get("workflows", [])
-
-    def get_workflow_runs_by_id(self, owner: str, repo: str, workflow_id: int, per_page: int = 5) -> List[dict]:
-        """Get workflow runs by workflow ID."""
-        params = {"per_page": per_page}
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs", params=params)
-        return self._safe_json(resp.json()).get("workflow_runs", [])
-
-    def get_commit_status(self, owner: str, repo: str, sha: str) -> dict:
-        """Get commit status."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{sha}/status")
-        return self._safe_json(resp.json())
-
-    def get_check_runs(self, owner: str, repo: str, sha: str) -> List[dict]:
-        """Get check runs for a commit."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{sha}/check-runs")
-        return self._safe_json(resp.json()).get("check_runs", [])
-
-    def get_check_run_annotations(self, owner: str, repo: str, check_run_id: int) -> List[dict]:
-        """Get check run annotations."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/check-runs/{check_run_id}/annotations")
-        return self._safe_json(resp.json())
-
-    def get_repo(self, owner: str, repo: str) -> dict:
-        """Get repository details."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}")
-        return self._safe_json(resp.json())
-
-    def get_workflow_run_attempts(self, owner: str, repo: str, run_id: int) -> List[dict]:
-        """Get workflow run attempts."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/attempts")
-        return self._safe_json(resp.json())
-
-    def get_check_run(self, owner: str, repo: str, check_run_id: int) -> dict:
-        """Get a specific check run."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/check-runs/{check_run_id}")
-        return self._safe_json(resp.json())
-
-    def get_latest_run_id(self, owner: str, repo: str, workflow_name: Optional[str] = None) -> Optional[int]:
-        """Get the latest workflow run ID."""
-        runs = self.get_workflow_runs(owner, repo, per_page=1)
-        if runs:
-            return runs[0].get("id")
-        return None
-
-    def get_workflow_runs_with_params(self, owner: str, repo: str, params: Optional[Dict[str, Any]] = None) -> List[dict]:
-        """Get workflow runs with custom parameters."""
-        if params is None:
-            params = {}
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs", params=params)
-        return self._safe_json(resp.json()).get("workflow_runs", [])
