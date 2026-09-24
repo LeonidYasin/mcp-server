@@ -15,55 +15,36 @@
 - **Батч 1** — PR / Issues / Releases / Tags / batch-push, meta (`list_my_tools`, `describe_tool`), web (`web_fetch`, `web_search`), утилиты (base64/hash/json/uuid/date/regex/diff) → ~54 инструмента.
 - **Батч 2** — branches, gists, Actions control (`dispatch`/`rerun`/`cancel`/`list_workflows`/`list_artifacts`), security alerts (`dependabot`/`code-scanning`/`secret-scanning`), repo info → ~75.
 - **Батч 3** — web (`rss_read`, `html_to_markdown`), данные (`csv_parse`/`csv_generate`/`yaml_to_json`/`json_to_yaml`/`markdown_to_html`), commits (`get_commit_diff`, `list_directory`, `get_file_blame`) → ~85.
-- **Батч 4 (в этой ветке)** — sandboxed local filesystem: `read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files`. По умолчанию **выключено** (`ENABLE_LOCAL_TOOLS=1`). См. `SANDBOX.md`.
+- **Батч 4** — sandboxed local filesystem: `read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files`. По умолчанию **выключено** (`ENABLE_LOCAL_TOOLS=1`). См. `SANDBOX.md`.
 
 ---
 
-## Батч 4 — Локальные файлы (реализовано в этой ветке)
+## Единый sandbox-пул инструментов (идея)
 
-### 🔒 Инструменты
-Файлы: `mcp_server/tools/localfs/files.py`
+Когда батчи 4–6 будут готовы, localfs + git + shell естественно объединяются
+в **один изолированный workspace** под одним пользователем:
 
-- `read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files`
+- один `LOCAL_TOOLS_ROOT` (= `/workspace`) — общий whitelist для всех трёх категорий;
+- один флаг `ENABLE_LOCAL_TOOLS` включает весь пул (или раздельные флаги
+  `ENABLE_LOCAL_FS` / `ENABLE_LOCAL_GIT` / `ENABLE_LOCAL_SHELL`, если нужен
+  более тонкий контроль);
+- всё выполняется под одним `mcp-sandbox` (Linux) / внутри WSL2 без automount;
+- shell-команды запускаются с `cwd` внутри `LOCAL_TOOLS_ROOT`;
+- git-операции — только над репозиториями внутри `LOCAL_TOOLS_ROOT`.
 
-### 🔒 Уровни изоляции
-
-Базовая модель: **обычный непривилегированный Linux-пользователь** (`mcp-sandbox`).
-Этого достаточно, чтобы не навредить системе и другим пользователям.
-
-| Уровень | Что даёт | Статус |
-|---|---|---|
-| **1. Отдельный Linux-юзер** | Нет доступа к системе/чужим home/процессам | ✅ используется |
-| **2. WSL2 + отключённый automount** | + нет доступа к Windows-диску `C:` | ✅ инструкция в `SANDBOX.md` |
-| **3. `bubblewrap`** | + нет сети, только `/workspace`, изоляция PID/IPC | 🟢 опция на будущее |
-| **4. Docker/Podman** | + лимиты CPU/RAM/PID, read-only rootfs | 🟢 опция на будущее |
-
-### 🟢 Уровень 3 — bubblewrap (будущее)
-
-`--unshare-all --ro-bind /usr --bind $ROOT` — полная изоляция ФС/сети без root.
-Полезно, если localfs-инструменты будут вызываться из недоверенного контента
-(prompt injection через `web_fetch`).
-
-### 🟢 Уровень 4 — Docker/Podman (будущее)
-
-`--read-only --network=none --cap-drop=ALL --memory=512m --pids-limit=100`.
-Для продакшена и мультиарендных сценариев.
-
-### Что НЕ закрывает уровень 1
-
-Закрывается только bwrap/docker:
-1. Чтение world-readable файлов (`/etc/passwd`, логи, конфиги с `o+r`).
-2. Полный доступ в сеть.
-3. DoS (fork-бомба, забивание диска/RAM).
-4. Доступ к `ssh-agent`, docker-сокету, другим IPC.
+Смысл: агент работает как полноценный разработчик в «своей песочнице»,
+но не выходит за её границы. Дальнейшее усиление — bwrap/Docker вокруг
+этого пула (см. уровни изоляции выше).
 
 ---
 
-## Батч 5 — Git-операции в workspace (осторожно)
+## Батч 5 — Git-операции в workspace (следующий)
 
 ⚠️ Внутри whitelist-корня, поверх уровня изоляции из батча 4.
 
 - `git_status`, `git_log`, `git_diff`, `git_commit`, `git_push`, `git_pull`
+- Флаги: `ENABLE_LOCAL_TOOLS` (общий) + `LOCAL_TOOLS_ROOT` (общий)
+- `git_push` требует наличие remote/токена; по умолчанию не форсит (`--force` не используется)
 
 ---
 
@@ -96,3 +77,4 @@
 - `ToolRegistry.discover()` сканирует подпакеты в `mcp_server/tools/`; внутри подпакета нужен `__init__.py` с импортами.
 - Опасные категории (shell, local fs) держать отдельными подпакетами, чтобы отключать одной строкой.
 - `localfs/__init__.py` сам решает, регистрировать инструменты или нет (по `ENABLE_LOCAL_TOOLS`).
+- `localgit/__init__.py` работает по той же схеме (флаг `ENABLE_LOCAL_TOOLS`).
