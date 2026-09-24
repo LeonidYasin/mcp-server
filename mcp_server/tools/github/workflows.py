@@ -1,5 +1,7 @@
 """Workflow tools: get_latest_workflow_error, get_workflow_run_logs, get_full_workflow_logs, get_workflow_by_file."""
 
+import re
+
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
@@ -61,18 +63,21 @@ def get_latest_workflow_error(client: GitHubClient, owner: str, repo: str) -> st
     name="get_workflow_run_logs",
     description=(
         "Получает логи и причину падения конкретного workflow run: "
-        "список проваленных шагов + последние строки их логов (распаковывает ZIP)."
+        "список проваленных шагов + последние строки их логов (распаковывает ZIP). "
+        "grep_pattern — дополнительно вытащить ключевые строки по regex из всего лога."
     ),
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "run_id": {"type": "integer", "description": "ID запуска workflow"},
         "tail_lines": {"type": "integer", "description": "Сколько последних строк логов показать на упавший job (по умолчанию 15)"},
+        "grep_pattern": {"type": "string", "description": "Regex: дополнительно вывести совпавшие строки (напр. 'e: file|Unresolved|error:')"},
     },
     required=["owner", "repo", "run_id"],
 )
-def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: int, tail_lines: int = 15) -> str:
-    """Get workflow run logs (with failing-step tail from unzipped archive)."""
+def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: int,
+                          tail_lines: int = 15, grep_pattern: str = None) -> str:
+    """Get workflow run logs (with failing-step tail + optional grep from unzipped archive)."""
     try:
         run = client.get_workflow_run(owner, repo, run_id)
         jobs = client.get_workflow_jobs(owner, repo, run_id)
@@ -120,6 +125,30 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
                     lines.append(f"     ── {name} ──")
                     for tl in tail:
                         lines.append(f"     {_safe_utf8(tl)}")
+
+            # grep_pattern: дополнительно вытащить ключевые строки из всего лога
+            gp = (grep_pattern or "").strip()
+            if gp:
+                rx = None
+                try:
+                    rx = re.compile(gp, re.IGNORECASE)
+                except re.error as exc:
+                    lines.append(f"   ⚠️ Некорректный grep_pattern '{gp}': {exc}")
+                if rx:
+                    lines.append(f"\n   🔎 Совпадения по '{gp}' в логах упавших job'ов:")
+                    total_hits = 0
+                    for job in failed:
+                        job_name = (job.get('name') or '').strip()
+                        if not job_name:
+                            continue
+                        matched = [(n, t) for n, t in files.items() if job_name.lower() in n.lower()]
+                        for name, text in matched:
+                            for ln in text.split("\n"):
+                                if rx.search(ln):
+                                    total_hits += 1
+                                    lines.append(f"     {_safe_utf8(ln.strip())[:300]}")
+                    if total_hits == 0:
+                        lines.append("     (совпадений нет)")
         except Exception as e:
             lines.append(f"   ⚠️ Не удалось получить текст логов: {e}")
 
