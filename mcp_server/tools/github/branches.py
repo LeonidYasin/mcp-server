@@ -4,28 +4,41 @@ from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
 
+def _branch_hint(owner: str, repo: str, ref: str, err: Exception) -> str:
+    return (
+        f"❌ Ветка/ref '{ref}' не найдена в {owner}/{repo}.\n"
+        f"   GitHub: {err}\n"
+        f"   Подсказка: вызови list_branches(owner='{owner}', repo='{repo}')."
+    )
+
+
 @mcp_tool(
     name="list_branches",
-    description="Список веток репозитория",
+    description="Список веток репозитория (с пагинацией)",
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
-        "limit": {"type": "integer", "description": "Сколько вернуть (по умолчанию 30)"},
+        "limit": {"type": "integer", "description": "Сколько вернуть на странице (по умолчанию 30, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
     },
     required=["owner", "repo"],
 )
 def list_branches(client: GitHubClient, **kwargs) -> str:
+    page = max(int(kwargs.get("page", 1) or 1), 1)
+    per_page = min(int(kwargs.get("limit", 30)), 100)
     resp = client._request(
         "GET",
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/branches",
-        params={"per_page": min(int(kwargs.get("limit", 30)), 100)},
+        params={"per_page": per_page, "page": page},
     )
     items = resp.json()
     if not items:
-        return "Веток нет"
-    lines = [f"Ветки ({len(items)}):"]
+        return f"Веток нет (страница {page})"
+    lines = [f"Ветки ({len(items)}) — страница {page}:"]
     for b in items:
         lines.append(f"  {b['name']} -> {b['commit']['sha'][:8]}")
+    if len(items) == per_page:
+        lines.append(f"... возможно, есть ещё — вызови с page={page + 1}")
     return "\n".join(lines)
 
 
@@ -53,7 +66,10 @@ def get_branch(client: GitHubClient, **kwargs) -> str:
 
 @mcp_tool(
     name="create_branch",
-    description="Создаёт новую ветку от указанного ref (по умолчанию — main)",
+    description=(
+        "Создаёт новую ветку от указанного ref (по умолчанию — main). "
+        "Идемпотентен: если ветка уже существует — вернёт её SHA без ошибки."
+    ),
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
@@ -66,7 +82,17 @@ def create_branch(client: GitHubClient, **kwargs) -> str:
     owner, repo, branch = kwargs["owner"], kwargs["repo"], kwargs["branch"]
     from_branch = kwargs.get("from_branch") or "main"
 
-    # 1. SHA источника. Понятная ошибка вместо трейсбека, если ветки нет.
+    # 0. Если ветка уже есть — не ошибка, а «уже существует» + SHA.
+    try:
+        existing = client._request(
+            "GET", f"/repos/{owner}/{repo}/git/ref/heads/{branch}"
+        ).json()
+        sha = existing["object"]["sha"]
+        return f"ℹ️ Ветка '{branch}' уже существует ({sha[:8]})"
+    except Exception:
+        pass
+
+    # 1. SHA источника.
     try:
         ref_resp = client._request(
             "GET", f"/repos/{owner}/{repo}/git/ref/heads/{from_branch}"
@@ -78,7 +104,7 @@ def create_branch(client: GitHubClient, **kwargs) -> str:
             f"   Проверь имя исходной ветки (list_branches) — часто это main, но бывает master."
         )
 
-    # 2. Создаём ref. Если ветка уже есть — GitHub вернёт 422.
+    # 2. Создаём ref.
     try:
         client._request(
             "POST",
@@ -111,12 +137,17 @@ def delete_branch(client: GitHubClient, **kwargs) -> str:
 
 @mcp_tool(
     name="compare_branches",
-    description="Сравнивает две ветки (base...head): коммиты и файлы",
+    description=(
+        "Сравнивает две ветки (base...head): коммиты и файлы. "
+        "include_patch=True добавляет unified diff по изменённым файлам."
+    ),
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
         "base": {"type": "string", "description": "Базовая ветка"},
         "head": {"type": "string", "description": "Ветка для сравнения"},
+        "include_patch": {"type": "boolean", "description": "Добавить unified diff (по умолчанию false)"},
+        "max_files": {"type": "integer", "description": "Сколько файлов показать в диффе (по умолчанию 10)"},
     },
     required=["owner", "repo", "base", "head"],
 )
@@ -131,8 +162,23 @@ def compare_branches(client: GitHubClient, **kwargs) -> str:
         f"Статус: {d.get('status')} | ahead_by={d.get('ahead_by')} behind_by={d.get('behind_by')}",
         f"Коммитов: {d.get('total_commits')} | Файлов: {len(d.get('files', []))}",
     ]
-    for f in d.get("files", [])[:30]:
+    files = d.get("files", [])
+    for f in files[:30]:
         lines.append(f"  [{f['status']}] {f['filename']} (+{f.get('additions', 0)}/-{f.get('deletions', 0)})")
+
+    if kwargs.get("include_patch"):
+        limit = max(int(kwargs.get("max_files", 10)), 1)
+        lines.append("")
+        lines.append("--- patch ---")
+        for f in files[:limit]:
+            patch = f.get("patch")
+            if not patch:
+                continue
+            lines.append(f"diff --git a/{f['filename']} b/{f['filename']}")
+            lines.append(patch)
+        if len(files) > limit:
+            lines.append(f"... ещё {len(files) - limit} файлов не показано")
+
     return "\n".join(lines)
 
 
