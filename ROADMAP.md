@@ -9,116 +9,68 @@
 
 ---
 
-## Текущее состояние (baseline)
+## Текущее состояние
 
-21 инструмент: GitHub files / commits / workflows / builds.
-
----
-
-## Батч 1 — реализовано в этой ветке
-
-### 🔴 GitHub: Pull Requests, Issues, Releases, Tags
-
-Файлы: `mcp_server/tools/github/pull_requests.py`, `issues.py`, `releases.py`, `tags.py`
-
-- PR: `create_pull_request`, `list_pull_requests`, `get_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`
-- Issues: `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`, `add_labels`
-- Releases: `list_releases`, `create_release`, `get_latest_release`
-- Tags: `list_tags`, `create_tag`
-
-### 🔴 MCP meta
-
-Файл: `mcp_server/tools/meta/meta_tools.py`
-
-- `list_my_tools` — список всех зарегистрированных инструментов
-- `describe_tool` — JSON-схема конкретного инструмента
-
-### 🟡 Web
-
-Файл: `mcp_server/tools/web/web_tools.py`
-
-- `web_fetch` — получить HTML/текст страницы
-- `web_search` — поиск через DuckDuckGo HTML (без API-ключа)
-
-### 🟡 Утилиты
-
-Файл: `mcp_server/tools/utils/utils_tools.py`
-
-- `base64_encode`, `base64_decode`
-- `hash_text` (md5/sha1/sha256)
-- `json_format`, `json_query`
-- `uuid_generate`
-- `timestamp_now`, `date_convert`
-- `regex_test`
-- `text_diff`
-
-### 🟡 GitHub: batch-операции
-
-Файл: `mcp_server/tools/github/batch.py`
-
-- `push_multiple_files` — несколько файлов одним коммитом
+Реализовано (смержено в `main`):
+- **Батч 1** — PR / Issues / Releases / Tags / batch-push, meta (`list_my_tools`, `describe_tool`), web (`web_fetch`, `web_search`), утилиты (base64/hash/json/uuid/date/regex/diff) → ~54 инструмента.
+- **Батч 2** — branches, gists, Actions control (`dispatch`/`rerun`/`cancel`/`list_workflows`/`list_artifacts`), security alerts (`dependabot`/`code-scanning`/`secret-scanning`), repo info → ~75.
+- **Батч 3** — web (`rss_read`, `html_to_markdown`), данные (`csv_parse`/`csv_generate`/`yaml_to_json`/`json_to_yaml`/`markdown_to_html`), commits (`get_commit_diff`, `list_directory`, `get_file_blame`) → ~85.
+- **Батч 4 (в этой ветке)** — sandboxed local filesystem: `read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files`. По умолчанию **выключено** (`ENABLE_LOCAL_TOOLS=1`). См. `SANDBOX.md`.
 
 ---
 
-## Батч 2 — GitHub доведение до полноты
+## Батч 4 — Локальные файлы (реализовано в этой ветке)
 
-### 🔴 Ветки и рефы
-- `delete_branch`, `get_branch`, `merge_branches`, `compare_branches`
+### 🔒 Инструменты
+Файлы: `mcp_server/tools/localfs/files.py`
 
-### 🟡 Gists
-- `create_gist`, `list_gists`, `get_gist`, `update_gist`
+- `read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files`
 
-### 🟡 Repository
-- `get_repo_info`, `get_repo_stats`, `list_repo_topics`, `update_repo`
+### 🔒 Уровни изоляции
 
-### 🟡 Actions
-- `dispatch_workflow`, `rerun_workflow`, `cancel_workflow`, `list_workflows`
-- `list_artifacts`, `download_artifact`
+Базовая модель: **обычный непривилегированный Linux-пользователь** (`mcp-sandbox`).
+Этого достаточно, чтобы не навредить системе и другим пользователям.
 
-### 🟡 Commits / files
-- `get_commit_diff`, `list_directory`, `get_file_blame`
+| Уровень | Что даёт | Статус |
+|---|---|---|
+| **1. Отдельный Linux-юзер** | Нет доступа к системе/чужим home/процессам | ✅ используется |
+| **2. WSL2 + отключённый automount** | + нет доступа к Windows-диску `C:` | ✅ инструкция в `SANDBOX.md` |
+| **3. `bubblewrap`** | + нет сети, только `/workspace`, изоляция PID/IPC | 🟢 опция на будущее |
+| **4. Docker/Podman** | + лимиты CPU/RAM/PID, read-only rootfs | 🟢 опция на будущее |
 
----
+### 🟢 Уровень 3 — bubblewrap (будущее)
 
-## Батч 3 — Безопасность и поиск
+`--unshare-all --ro-bind /usr --bind $ROOT` — полная изоляция ФС/сети без root.
+Полезно, если localfs-инструменты будут вызываться из недоверенного контента
+(prompt injection через `web_fetch`).
 
-### 🟡 Security
-- `list_dependabot_alerts`
-- `list_code_scanning_alerts`
-- `list_secret_scanning_alerts`
+### 🟢 Уровень 4 — Docker/Podman (будущее)
 
-### 🟡 Search (расширить)
-- уже есть `search_code`/`repos`/`users`/`issues`/`commits` у Copilot MCP;
-  для локального сервера — добавить аналоги
+`--read-only --network=none --cap-drop=ALL --memory=512m --pids-limit=100`.
+Для продакшена и мультиарендных сценариев.
 
----
+### Что НЕ закрывает уровень 1
 
-## Батч 4 — Веб и данные
-
-### 🟡 Web
-- `rss_read` — парсинг RSS/Atom
-- `html_to_markdown`
-- `screenshot_url` (через headless browser)
-
-### 🟡 Данные
-- `csv_parse`, `csv_generate`
-- `yaml_to_json`, `json_to_yaml`
-- `markdown_to_html`
+Закрывается только bwrap/docker:
+1. Чтение world-readable файлов (`/etc/passwd`, логи, конфиги с `o+r`).
+2. Полный доступ в сеть.
+3. DoS (fork-бомба, забивание диска/RAM).
+4. Доступ к `ssh-agent`, docker-сокету, другим IPC.
 
 ---
 
-## Батч 5 — Локальная машина (осторожно)
+## Батч 5 — Git-операции в workspace (осторожно)
 
-⚠️ Требует whitelist путей и env-флаг `ENABLE_LOCAL_TOOLS=1`.
+⚠️ Внутри whitelist-корня, поверх уровня изоляции из батча 4.
 
-- `read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files` (grep)
 - `git_status`, `git_log`, `git_diff`, `git_commit`, `git_push`, `git_pull`
 
 ---
 
 ## Батч 6 — Shell / код (опасно)
 
-⚠️ Требует подтверждения на опасные команды и таймаут.
+⚠️ Требует подтверждения на опасные команды, таймаут, лимит вывода.
+Обязательно внутри sandbox (уровень 2–4).
 
 - `run_command(cmd, cwd, timeout)`
 - `run_python(code)` в песочнице
@@ -143,3 +95,4 @@
 - Новый файл с инструментами нужно импортировать в `__init__.py` соответствующего подпакета.
 - `ToolRegistry.discover()` сканирует подпакеты в `mcp_server/tools/`; внутри подпакета нужен `__init__.py` с импортами.
 - Опасные категории (shell, local fs) держать отдельными подпакетами, чтобы отключать одной строкой.
+- `localfs/__init__.py` сам решает, регистрировать инструменты или нет (по `ENABLE_LOCAL_TOOLS`).
