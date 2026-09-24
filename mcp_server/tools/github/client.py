@@ -30,12 +30,25 @@ class GitHubClient:
         )
 
     def _request(self, method: str, url: str, **kwargs) -> httpx.Response:
-        """Execute HTTP request with error handling."""
+        """Execute HTTP request with error handling.
+
+        ВАЖНО: если вызывающий передал headers=..., они МЕРЖАТСЯ с базовыми
+        (Authorization, Accept и т.д.), а не заменяют их и не дублируются.
+        Иначе httpx получает headers дважды и падает с
+        'got multiple values for keyword argument headers'
+        (так ломался search_code и все *_search инструменты).
+        """
         try:
+            # Вынимаем пользовательские заголовки ДО вызова, чтобы не было дубля
+            extra_headers = kwargs.pop("headers", None)
+            headers = dict(self._headers)
+            if extra_headers:
+                headers.update(extra_headers)
+
             if "json" in kwargs:
                 kwargs["json"] = self._ensure_utf8_dict(kwargs["json"])
 
-            resp = self._client.request(method, url, headers=self._headers, **kwargs)
+            resp = self._client.request(method, url, headers=headers, **kwargs)
             resp.raise_for_status()
             return resp
         except httpx.HTTPStatusError as e:
@@ -155,7 +168,6 @@ class GitHubClient:
             "GET",
             f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{ref}/check-runs",
             params=params,
-            headers={"Accept": "application/vnd.github+json"},
         )
         return self._safe_json(resp.json()).get("check_runs", [])
 
@@ -173,11 +185,6 @@ class GitHubClient:
         ВНИМАНИЕ: GitHub отдаёт это как ZIP-архив. Для текста используй
         get_workflow_run_logs_text() / get_workflow_run_logs_files().
 
-        Args:
-            owner: Repository owner
-            repo: Repository name
-            run_id: Workflow run ID
-
         Returns:
             Raw ZIP content as bytes
         """
@@ -189,7 +196,6 @@ class GitHubClient:
         if resp.status_code == 302:
             redirect_url = resp.headers.get("Location")
             if redirect_url:
-                # Download logs from redirect URL
                 log_resp = self._client.get(redirect_url, follow_redirects=True)
                 if log_resp.status_code == 200:
                     return log_resp.content
@@ -217,7 +223,6 @@ class GitHubClient:
                     except Exception:
                         continue
         except zipfile.BadZipFile:
-            # Не ZIP (например, отдали plain text) — вернём как один файл
             out["(raw)"] = raw.decode("utf-8", errors="replace")
         return out
 
