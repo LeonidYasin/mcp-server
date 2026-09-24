@@ -18,7 +18,7 @@
 |--------|-------------|
 | Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_binary_file`, `create_or_update_file_with_sha`, `delete_file`, `read_file_chunk`, `grep_file`, `list_directory`, `get_file_blame` |
 | Коммиты | `list_commits`, `get_commit_status`, `get_commit_diff` |
-| Ветки / сравнение | `list_branches`, `get_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
+| Ветки / сравнение | `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
 | PR / Issues | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`, `add_labels` |
 | Releases / Tags | `list_releases`, `create_release`, `get_latest_release`, `list_tags`, `create_tag` |
 | Gists | `create_gist`, `list_gists`, `get_gist`, `update_gist` |

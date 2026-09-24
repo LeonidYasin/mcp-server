@@ -52,6 +52,46 @@ def get_branch(client: GitHubClient, **kwargs) -> str:
 
 
 @mcp_tool(
+    name="create_branch",
+    description="Создаёт новую ветку от указанного ref (по умолчанию — main)",
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "branch": {"type": "string", "description": "Имя новой ветки"},
+        "from_branch": {"type": "string", "description": "Источник (по умолчанию main)"},
+    },
+    required=["owner", "repo", "branch"],
+)
+def create_branch(client: GitHubClient, **kwargs) -> str:
+    owner, repo, branch = kwargs["owner"], kwargs["repo"], kwargs["branch"]
+    from_branch = kwargs.get("from_branch") or "main"
+
+    # 1. SHA источника. Понятная ошибка вместо трейсбека, если ветки нет.
+    try:
+        ref_resp = client._request(
+            "GET", f"/repos/{owner}/{repo}/git/ref/heads/{from_branch}"
+        )
+        sha = ref_resp.json()["object"]["sha"]
+    except Exception as e:
+        return (
+            f"❌ Не удалось получить '{from_branch}' в {owner}/{repo}: {e}\n"
+            f"   Проверь имя исходной ветки (list_branches) — часто это main, но бывает master."
+        )
+
+    # 2. Создаём ref. Если ветка уже есть — GitHub вернёт 422.
+    try:
+        client._request(
+            "POST",
+            f"/repos/{owner}/{repo}/git/refs",
+            json={"ref": f"refs/heads/{branch}", "sha": sha},
+        )
+    except Exception as e:
+        return f"❌ Не удалось создать ветку '{branch}': {e}"
+
+    return f"✅ Ветка '{branch}' создана из '{from_branch}' ({sha[:8]})"
+
+
+@mcp_tool(
     name="delete_branch",
     description="Удаляет ветку",
     parameters={
