@@ -10,6 +10,7 @@ from mcp_server.tools.github.file_ops import read_file_chunk
 from mcp_server.tools.github.file_ops import grep_file
 from mcp_server.tools.github.file_ops import read_full_file
 from mcp_server.tools.github.file_ops import get_file_sha
+from mcp_server.tools.github.file_ops import read_multiple_files
 from mcp_server.tools.github.commits import list_commits
 from mcp_server.tools.github.commits import get_commit_status
 from mcp_server.tools.github.workflows import get_latest_workflow_error
@@ -30,6 +31,7 @@ from mcp_server.tools.github.pull_requests import (
     create_pull_request,
     list_pull_requests,
     get_pull_request,
+    update_pull_request,
     merge_pull_request,
     close_pull_request,
     add_pr_comment,
@@ -109,6 +111,7 @@ __all__ = [
     "grep_file",
     "read_full_file",
     "get_file_sha",
+    "read_multiple_files",
     "list_commits",
     "get_commit_status",
     "get_latest_workflow_error",
@@ -127,6 +130,7 @@ __all__ = [
     "create_pull_request",
     "list_pull_requests",
     "get_pull_request",
+    "update_pull_request",
     "merge_pull_request",
     "close_pull_request",
     "add_pr_comment",
