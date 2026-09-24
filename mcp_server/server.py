@@ -24,7 +24,7 @@ SUPPORTED_PROTOCOL_VERSIONS = [
 LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]
 
 SERVER_NAME = "mcp-github-server"
-SERVER_VERSION = "0.4.1"
+SERVER_VERSION = "0.4.2"
 
 # Tools that don't need a GitHub token (pure functions / meta / web)
 TOKENLESS_PREFIXES = ("base64_", "hash_", "json_", "uuid_", "timestamp_", "date_", "regex_", "text_")
@@ -35,6 +35,50 @@ def _tool_needs_token(tool_name: str) -> bool:
     if tool_name in TOKENLESS_NAMES:
         return False
     return not tool_name.startswith(TOKENLESS_PREFIXES)
+
+
+def _normalize_content(output):
+    """Coerce any tool return value into a strict MCP `content` payload.
+
+    MCP clients persist the tool result and validate its shape. A tool that
+    returns e.g. {"content": "plain string"} or {"content": {"foo": 1}}
+    produces a record the client cannot persist, which surfaces as
+    `tool_post_effect_persistence_failed: Invalid tool history record`.
+
+    We guarantee: content is a non-empty list of blocks, each block is a dict
+    with a string `type`. Text blocks always carry a string `text`.
+    """
+    # Already a well-formed content list? Pass through (but still validate blocks).
+    raw = None
+    if isinstance(output, dict) and "content" in output:
+        raw = output["content"]
+
+    if raw is None:
+        blocks = [{"type": "text", "text": str(output)}]
+    elif isinstance(raw, list):
+        blocks = raw
+    else:
+        # content present but not a list (str/dict/int/None) -> wrap as text
+        blocks = [{"type": "text", "text": str(raw)}]
+
+    normalized = []
+    for block in blocks:
+        if isinstance(block, dict):
+            b = dict(block)
+            btype = b.get("type")
+            if not isinstance(btype, str) or not btype:
+                b["type"] = "text"
+                btype = "text"
+            if btype == "text" and not isinstance(b.get("text"), str):
+                b["text"] = str(b.get("text", ""))
+            normalized.append(b)
+        else:
+            normalized.append({"type": "text", "text": str(block)})
+
+    if not normalized:
+        normalized = [{"type": "text", "text": "(empty result)"}]
+
+    return {"content": normalized}
 
 
 app = Flask(__name__)
@@ -159,10 +203,7 @@ def mcp_handler():
         try:
             client = GitHubClient(token) if token else None
             output = tool.handler(client=client, **args)
-            if isinstance(output, dict) and "content" in output:
-                result = output
-            else:
-                result = {"content": [{"type": "text", "text": str(output)}]}
+            result = _normalize_content(output)
             return _json_rpc_result(req_id, result)
         except Exception as e:  # noqa: BLE001
             logger.exception("Tool %s error", tool_name)
