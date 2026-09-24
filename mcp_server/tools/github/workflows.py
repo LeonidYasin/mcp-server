@@ -62,22 +62,26 @@ def get_latest_workflow_error(client: GitHubClient, owner: str, repo: str) -> st
 @mcp_tool(
     name="get_workflow_run_logs",
     description=(
-        "Получает логи и причину падения конкретного workflow run: "
-        "список проваленных шагов + последние строки их логов (распаковывает ZIP). "
-        "grep_pattern — дополнительно вытащить ключевые строки по regex из всего лога."
+        "Логи и причина падения workflow run: список упавших шагов + хвост их логов "
+        "(распаковывает ZIP). "
+        "grep_pattern — regex, ищется по ВСЕМ файлам архива (не только упавшим); "
+        "примеры: 'e: file', 'error:', 'Unresolved reference', 'Caused by', 'FAILURE:'. "
+        "context_before — сколько строк ВЫШЕ хвоста показать (там обычно сообщение компилятора)."
     ),
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "run_id": {"type": "integer", "description": "ID запуска workflow"},
         "tail_lines": {"type": "integer", "description": "Сколько последних строк логов показать на упавший job (по умолчанию 15)"},
-        "grep_pattern": {"type": "string", "description": "Regex: дополнительно вывести совпавшие строки (напр. 'e: file|Unresolved|error:')"},
+        "context_before": {"type": "integer", "description": "Сколько строк выше хвоста показать (по умолчанию 0; там сообщение компилятора)"},
+        "grep_pattern": {"type": "string", "description": "Regex: вывести совпавшие строки из всех файлов (напр. 'e: file|Unresolved|error:')"},
     },
     required=["owner", "repo", "run_id"],
 )
 def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: int,
-                          tail_lines: int = 15, grep_pattern: str = None) -> str:
-    """Get workflow run logs (with failing-step tail + optional grep from unzipped archive)."""
+                          tail_lines: int = 15, context_before: int = 0,
+                          grep_pattern: str = None) -> str:
+    """Get workflow run logs (failing-step tail + context_before + grep over all files)."""
     try:
         run = client.get_workflow_run(owner, repo, run_id)
         jobs = client.get_workflow_jobs(owner, repo, run_id)
@@ -111,6 +115,8 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
         try:
             files = client.get_workflow_run_logs_files(owner, repo, run_id)
             tail_n = max(1, min(int(tail_lines), 100))
+            before_n = max(0, min(int(context_before), 200))
+
             for job in failed:
                 job_name = (job.get('name') or '').strip()
                 if not job_name:
@@ -118,15 +124,19 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
                 matched = [(n, t) for n, t in files.items() if job_name.lower() in n.lower()]
                 if not matched:
                     continue
-                lines.append(f"\n   📄 Текст ошибки ({job_name}, последние {tail_n} строк):")
-                # Собираем хвост из всех совпавших файлов job'а
+                lines.append(f"\n   📄 Текст ошибки ({job_name}, последние {tail_n} строк"
+                             + (f" + {before_n} выше" if before_n else "") + "):")
                 for name, text in matched:
-                    tail = [ln for ln in text.strip().split("\n") if ln.strip()][-tail_n:]
+                    all_lines = [ln for ln in text.strip().split("\n") if ln.strip()]
+                    if before_n:
+                        block = all_lines[-(tail_n + before_n):]
+                    else:
+                        block = all_lines[-tail_n:]
                     lines.append(f"     ── {name} ──")
-                    for tl in tail:
+                    for tl in block:
                         lines.append(f"     {_safe_utf8(tl)}")
 
-            # grep_pattern: дополнительно вытащить ключевые строки из всего лога
+            # grep_pattern: ищем по ВСЕМ файлам архива (не только по упавшим job'ам).
             gp = (grep_pattern or "").strip()
             if gp:
                 rx = None
@@ -135,20 +145,33 @@ def get_workflow_run_logs(client: GitHubClient, owner: str, repo: str, run_id: i
                 except re.error as exc:
                     lines.append(f"   ⚠️ Некорректный grep_pattern '{gp}': {exc}")
                 if rx:
-                    lines.append(f"\n   🔎 Совпадения по '{gp}' в логах упавших job'ов:")
                     total_hits = 0
-                    for job in failed:
-                        job_name = (job.get('name') or '').strip()
-                        if not job_name:
-                            continue
-                        matched = [(n, t) for n, t in files.items() if job_name.lower() in n.lower()]
-                        for name, text in matched:
-                            for ln in text.split("\n"):
-                                if rx.search(ln):
-                                    total_hits += 1
-                                    lines.append(f"     {_safe_utf8(ln.strip())[:300]}")
+                    scanned_files = 0
+                    per_file = []
+                    for name, text in files.items():
+                        scanned_files += 1
+                        file_hits = []
+                        for ln in text.split("\n"):
+                            if rx.search(ln):
+                                file_hits.append(_safe_utf8(ln.strip())[:300])
+                        if file_hits:
+                            per_file.append((name, file_hits))
+                            total_hits += len(file_hits)
+
+                    lines.append(
+                        f"\n   🔎 grep '{gp}': файлов проверено {scanned_files}, "
+                        f"совпадений {total_hits}"
+                    )
                     if total_hits == 0:
-                        lines.append("     (совпадений нет)")
+                        lines.append(
+                            "     (совпадений нет — проверь паттерн; примеры: "
+                            "'e: file', 'error:', 'Unresolved reference', 'Caused by')"
+                        )
+                    else:
+                        for name, file_hits in per_file[:10]:
+                            lines.append(f"     ── {name} ({len(file_hits)}) ──")
+                            for h in file_hits[:20]:
+                                lines.append(f"       {h}")
         except Exception as e:
             lines.append(f"   ⚠️ Не удалось получить текст логов: {e}")
 
