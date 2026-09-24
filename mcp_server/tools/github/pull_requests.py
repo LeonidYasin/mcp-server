@@ -61,9 +61,7 @@ def list_pull_requests(client: GitHubClient, **kwargs) -> str:
         return f"PR ({state}, стр. {page}): нет"
     lines = [f"PR ({state}), стр. {page}, всего {len(items)}:"]
     for pr in items:
-        lines.append(
-            f"  #{pr['number']} [{pr['state']}] {pr['title']} — {pr['html_url']}"
-        )
+        lines.append(f"  #{pr['number']} [{pr['state']}] {pr['title']} — {pr['html_url']}")
     return "\n".join(lines)
 
 
@@ -291,3 +289,65 @@ def resolve_review_thread(client: GitHubClient, **kwargs) -> str:
 )
 def unresolve_review_thread(client: GitHubClient, **kwargs) -> str:
     return _toggle_review_thread(client, kwargs["thread_id"], resolve=False)
+
+
+@mcp_tool(
+    name="get_review_threads",
+    description=(
+        "Возвращает review-threads PR (GraphQL reviewThreads): node_id (для "
+        "resolve_review_thread), isResolved, isOutdated, path, line и первый "
+        "комментарий. Используй id из вывода как thread_id."
+    ),
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "number": {"type": "integer", "description": "Номер PR"},
+        "only_unresolved": {"type": "boolean", "description": "Только незакрытые (по умолчанию false)"},
+        "limit": {"type": "integer", "description": "Сколько тредов (по умолчанию 50, максимум 100)"},
+    },
+    required=["owner", "repo", "number"],
+)
+def get_review_threads(client: GitHubClient, **kwargs) -> str:
+    owner, repo, number = kwargs["owner"], kwargs["repo"], kwargs["number"]
+    limit = max(1, min(int(kwargs.get("limit", 50)), 100))
+    only_unresolved = bool(kwargs.get("only_unresolved", False))
+    query = (
+        'query($owner:String!,$repo:String!,$number:Int!,$first:Int!){'
+        ' repository(owner:$owner,name:$repo){'
+        '  pullRequest(number:$number){'
+        '   reviewThreads(first:$first){'
+        '    nodes{ id isResolved isOutdated path line'
+        '     comments(first:1){ nodes{ author{login} body } } }'
+        '   } } } }'
+    )
+    try:
+        resp = client._request(
+            "POST",
+            f"{GitHubClient.BASE_URL}/graphql",
+            json={"query": query, "variables": {
+                "owner": owner, "repo": repo, "number": int(number), "first": limit,
+            }},
+        )
+    except Exception as exc:
+        return f"❌ Не удалось получить review-threads PR #{number}: {exc}"
+    data = resp.json()
+    if data.get("errors"):
+        msgs = "; ".join(e.get("message", "") for e in data["errors"])
+        return f"❌ GraphQL error: {msgs}"
+    pr = (((data.get("data") or {}).get("repository") or {}).get("pullRequest") or {})
+    nodes = ((pr.get("reviewThreads") or {}).get("nodes") or [])
+    if only_unresolved:
+        nodes = [n for n in nodes if not n.get("isResolved")]
+    if not nodes:
+        return f"PR #{number}: review-threads нет" + (" (незакрытых)" if only_unresolved else "")
+    lines = [f"PR #{number}: review-threads — {len(nodes)}:"]
+    for n in nodes:
+        state = "✅ resolved" if n.get("isResolved") else "🔴 open"
+        loc = f"{n.get('path', '?')}:{n.get('line', '?')}"
+        lines.append(f"  [{state}] {loc}  id={n.get('id')}")
+        first = ((n.get("comments") or {}).get("nodes") or [{}])[0]
+        if first:
+            author = ((first.get("author") or {}).get("login")) or "?"
+            body = (first.get("body") or "").splitlines()[0][:100]
+            lines.append(f"      {author}: {body}")
+    return "\n".join(lines)
