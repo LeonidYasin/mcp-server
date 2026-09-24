@@ -10,6 +10,7 @@ from mcp_server.tools import meta  # noqa: F401
 from mcp_server.tools import web  # noqa: F401
 from mcp_server.tools import utils  # noqa: F401
 
-# localfs is DISABLED by default; its __init__ registers tools only when
-# ENABLE_LOCAL_TOOLS is truthy. Importing the package is safe either way.
+# localfs/localgit are DISABLED by default; their __init__ registers tools
+# only when ENABLE_LOCAL_TOOLS is truthy. Importing is safe either way.
 from mcp_server.tools import localfs  # noqa: F401
+from mcp_server.tools import localgit  # noqa: F401
