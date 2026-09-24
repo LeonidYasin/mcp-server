@@ -92,6 +92,63 @@ def get_pull_request(client: GitHubClient, **kwargs) -> str:
 
 
 @mcp_tool(
+    name="update_pull_request",
+    description=(
+        "Обновляет существующий PR: title, body, state, base, draft, reviewers. "
+        "Передавай только те поля, которые нужно изменить."
+    ),
+    parameters={
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "number": {"type": "integer", "description": "Номер PR"},
+        "title": {"type": "string"},
+        "body": {"type": "string"},
+        "state": {"type": "string", "description": "open|closed"},
+        "base": {"type": "string", "description": "Новая целевая ветка"},
+        "draft": {"type": "boolean", "description": "true = draft, false = ready"},
+        "reviewers": {"type": "array", "items": {"type": "string"}, "description": "GitHub-логины для ревью"},
+    },
+    required=["owner", "repo", "number"],
+)
+def update_pull_request(client: GitHubClient, **kwargs) -> str:
+    owner, repo, number = kwargs["owner"], kwargs["repo"], kwargs["number"]
+    payload = {}
+    for k in ("title", "body", "state", "base"):
+        if kwargs.get(k) is not None:
+            payload[k] = kwargs[k]
+    if kwargs.get("draft") is not None:
+        payload["draft"] = bool(kwargs["draft"])
+
+    changes = []
+    if payload:
+        try:
+            client._request(
+                "PATCH", f"/repos/{owner}/{repo}/pulls/{number}", json=payload
+            )
+            changes.append(", ".join(payload.keys()))
+        except Exception as e:
+            return f"❌ Не удалось обновить PR #{number}: {e}"
+
+    reviewers = kwargs.get("reviewers")
+    if reviewers:
+        if isinstance(reviewers, str):
+            reviewers = [r.strip() for r in reviewers.split(",") if r.strip()]
+        try:
+            client._request(
+                "POST",
+                f"/repos/{owner}/{repo}/pulls/{number}/requested_reviewers",
+                json={"reviewers": reviewers},
+            )
+            changes.append(f"reviewers: {', '.join(reviewers)}")
+        except Exception as e:
+            return f"⚠️ PR обновлён, но ревьюеры не назначены: {e}"
+
+    if not changes:
+        return "ℹ️ Нечего обновлять — не передано ни одного поля."
+    return f"✅ PR #{number} обновлён ({'; '.join(changes)})"
+
+
+@mcp_tool(
     name="merge_pull_request",
     description="Мержит pull request",
     parameters={
