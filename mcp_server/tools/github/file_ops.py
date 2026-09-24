@@ -1,5 +1,5 @@
 """File operations tools: get_file_contents, create_or_update_file, delete_file,
-read_file_chunk, grep_file."""
+read_file_chunk, grep_file, read_full_file."""
 
 import base64
 import json
@@ -14,6 +14,15 @@ MAX_CHUNK_BYTES = 32_768       # 32 KB
 DEFAULT_CHUNK_LINES = 100
 MAX_CHUNK_LINES = 400
 MAX_GREP_MATCHES = 200
+
+# read_full_file tuning.
+# Byte budget we aim to stay under for each internal slice, with headroom below
+# MAX_CHUNK_BYTES so header/tail notes never push a slice over the transport cap.
+SAFE_CHUNK_BYTES = 24_576          # ~24 KB
+MIN_AUTO_CHUNK_LINES = 20
+MAX_AUTO_CHUNK_LINES = MAX_CHUNK_LINES
+# Safety budget for the assembled text of one read_full_file call.
+MAX_FULL_FILE_BYTES = 512_000      # 512 KB
 
 
 @mcp_tool(
@@ -167,6 +176,125 @@ def read_file_chunk(
     else:
         tail = "\n(конец файла)"
 
+    return header + "\n" + body + tail
+
+
+@mcp_tool(
+    name="read_full_file",
+    description=(
+        "Читает файл ЦЕЛИКОМ, автоматически подбирая размер чанка. "
+        "Не нужно вручную угадывать limit/offset: инструмент сам вычисляет "
+        "безопасный размер куска по средней длине строки (бюджет ~24 KB на чанк), "
+        "последовательно склеивает все куски и возвращает полный текст. "
+        "В конце гарантированно стоит маркер (конец файла) либо предупреждение "
+        "о достижении защитного бюджета max_bytes."
+    ),
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "path": {"type": "string", "description": "Путь к файлу"},
+        "ref": {"type": "string", "description": "Git ref (ветка, тег, коммит). По умолчанию — дефолтная ветка"},
+        "max_bytes": {"type": "integer", "description": f"Защитный бюджет на весь файл в байтах (по умолчанию {MAX_FULL_FILE_BYTES})"},
+        "include_line_numbers": {"type": "boolean", "description": "Добавлять номера строк (по умолчанию false)"},
+    },
+    required=["owner", "repo", "path"],
+)
+def read_full_file(
+    client: GitHubClient,
+    owner: str, repo: str, path: str,
+    ref: str | None = None, max_bytes: int | None = None,
+    include_line_numbers: bool | None = None
+) -> str:
+    """Прочитать весь текстовый файл, автоматически выбрав безопасный размер чанка.
+
+    Алгоритм:
+      1. один раз получаем файл, узнаём общее число строк и среднюю длину строки;
+      2. вычисляем размер куска так, чтобы каждый внутренний срез был < SAFE_CHUNK_BYTES;
+      3. идём от начала до конца с гарантированно растущим offset;
+      4. склеиваем все куски и проверяем полное покрытие строк.
+    """
+    try:
+        data = client.get_file(owner, repo, path, ref)
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+
+    if isinstance(data, list):
+        return f"❌ '{path}' — директория. Используйте list_directory."
+    if "content" not in data:
+        return f"❌ Неожиданный ответ GitHub API: {str(data)[:200]}"
+    try:
+        text = base64.b64decode(data["content"]).decode("utf-8")
+    except Exception:
+        return f"❌ Не текстовый файл (или не UTF-8): {path}"
+
+    lines = text.splitlines()
+    total = len(lines)
+    if total == 0:
+        return f"[полный файл] {path} — пустой (0 строк)\n(конец файла)"
+
+    budget = max(int(max_bytes or MAX_FULL_FILE_BYTES), MIN_AUTO_CHUNK_LINES)
+    total_bytes = len(text.encode("utf-8"))
+    avg_line_bytes = max(total_bytes // max(total, 1), 1)
+
+    auto_lines = max(SAFE_CHUNK_BYTES // avg_line_bytes, MIN_AUTO_CHUNK_LINES)
+    auto_lines = min(auto_lines, MAX_AUTO_CHUNK_LINES)
+
+    collected: list[str] = []
+    collected_bytes = 0
+    off = 0
+    guard = 0
+    max_iterations = total // max(auto_lines, 1) + 8
+
+    while off < total:
+        guard += 1
+        if guard > max_iterations:
+            return (
+                f"❌ Внутренняя ошибка: offset не продвинулся на строке {off} "
+                f"(итерация {guard}). Прервано, чтобы не зациклиться."
+            )
+
+        chunk = lines[off:off + auto_lines]
+        if not chunk:
+            break
+
+        if include_line_numbers:
+            piece = "\n".join(f"{off + i + 1}: {ln}" for i, ln in enumerate(chunk))
+        else:
+            piece = "\n".join(chunk)
+
+        piece_bytes = len(piece.encode("utf-8"))
+        if collected_bytes + piece_bytes > budget:
+            remaining = budget - collected_bytes
+            if remaining <= 0:
+                collected.append(
+                    f"\n... ⚠️ достигнут бюджет {budget} байт — файл прочитан НЕ полностью "
+                    f"(остановлено на строке {off} из {total}). Увеличьте max_bytes и вызовите снова."
+                )
+                break
+            cut = piece.encode("utf-8")[:remaining].decode("utf-8", errors="ignore")
+            collected.append(cut)
+            collected_bytes += len(cut.encode("utf-8"))
+            collected.append(
+                f"\n... ⚠️ достигнут бюджет {budget} байт — файл прочитан НЕ полностью "
+                f"(остановлено на строке {off + len(cut.splitlines())} из {total}). "
+                f"Увеличьте max_bytes и вызовите снова."
+            )
+            break
+
+        collected.append(piece)
+        collected_bytes += piece_bytes
+        off += len(chunk)
+
+    body = "\n".join(collected)
+    read_lines = off if off > 0 else total
+    full = read_lines >= total
+
+    header = (
+        f"[полный файл] {path} — строк: {total}, "
+        f"чанк: {auto_lines} строк (~{SAFE_CHUNK_BYTES} B), "
+        f"прочитано: {read_lines}/{total}, байт: {collected_bytes}"
+    )
+    tail = "\n(конец файла)" if full else ""
     return header + "\n" + body + tail
 
 
