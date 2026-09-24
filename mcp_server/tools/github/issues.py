@@ -34,21 +34,22 @@ def create_issue(client: GitHubClient, **kwargs) -> str:
 
 @mcp_tool(
     name="list_issues",
-    description="Список issues репозитория",
+    description="Список issues репозитория (с пагинацией)",
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
         "state": {"type": "string", "description": "open|closed|all"},
         "labels": {"type": "string", "description": "Метки через запятую"},
-        "limit": {"type": "integer"},
+        "limit": {"type": "integer", "description": "Сколько на странице (по умолчанию 20, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
     },
     required=["owner", "repo"],
 )
 def list_issues(client: GitHubClient, **kwargs) -> str:
-    params = {
-        "state": kwargs.get("state", "open"),
-        "per_page": min(int(kwargs.get("limit", 20)), 100),
-    }
+    state = kwargs.get("state", "open")
+    limit = max(1, min(int(kwargs.get("limit", 20)), 100))
+    page = max(1, int(kwargs.get("page", 1)))
+    params = {"state": state, "per_page": limit, "page": page}
     if kwargs.get("labels"):
         params["labels"] = kwargs["labels"]
     resp = client._request(
@@ -56,8 +57,8 @@ def list_issues(client: GitHubClient, **kwargs) -> str:
     )
     items = [i for i in resp.json() if "pull_request" not in i]
     if not items:
-        return "Issues: нет"
-    lines = [f"Issues ({params['state']}), всего {len(items)}:"]
+        return f"Issues ({state}, стр. {page}): нет"
+    lines = [f"Issues ({state}), стр. {page}, всего {len(items)}:"]
     for it in items:
         labels = ",".join(l["name"] for l in it.get("labels", []))
         lines.append(f"  #{it['number']} [{it['state']}] {it['title']} {('#'+labels) if labels else ''}")
