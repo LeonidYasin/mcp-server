@@ -1,5 +1,5 @@
 """File operations tools: get_file_contents, create_or_update_file, delete_file,
-read_file_chunk, grep_file, read_full_file."""
+read_file_chunk, grep_file, read_full_file, get_file_sha, read_multiple_files."""
 
 import base64
 import json
@@ -8,8 +8,7 @@ import re
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
-# Hard ceiling for a single chunk response. Keeps tool-output small enough
-# that no MCP client will truncate it, regardless of model context limits.
+# Hard ceiling for a single chunk response.
 MAX_CHUNK_BYTES = 32_768       # 32 KB
 DEFAULT_CHUNK_LINES = 100
 MAX_CHUNK_LINES = 400
@@ -20,6 +19,21 @@ SAFE_CHUNK_BYTES = 24_576          # ~24 KB
 MIN_AUTO_CHUNK_LINES = 20
 MAX_AUTO_CHUNK_LINES = MAX_CHUNK_LINES
 MAX_FULL_FILE_BYTES = 512_000      # 512 KB
+
+# read_multiple_files tuning.
+MAX_BATCH_FILES = 20
+MAX_BATCH_TOTAL_BYTES = 256_000    # 256 KB на весь батч
+
+
+def _validate_ref_inputs(owner, repo, path=None) -> str | None:
+    """Return a friendly error string if required inputs are empty."""
+    if not owner or not str(owner).strip():
+        return "❌ Не указан owner."
+    if not repo or not str(repo).strip():
+        return "❌ Не указан repo."
+    if path is not None and (not path or not str(path).strip()):
+        return "❌ Не указан path."
+    return None
 
 
 def _file_links(owner: str, repo: str, path: str, ref: str | None) -> str:
@@ -50,6 +64,9 @@ def _sha_line(blob_sha: str | None) -> str:
 )
 def get_file_contents(client: GitHubClient, owner: str, repo: str, path: str, ref: str | None = None) -> str:
     """Get file contents from a GitHub repository."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
     try:
         data = client.get_file(owner, repo, path, ref)
         if "content" in data:
@@ -81,6 +98,9 @@ def get_file_contents(client: GitHubClient, owner: str, repo: str, path: str, re
 )
 def get_file_sha(client: GitHubClient, owner: str, repo: str, path: str, ref: str | None = None) -> str:
     """Return blob SHA of a file, or a friendly message if missing."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
     try:
         data = client.get_file(owner, repo, path, ref)
     except Exception as e:
@@ -91,6 +111,73 @@ def get_file_sha(client: GitHubClient, owner: str, repo: str, path: str, ref: st
     if not sha:
         return f"❌ Не удалось получить SHA для {path}"
     return f"SHA: {sha}"
+
+
+@mcp_tool(
+    name="read_multiple_files",
+    description=(
+        "Читает несколько файлов одним вызовом. paths — массив путей (или строка через запятую). "
+        "Бюджет на батч ~256 KB и не более 20 файлов. Для каждого файла — ссылки + SHA в шапке."
+    ),
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "paths": {"type": "array", "items": {"type": "string"}, "description": "Массив путей к файлам"},
+        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию — дефолтная ветка)"},
+    },
+    required=["owner", "repo", "paths"],
+)
+def read_multiple_files(client: GitHubClient, **kwargs) -> str:
+    owner, repo = kwargs.get("owner"), kwargs.get("repo")
+    err = _validate_ref_inputs(owner, repo)
+    if err:
+        return err
+    paths = kwargs.get("paths")
+    if isinstance(paths, str):
+        paths = [p.strip() for p in paths.split(",") if p.strip()]
+    if not paths:
+        return "❌ paths пуст — передай массив путей или строку через запятую."
+    if len(paths) > MAX_BATCH_FILES:
+        return f"❌ Слишком много файлов ({len(paths)}). Максимум {MAX_BATCH_FILES} за вызов."
+
+    ref = kwargs.get("ref")
+    out = []
+    total_bytes = 0
+    for p in paths:
+        try:
+            data = client.get_file(owner, repo, p, ref)
+        except Exception as e:
+            out.append(f"### {p}\n❌ Ошибка: {e}")
+            continue
+        if isinstance(data, list):
+            out.append(f"### {p}\n❌ Это директория (используй list_directory).")
+            continue
+        if "content" not in data:
+            out.append(f"### {p}\n❌ Неожиданный ответ GitHub API.")
+            continue
+        try:
+            decoded = base64.b64decode(data["content"]).decode("utf-8", errors="replace")
+        except Exception:
+            out.append(f"### {p}\n❌ Не текстовый файл (или не UTF-8).")
+            continue
+
+        encoded = len(decoded.encode("utf-8"))
+        if total_bytes + encoded > MAX_BATCH_TOTAL_BYTES:
+            out.append(
+                f"### {p}\n⚠️ Пропущен: превышен бюджет батча {MAX_BATCH_TOTAL_BYTES} байт "
+                f"(уже {total_bytes}). Читай отдельно через read_full_file."
+            )
+            continue
+        total_bytes += encoded
+
+        header = f"### {p}\n{_file_links(owner, repo, p, ref)}"
+        sha = _sha_line(data.get("sha"))
+        if sha:
+            header += "\n" + sha
+        out.append(header + "\n\n" + decoded)
+
+    summary = f"[батч: {len(paths)} файлов, {total_bytes} байт]"
+    return summary + "\n\n" + "\n\n".join(out)
 
 
 @mcp_tool(
@@ -113,6 +200,11 @@ def create_or_update_file(
     message: str, branch: str, sha: str | None = None
 ) -> str:
     """Create or update a file."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
+    if not branch or not str(branch).strip():
+        return "❌ Не указана branch."
     try:
         client.create_or_update_file(owner, repo, path, content, message, branch, sha)
         return f"✅ Файл {path} успешно сохранён в {owner}/{repo} ({branch})"
@@ -138,6 +230,9 @@ def delete_file(
     message: str, branch: str
 ) -> str:
     """Delete a file, auto-fetching SHA."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
     try:
         sha = client.get_file_sha(owner, repo, path, branch)
         if not sha:
@@ -172,6 +267,9 @@ def read_file_chunk(
     ref: str | None = None, offset: int | None = None, limit: int | None = None
 ) -> str:
     """Read a line-range of a file directly from GitHub, bounded in size."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
     try:
         data = client.get_file(owner, repo, path, ref)
     except Exception as e:
@@ -246,6 +344,9 @@ def read_full_file(
     include_line_numbers: bool | None = None
 ) -> str:
     """Прочитать весь текстовый файл, автоматически выбрав безопасный размер чанка."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
     try:
         data = client.get_file(owner, repo, path, ref)
     except Exception as e:
@@ -363,6 +464,11 @@ def grep_file(
     case_sensitive: bool | None = None, max_matches: int | None = None
 ) -> str:
     """Search a pattern inside a file on the server side, return matched lines only."""
+    err = _validate_ref_inputs(owner, repo, path)
+    if err:
+        return err
+    if not pattern:
+        return "❌ Не указан pattern."
     try:
         data = client.get_file(owner, repo, path, ref)
     except Exception as e:
