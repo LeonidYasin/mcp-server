@@ -14,19 +14,26 @@ def _safe_utf8(text: str) -> str:
 
 @mcp_tool(
     name="list_workflow_runs",
-    description="Получает список последних запусков workflow с run_id, статусами и временем.",
+    description="Получает список запусков workflow с run_id, статусами и временем (с пагинацией и фильтром status).",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
-        "limit": {"type": "integer", "description": "Количество запусков (по умолчанию 10)"},
+        "limit": {"type": "integer", "description": "Количество запусков на странице (по умолчанию 10, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
+        "status": {"type": "string", "description": "Фильтр: completed|in_progress|queued|success|failure|cancelled и т.д."},
     },
     required=["owner", "repo"],
 )
-def list_workflow_runs(client: GitHubClient, owner: str, repo: str, limit: int = 10):
-    """Получает список последних запусков workflow."""
+def list_workflow_runs(client: GitHubClient, owner: str, repo: str, limit: int = 10,
+                       page: int = 1, status: str = None):
+    """Получает список запусков workflow с пагинацией."""
     try:
-        runs = client.get_workflow_runs(owner, repo, per_page=limit)
-        
+        per_page = max(1, min(int(limit), 100))
+        page = max(1, int(page))
+        runs = client.get_workflow_runs(
+            owner, repo, per_page=per_page, page=page, status=status
+        )
+
         result = []
         for run in runs:
             result.append({
@@ -41,10 +48,12 @@ def list_workflow_runs(client: GitHubClient, owner: str, repo: str, limit: int =
                 "head_branch": run.get("head_branch"),
                 "head_sha": run.get("head_sha")
             })
-        
+
         return {
             "owner": owner,
             "repo": repo,
+            "page": page,
+            "status_filter": status,
             "total": len(result),
             "runs": result
         }
@@ -67,7 +76,7 @@ def get_latest_run_id(client: GitHubClient, owner: str, repo: str):
         runs = client.get_workflow_runs(owner, repo, per_page=1)
         if not runs:
             return {"error": "No workflow runs found"}
-        
+
         run = runs[0]
         return {
             "run_id": run.get("id"),
@@ -96,7 +105,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
         jobs = client.get_workflow_jobs(owner, repo, run_id)
         if not jobs:
             return {"error": "No jobs found for this run"}
-        
+
         result = []
         for job in jobs:
             job_name = job.get("name", "")
@@ -112,7 +121,7 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
                     "started_at": step.get("started_at"),
                     "completed_at": step.get("completed_at")
                 })
-        
+
         return {
             "owner": owner,
             "repo": repo,
@@ -148,13 +157,9 @@ def get_run_logs_by_step(
 ):
     """Получает логи конкретного шага workflow по имени шага."""
     try:
-        # Получаем логи через client
         logs = client.get_workflow_run_logs(owner, repo, run_id)
-        
-        # Ищем нужный шаг в логах
         log_lines = logs.split('\n')
-        
-        # Если указано время начала, фильтруем логи после этого времени
+
         if start_time:
             filtered_lines = []
             found_start = False
@@ -164,8 +169,7 @@ def get_run_logs_by_step(
                 if found_start:
                     filtered_lines.append(line)
             log_lines = filtered_lines
-        
-        # Ищем шаг по имени
+
         step_lines = []
         in_step = False
         for line in log_lines:
@@ -173,13 +177,12 @@ def get_run_logs_by_step(
                 in_step = True
             if in_step:
                 step_lines.append(line)
-                # Останавливаемся после max_lines строк
                 if len(step_lines) >= max_lines:
                     break
-        
+
         if not step_lines:
             return {"error": f"No logs found for step: {step_name}"}
-        
+
         return {
             "run_id": run_id,
             "step_name": step_name,
@@ -206,29 +209,26 @@ def get_run_logs_by_step(
 def get_step_logs_via_checks(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str):
     """Получает логи шага через GitHub Checks API."""
     try:
-        # Получаем информацию о запуске
         run = client.get_workflow_run(owner, repo, run_id)
         commit_sha = run.get("head_sha")
         if not commit_sha:
             return {"error": "No commit SHA found"}
-        
-        # Получаем check-runs для коммита
+
         check_runs = client.get_check_runs(owner, repo, commit_sha)
-        
-        # Ищем check-run с нужным именем шага
+
         found_check = None
         for check in check_runs:
             check_name = check.get("name", "").lower()
             if step_name.lower() in check_name:
                 found_check = check
                 break
-        
+
         if not found_check:
             return {
                 "error": f"No check-run found for step: {step_name}",
                 "available_checks": [c.get("name") for c in check_runs[:10]]
             }
-        
+
         return {
             "run_id": run_id,
             "step_name": step_name,
