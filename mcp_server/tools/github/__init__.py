@@ -8,6 +8,7 @@ from mcp_server.tools.github.file_ops import create_or_update_file
 from mcp_server.tools.github.file_ops import delete_file
 from mcp_server.tools.github.file_ops import read_file_chunk
 from mcp_server.tools.github.file_ops import grep_file
+from mcp_server.tools.github.file_ops import read_full_file
 from mcp_server.tools.github.commits import list_commits
 from mcp_server.tools.github.commits import get_commit_status
 from mcp_server.tools.github.workflows import get_latest_workflow_error
@@ -100,6 +101,7 @@ __all__ = [
     "delete_file",
     "read_file_chunk",
     "grep_file",
+    "read_full_file",
     "list_commits",
     "get_commit_status",
     "get_latest_workflow_error",
