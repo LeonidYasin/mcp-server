@@ -1,3 +1,3 @@
 """MCP GitHub Server - Modular Flask-based MCP server for GitHub API."""
 
-__version__ = "0.3.0"
+__version__ = "0.4.3"
