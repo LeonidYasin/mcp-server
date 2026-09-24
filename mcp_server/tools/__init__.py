@@ -14,3 +14,7 @@ from mcp_server.tools import utils  # noqa: F401
 # only when ENABLE_LOCAL_TOOLS is truthy. Importing is safe either way.
 from mcp_server.tools import localfs  # noqa: F401
 from mcp_server.tools import localgit  # noqa: F401
+
+# shell is DISABLED by default; its __init__ registers tools only when
+# ENABLE_LOCAL_SHELL is truthy. Most dangerous category — see SANDBOX.md.
+from mcp_server.tools import shell  # noqa: F401
