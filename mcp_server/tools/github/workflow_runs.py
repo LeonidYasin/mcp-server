@@ -12,6 +12,17 @@ def _safe_utf8(text: str) -> str:
         return str(text)
 
 
+def _decode_logs(raw) -> str:
+    """Приводит логи к str: клиент может вернуть bytes (ZIP-контент).
+
+    Без этого logs.split('\\n') падает с TypeError
+    'a bytes-like object is required, not str'.
+    """
+    if isinstance(raw, bytes):
+        return raw.decode('utf-8', errors='replace')
+    return raw if isinstance(raw, str) else str(raw)
+
+
 @mcp_tool(
     name="list_workflow_runs",
     description="Получает список запусков workflow с run_id, статусами и временем (с пагинацией и фильтром status).",
@@ -157,7 +168,7 @@ def get_run_logs_by_step(
 ):
     """Получает логи конкретного шага workflow по имени шага."""
     try:
-        logs = client.get_workflow_run_logs(owner, repo, run_id)
+        logs = _decode_logs(client.get_workflow_run_logs(owner, repo, run_id))
         log_lines = logs.split('\n')
 
         if start_time:
