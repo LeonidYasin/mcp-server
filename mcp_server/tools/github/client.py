@@ -32,7 +32,7 @@ class GitHubClient:
         try:
             if "json" in kwargs:
                 kwargs["json"] = self._ensure_utf8_dict(kwargs["json"])
-            
+
             resp = self._client.request(method, url, headers=self._headers, **kwargs)
             resp.raise_for_status()
             return resp
@@ -142,6 +142,21 @@ class GitHubClient:
         resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/jobs", params=params)
         return self._safe_json(resp.json()).get("jobs", [])
 
+    def get_check_runs(self, owner: str, repo: str, ref: str, per_page: int = 100) -> List[dict]:
+        """Get check-runs for a commit ref (GitHub Checks API).
+
+        Используется get_step_logs_via_checks. Прямой REST-запрос
+        GET /repos/{owner}/{repo}/commits/{ref}/check-runs.
+        """
+        params = {"per_page": per_page}
+        resp = self._request(
+            "GET",
+            f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{ref}/check-runs",
+            params=params,
+            headers={"Accept": "application/vnd.github+json"},
+        )
+        return self._safe_json(resp.json()).get("check_runs", [])
+
     def get_job_logs(self, owner: str, repo: str, job_id: int) -> str:
         """Get logs for a specific job."""
         resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/jobs/{job_id}/logs")
@@ -152,20 +167,20 @@ class GitHubClient:
 
     def get_workflow_run_logs(self, owner: str, repo: str, run_id: int) -> bytes:
         """Download workflow run logs as bytes.
-        
+
         Args:
             owner: Repository owner
             repo: Repository name
             run_id: Workflow run ID
-            
+
         Returns:
             Raw log content as bytes
         """
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
-        
+
         # First request to get redirect URL
         resp = self._client.get(url, headers=self._headers, follow_redirects=False)
-        
+
         if resp.status_code == 302:
             redirect_url = resp.headers.get("Location")
             if redirect_url:
@@ -175,3 +190,9 @@ class GitHubClient:
                     return log_resp.content
                 raise Exception(f"Failed to download logs: {log_resp.status_code}")
             raise Exception("Redirect URL not found")
+        raise Exception(f"Unexpected status code: {resp.status_code}")
+
+    def get_commit_status(self, owner: str, repo: str, ref: str) -> dict:
+        """Get combined commit status."""
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{ref}/status")
+        return self._safe_json(resp.json())
