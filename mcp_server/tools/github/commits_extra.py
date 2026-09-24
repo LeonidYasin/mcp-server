@@ -1,7 +1,5 @@
 """MCP tools: extra commit / file inspection."""
 
-import base64
-
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
@@ -20,7 +18,7 @@ from mcp_server.tools.github.client import GitHubClient
 def get_commit_diff(client: GitHubClient, **kwargs) -> str:
     resp = client._request(
         "GET",
-        f"/repos/{kwargs['owner']}/{kwargs['repo']}/commits/{kwargs['sha']}",
+        f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits/{kwargs['sha']}",
         headers={"Accept": "application/vnd.github.v3.diff"},
     )
     diff = resp.text
@@ -46,7 +44,7 @@ def get_commit_diff(client: GitHubClient, **kwargs) -> str:
 def list_directory(client: GitHubClient, **kwargs) -> str:
     path = (kwargs.get("path") or "").strip("/")
     ref = kwargs.get("ref", "main")
-    url = f"/repos/{kwargs['owner']}/{kwargs['repo']}/contents/{path}"
+    url = f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/contents/{path}"
     resp = client._request("GET", url, params={"ref": ref})
     items = resp.json()
     if isinstance(items, dict):
@@ -73,7 +71,7 @@ def list_directory(client: GitHubClient, **kwargs) -> str:
 def get_file_blame(client: GitHubClient, **kwargs) -> str:
     resp = client._request(
         "GET",
-        f"/repos/{kwargs['owner']}/{kwargs['repo']}/commits",
+        f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits",
         params={
             "path": kwargs["path"],
             "sha": kwargs.get("ref", "main"),
