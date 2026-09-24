@@ -9,6 +9,7 @@ from mcp_server.tools.github.file_ops import delete_file
 from mcp_server.tools.github.file_ops import read_file_chunk
 from mcp_server.tools.github.file_ops import grep_file
 from mcp_server.tools.github.file_ops import read_full_file
+from mcp_server.tools.github.file_ops import get_file_sha
 from mcp_server.tools.github.commits import list_commits
 from mcp_server.tools.github.commits import get_commit_status
 from mcp_server.tools.github.workflows import get_latest_workflow_error
@@ -47,7 +48,7 @@ from mcp_server.tools.github.releases import (
     create_release,
     get_latest_release,
 )
-from mcp_server.tools.github.tags import list_tags, create_tag
+from mcp_server.tools.github.tags import list_tags, create_tag, delete_tag
 from mcp_server.tools.github.batch import push_multiple_files
 
 # --- batch 2 additions ---
@@ -89,7 +90,11 @@ from mcp_server.tools.github.commits_extra import (
     get_commit_diff,
     list_directory,
     get_file_blame,
+    get_repo_tree,
 )
+
+# --- batch 8 additions ---
+from mcp_server.tools.github.search import search_code
 
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
@@ -103,6 +108,7 @@ __all__ = [
     "read_file_chunk",
     "grep_file",
     "read_full_file",
+    "get_file_sha",
     "list_commits",
     "get_commit_status",
     "get_latest_workflow_error",
@@ -136,6 +142,7 @@ __all__ = [
     "get_latest_release",
     "list_tags",
     "create_tag",
+    "delete_tag",
     "push_multiple_files",
     # batch 2
     "list_branches",
@@ -164,6 +171,9 @@ __all__ = [
     "get_commit_diff",
     "list_directory",
     "get_file_blame",
+    "get_repo_tree",
+    # batch 8
+    "search_code",
     # repo admin
     "update_repo_info",
 ]
