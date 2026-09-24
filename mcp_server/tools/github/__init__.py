@@ -74,6 +74,7 @@ from mcp_server.tools.github.actions import (
     rerun_workflow,
     cancel_workflow,
     list_artifacts,
+    download_artifact,
 )
 from mcp_server.tools.github.security import (
     list_dependabot_alerts,
@@ -108,6 +109,9 @@ from mcp_server.tools.github.search import (
     search_issues,
     search_repositories,
 )
+
+# --- batch 11 additions ---
+from mcp_server.tools.github.pull_requests import get_review_threads
 
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
@@ -175,6 +179,7 @@ __all__ = [
     "rerun_workflow",
     "cancel_workflow",
     "list_artifacts",
+    "download_artifact",
     "list_dependabot_alerts",
     "list_code_scanning_alerts",
     "list_secret_scanning_alerts",
@@ -195,6 +200,8 @@ __all__ = [
     "search_commits",
     "search_issues",
     "search_repositories",
+    # batch 11
+    "get_review_threads",
     # repo admin
     "update_repo_info",
 ]
