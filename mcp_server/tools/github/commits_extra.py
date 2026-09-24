@@ -4,6 +4,16 @@ from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
 
+def _branch_hint(owner: str, repo: str, ref: str, err: Exception) -> str:
+    """Build a friendly message when a ref/branch does not exist."""
+    return (
+        f"❌ Ветка/ref '{ref}' не найдена в {owner}/{repo}.\n"
+        f"   GitHub: {err}\n"
+        f"   Подсказка: вызови list_branches(owner='{owner}', repo='{repo}'), "
+        f"чтобы узнать имя дефолтной ветки (часто master, а не main)."
+    )
+
+
 @mcp_tool(
     name="get_commit_diff",
     description="Unified diff конкретного коммита",
@@ -16,11 +26,14 @@ from mcp_server.tools.github.client import GitHubClient
     required=["owner", "repo", "sha"],
 )
 def get_commit_diff(client: GitHubClient, **kwargs) -> str:
-    resp = client._request(
-        "GET",
-        f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits/{kwargs['sha']}",
-        headers={"Accept": "application/vnd.github.v3.diff"},
-    )
+    try:
+        resp = client._request(
+            "GET",
+            f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits/{kwargs['sha']}",
+            headers={"Accept": "application/vnd.github.v3.diff"},
+        )
+    except Exception as exc:
+        return _branch_hint(kwargs["owner"], kwargs["repo"], kwargs["sha"], exc)
     diff = resp.text
     limit = int(kwargs.get("max_files", 20))
     # limit by number of "diff --git" blocks
@@ -37,19 +50,32 @@ def get_commit_diff(client: GitHubClient, **kwargs) -> str:
         "owner": {"type": "string"},
         "repo": {"type": "string"},
         "path": {"type": "string", "description": "Путь директории (пусто = корень)"},
-        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию main)"},
+        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию — дефолтная ветка репо)"},
     },
     required=["owner", "repo"],
 )
 def list_directory(client: GitHubClient, **kwargs) -> str:
     path = (kwargs.get("path") or "").strip("/")
-    ref = kwargs.get("ref", "main")
+    # Do NOT default to "main": many repos use "master" or another default.
+    # When ref is omitted, GitHub itself picks the repository default branch.
+    ref = (kwargs.get("ref") or "").strip()
     url = f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/contents/{path}"
-    resp = client._request("GET", url, params={"ref": ref})
+    params = {"ref": ref} if ref else None
+    try:
+        resp = client._request("GET", url, params=params)
+    except Exception as exc:
+        if ref:
+            return _branch_hint(kwargs["owner"], kwargs["repo"], ref, exc)
+        return (
+            f"❌ Не удалось прочитать {kwargs['owner']}/{kwargs['repo']}/{path or ''}: {exc}\n"
+            f"   Подсказка: проверь owner/repo или вызови list_branches."
+        )
     items = resp.json()
     if isinstance(items, dict):
         return f"Не директория или не найдено: {items.get('message', '')}"
-    lines = [f"{path or '/'} @ {ref} — {len(items)} элементов:"]
+    where = path or "/"
+    where += f" @ {ref}" if ref else " @ default branch"
+    lines = [f"{where} — {len(items)} элементов:"]
     for it in items:
         icon = "📁" if it["type"] == "dir" else "📄"
         lines.append(f"  {icon} {it['name']} ({it.get('size', '-')} b)")
@@ -63,21 +89,29 @@ def list_directory(client: GitHubClient, **kwargs) -> str:
         "owner": {"type": "string"},
         "repo": {"type": "string"},
         "path": {"type": "string"},
-        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию main)"},
+        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию — дефолтная ветка репо)"},
         "limit": {"type": "integer", "description": "Сколько коммитов (по умолчанию 20)"},
     },
     required=["owner", "repo", "path"],
 )
 def get_file_blame(client: GitHubClient, **kwargs) -> str:
-    resp = client._request(
-        "GET",
-        f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits",
-        params={
-            "path": kwargs["path"],
-            "sha": kwargs.get("ref", "main"),
-            "per_page": min(int(kwargs.get("limit", 20)), 100),
-        },
-    )
+    ref = (kwargs.get("ref") or "").strip()
+    params = {
+        "path": kwargs["path"],
+        "per_page": min(int(kwargs.get("limit", 20)), 100),
+    }
+    if ref:
+        params["sha"] = ref
+    try:
+        resp = client._request(
+            "GET",
+            f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits",
+            params=params,
+        )
+    except Exception as exc:
+        if ref:
+            return _branch_hint(kwargs["owner"], kwargs["repo"], ref, exc)
+        return f"❌ Не удалось получить историю {kwargs['path']}: {exc}"
     commits = resp.json()
     if not isinstance(commits, list) or not commits:
         return "Коммитов по файлу не найдено"
