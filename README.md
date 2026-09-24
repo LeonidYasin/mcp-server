@@ -1,45 +1,61 @@
 # MCP GitHub Server
 
-Расширяемый MCP HTTP-сервер для GitHub API с модульной архитектурой и автоматическим обнаружением инструментов.
+Расширяемый MCP HTTP-сервер с модульной архитектурой и автоматическим обнаружением инструментов. Изначально вырос из обёртки над GitHub API, сейчас — универсальный набор инструментов для агента.
+
+Сервер реализует **MCP Streamable HTTP transport** (JSON-RPC 2.0 поверх `POST /mcp`). Актуальная версия — **0.4.2**.
+
+---
 
 ## Возможности
 
-Сервер предоставляет **19 инструментов** для работы с GitHub:
+Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
 
-### 📁 Работа с файлами (4)
-| Инструмент | Описание |
-|-----------|----------|
-| `get_file_contents` | Чтение содержимого файлов из репозитория |
-| `create_or_update_file` | Создание и обновление текстовых файлов |
-| `create_or_update_binary_file` | Создание и обновление бинарных файлов (base64) |
-| `delete_file` | Удаление файлов (автоматически получает SHA) |
+### 🐙 `github/` — GitHub API
 
-### 📝 Коммиты (2)
-| Инструмент | Описание |
-|-----------|----------|
-| `list_commits` | Список последних коммитов |
-| `get_commit_status` | Статус проверок для коммита |
+Файлы, коммиты, ветки, PR, issues, releases, tags, gists, Actions, security-алерты, workflow/сборки.
 
-### ⚙️ Workflow (7)
-| Инструмент | Описание |
-|-----------|----------|
-| `get_latest_workflow_error` | Ошибка последней сборки |
-| `get_workflow_run_logs` | Логи конкретного запуска workflow |
-| `get_full_workflow_logs` | Полные логи всех jobs запуска |
-| `get_workflow_by_file` | Запуски workflow по имени YAML-файла |
-| `list_workflow_runs` | Список запусков с run_id и статусами |
-| `get_latest_run_id` | run_id последнего запуска |
-| `get_workflow_run_steps` | Список всех шагов в запуске с их статусами |
+| Группа | Инструменты |
+|--------|-------------|
+| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_binary_file`, `create_or_update_file_with_sha`, `delete_file`, `list_directory`, `get_file_blame` |
+| Коммиты | `list_commits`, `get_commit_status`, `get_commit_diff` |
+| Ветки / сравнение | `list_branches`, `get_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
+| PR / Issues | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`, `add_labels` |
+| Releases / Tags | `list_releases`, `create_release`, `get_latest_release`, `list_tags`, `create_tag` |
+| Gists | `create_gist`, `list_gists`, `get_gist`, `update_gist` |
+| Actions | `dispatch_workflow`, `rerun_workflow`, `cancel_workflow`, `list_workflows`, `list_artifacts` |
+| Security | `list_dependabot_alerts`, `list_code_scanning_alerts`, `list_secret_scanning_alerts` |
+| Repo info | `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors` |
+| Batch | `push_multiple_files` |
 
-### 🏗️ Сборка и отладка (6)
-| Инструмент | Описание |
-|-----------|----------|
-| `watch_build` | Мониторинг сборки |
-| `auto_fix_build` | Авто-исправление ошибок сборки (Android/iOS) |
-| `get_android_build_error` | Детальная ошибка Android сборки |
-| `get_ios_build_error` | Детальная ошибка iOS сборки |
-| `get_run_logs_by_step` | Логи конкретного шага по имени |
-| `create_or_update_file_with_sha` | Создание/обновление с авто-получением SHA |
+### 🏗️ `build/` — сборка и отладка
+
+`watch_build`, `auto_fix_build`, `get_android_build_error`, `get_ios_build_error`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `get_latest_workflow_error`, `get_workflow_run_logs`, `get_full_workflow_logs`, `get_workflow_by_file`, `list_workflow_runs`, `get_latest_run_id`, `get_workflow_run_steps`.
+
+### 🌐 `web/` — веб
+
+`web_fetch`, `web_search` (DuckDuckGo HTML, без API-ключа), `rss_read`, `html_to_markdown`.
+
+### 🧰 `utils/` — утилиты и данные
+
+`base64_encode`, `base64_decode`, `hash_text`, `json_format`, `json_query`, `uuid_generate`, `timestamp_now`, `date_convert`, `regex_test`, `text_diff`, `csv_parse`, `csv_generate`, `yaml_to_json`, `json_to_yaml`, `markdown_to_html`.
+
+### 🧭 `meta/` — мета-инструменты
+
+`list_my_tools` (список всех зарегистрированных инструментов), `describe_tool` (JSON-схема конкретного инструмента).
+
+### 🔒 `localfs/` — локальные файлы (по умолчанию выключено)
+
+`read_local_file`, `write_local_file`, `list_local_dir`, `search_in_files`.
+
+Регистрируются только при `ENABLE_LOCAL_TOOLS=1`. Все пути ограничены `LOCAL_TOOLS_ROOT` (по умолчанию `~/workspace`). См. `SANDBOX.md`.
+
+### 🔒 `localgit/` — git в workspace (по умолчанию выключено)
+
+`git_status`, `git_log`, `git_diff`, `git_commit`, `git_push`, `git_pull`.
+
+Тот же флаг `ENABLE_LOCAL_TOOLS` и тот же `LOCAL_TOOLS_ROOT`. Репозитории должны лежать внутри корня.
+
+---
 
 ## Установка
 
@@ -49,22 +65,39 @@ cd mcp-server
 pip install flask httpx python-dotenv flask-cors
 ```
 
+Либо через пакет:
+
+```bash
+pip install -e .
+```
+
 ## Запуск
 
 ```bash
 python -m mcp_server.server
 ```
 
-Сервер запускается на `http://0.0.0.0:3001`, эндпоинт MCP: `POST /mcp`.
+Сервер слушает `http://0.0.0.0:3001`, MCP-эндпоинт — `POST /mcp`. Health-check — `GET /health` (показывает `tool_count`, список инструментов и диагностику последнего запроса).
 
-Токен GitHub передаётся через заголовок `Authorization: Bearer <token>`.
+Токен GitHub передаётся заголовком `Authorization: Bearer <token>`.
+
+### Включение локальных инструментов
+
+```bash
+export ENABLE_LOCAL_TOOLS=1          # включает localfs + localgit
+export LOCAL_TOOLS_ROOT=/workspace   # whitelist-корень (по умолчанию ~/workspace)
+python -m mcp_server.server
+```
 
 ## Подключение к DeepSeek++
 
-В настройках плагина DeepSeek++:
+В настройках плагина:
+
 - **URL:** `http://127.0.0.1:3001/mcp`
 - **Тип:** HTTP
 - **Заголовок:** `Authorization: Bearer <ваш_github_token>`
+
+---
 
 ## Структура проекта
 
@@ -72,32 +105,31 @@ python -m mcp_server.server
 mcp-server/
 ├── pyproject.toml
 ├── README.md
+├── ROADMAP.md
+├── SANDBOX.md
 └── mcp_server/
     ├── __init__.py
-    ├── server.py              # Flask HTTP-сервер
+    ├── server.py              # Flask HTTP-сервер (MCP transport, token handling, нормализация content)
     ├── core/
     │   ├── __init__.py
     │   ├── tool.py            # Tool dataclass
-    │   └── registry.py        # ToolRegistry с авто-обнаружением
+    │   └── registry.py        # ToolRegistry + канонический декоратор @mcp_tool
     └── tools/
-        ├── __init__.py
-        └── github/
-            ├── __init__.py            # Экспорт инструментов
-            ├── client.py              # GitHub API HTTP-клиент
-            ├── file_ops.py            # get_file_contents, create_or_update_file, delete_file
-            ├── file_sha_ops.py        # create_or_update_file_with_sha
-            ├── create_update_binary.py # create_or_update_binary_file
-            ├── commits.py             # list_commits, get_commit_status
-            ├── workflows.py           # workflow-инструменты (4 шт)
-            ├── workflow_runs.py       # list_workflow_runs, get_latest_run_id, get_workflow_run_steps, get_run_logs_by_step
-            ├── build_logs.py          # watch_build
-            ├── build_logs_loader.py   # auto_fix_build, get_android_build_error, get_ios_build_error
-            └── build_logs_tools.py    # вспомогательные функции для сборки
+        ├── __init__.py        # импорт подпакетов для авто-обнаружения
+        ├── build/             # сборка и отладка
+        ├── github/            # GitHub API
+        ├── localfs/           # локальные файлы (ENABLE_LOCAL_TOOLS)
+        ├── localgit/          # git в workspace (ENABLE_LOCAL_TOOLS)
+        ├── meta/              # list_my_tools, describe_tool
+        ├── utils/             # утилиты и данные
+        └── web/               # web_fetch, web_search, rss, html
 ```
+
+---
 
 ## Как добавить новый инструмент
 
-### Шаг 1: Создайте файл в `mcp_server/tools/github/`
+### Шаг 1. Создайте файл в нужном подпакете
 
 Пример: `mcp_server/tools/github/create_branch.py`
 
@@ -121,13 +153,11 @@ from mcp_server.tools.github.client import GitHubClient
 )
 def create_branch(client: GitHubClient, owner: str, repo: str, branch: str, from_branch: str = "main") -> dict:
     """Создать новую ветку."""
-    # 1. Получаем SHA родительской ветки
     ref_resp = client._request(
         "GET", f"/repos/{owner}/{repo}/git/ref/heads/{from_branch}"
     )
     sha = ref_resp.json()["object"]["sha"]
 
-    # 2. Создаём ветку
     client._request(
         "POST",
         f"/repos/{owner}/{repo}/git/refs",
@@ -142,42 +172,52 @@ def create_branch(client: GitHubClient, owner: str, repo: str, branch: str, from
     }
 ```
 
-### Шаг 2: Экспортируйте инструмент
+### Шаг 2. Экспортируйте инструмент
 
-В `mcp_server/tools/github/__init__.py` добавьте строку:
+В `mcp_server/tools/<подпакет>/__init__.py` добавьте строку:
 
 ```python
 from mcp_server.tools.github.create_branch import create_branch
 ```
 
-### Шаг 3: Перезапустите сервер
+### Шаг 3. Перезапустите сервер
 
 ```bash
-# Остановите Ctrl+C и снова запустите
+# Ctrl+C, затем:
 python -m mcp_server.server
 ```
 
-Инструмент автоматически появится в списке. Никакой другой настройки не требуется.
+Инструмент появится в `tools/list` автоматически.
+
+---
 
 ## Как работает авто-обнаружение
 
-`ToolRegistry` (в `mcp_server/core/registry.py`) при запуске:
+`ToolRegistry` (в `mcp_server/core/registry.py`) при старте:
 
-1. Сканирует `mcp_server/tools/`
-2. Находит все подпакеты (директории с `__init__.py`)
-3. Импортирует их и ищет функции с декоратором `@mcp_tool`
-4. Регистрирует найденные инструменты
+1. Сканирует подпакеты `mcp_server/tools/` через `pkgutil.iter_modules`.
+2. Импортирует каждый подпакет.
+3. Ищет функции с атрибутом `_mcp_tool` — его ставит декоратор `@mcp_tool` из `core/registry.py`.
+4. Регистрирует найденные `Tool` в реестре.
+
+---
 
 ## Правила написания инструментов
 
-1. **Функция должна быть синхронной** и принимать `client: GitHubClient` первым аргументом
-2. **Декоратор `@mcp_tool`** задаёт:
-   - `name` — имя инструмента (как будет вызываться)
-   - `description` — описание для AI-ассистента
-   - `parameters` — словарь параметров в формате JSON Schema
-   - `required` — список обязательных параметров
-3. **Возвращать нужно `dict`** с ключом `content` — списком объектов `{"type": "text", "text": "..."}`
-4. **Для запросов к GitHub API** используйте `client._request(method, path, ...)`
+1. **Функция синхронная.** Первый аргумент — `client` (может быть `None` для инструментов без GitHub-токена).
+2. **Декоратор — только `@mcp_tool` из `mcp_server.core.registry`.** Он принимает:
+   - `name` — имя инструмента (как вызывается по MCP);
+   - `description` — описание для AI-ассистента;
+   - `parameters` — словарь параметров в формате JSON Schema;
+   - `required` — список обязательных параметров.
+3. **Возвращать `str` или `dict`.** `server.py` нормализует результат в строгий MCP-`content` (непустой список блоков, у каждого строковый `type`). Возвращать `dict` с `content` — можно, но не обязательно.
+4. **Для GitHub API** используйте `client._request(method, path, ...)`.
+5. **Опасные категории** (shell, local fs, local git) держите отдельными подпакетами и гейтите их env-флагом, как это сделано в `localfs`/`localgit`.
+
+> ⚠️ **Единственный канонический декоратор** — `mcp_server.core.registry.mcp_tool`.
+> Старый `mcp_server/decorators.py` удалён: он регистрировал инструменты в отдельном `ToolRegistry` и не был виден глобальному реестру.
+
+---
 
 ## Шаблон для копирования
 
@@ -197,24 +237,25 @@ from mcp_server.tools.github.client import GitHubClient
     },
     required=["owner", "repo"],
 )
-def имя_инструмента(client: GitHubClient, owner: str, repo: str) -> dict:
-    # Ваш код здесь
-    return {
-        "content": [{"type": "text", "text": "Результат работы"}]
-    }
+def имя_инструмента(client: GitHubClient, owner: str, repo: str) -> str:
+    resp = client._request("GET", f"/repos/{owner}/{repo}")
+    return resp.text
 ```
+
+---
 
 ## Требования к GitHub токену
 
-Токен должен иметь следующие разрешения (scopes):
-- `repo` (или `Contents: Read and write`) — для работы с файлами
-- `Actions: Read` — для просмотра workflow
-- `Metadata: Read` — для базовой информации (обычно по умолчанию)
+- `repo` (или `Contents: Read and write`) — файлы, PR, issues.
+- `Actions: Read` — просмотр workflow.
+- `Metadata: Read` — базовая информация (обычно по умолчанию).
 
-## Тестирование сервера через curl
+---
+
+## Тестирование через curl
 
 ```bash
-# Проверка списка инструментов
+# Список инструментов
 curl -X POST http://127.0.0.1:3001/mcp \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <токен>" \
@@ -225,10 +266,18 @@ curl -X POST http://127.0.0.1:3001/mcp \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <токен>" \
   -d '{"jsonrpc":"2.0","id":"2","method":"tools/call","params":{"name":"get_file_contents","arguments":{"owner":"LeonidYasin","repo":"mcp-server","path":"README.md"}}}'
+
+# Health-check
+curl http://127.0.0.1:3001/health
 ```
+
+---
 
 ## Версионирование
 
-- **v0.1.0** — stdio-транспорт, базовая модульная архитектура
-- **v0.2.0** — Flask HTTP-транспорт, 10 инструментов, авто-обнаружение, инструкция для разработчиков
-- **v0.3.0** — Добавлены 9 новых инструментов: всего 19, включая работу с workflow, сборкой и отладкой
+- **v0.1.0** — stdio-транспорт, базовая модульная архитектура.
+- **v0.2.0** — Flask HTTP-транспорт, авто-обнаружение, инструкция для разработчиков.
+- **v0.3.0** — расширение инструментов GitHub, workflow, сборка.
+- **v0.4.0** — батчи 1–3: PR/Issues/Releases/Tags, meta, web, утилиты, data, branches, gists, Actions, security.
+- **v0.4.1** — sandboxed local filesystem (`localfs`, батч 4).
+- **v0.4.2** — sandboxed local git (`localgit`, батч 5) + нормализация MCP `content` в `server.py`.
