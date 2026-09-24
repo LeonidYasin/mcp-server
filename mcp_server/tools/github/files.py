@@ -29,30 +29,52 @@ def create_or_update_file(client: GitHubClient, **kwargs) -> str:
 
 @mcp_tool(
     name="get_file_contents",
-    description="Получает содержимое файла из репозитория",
+    description="Получает содержимое файла из репозитория. Для больших файлов поддерживает пагинацию по строкам (offset/limit).",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "path": {"type": "string", "description": "Путь к файлу"},
         "ref": {"type": "string", "description": "Git ref (ветка, тег, коммит)"},
+        "offset": {"type": "integer", "description": "С какой строки начать (0-based, по умолчанию 0)"},
+        "limit": {"type": "integer", "description": "Сколько строк вернуть (по умолчанию все). Для файлов >400 строк используйте limit"},
     },
     required=["owner", "repo", "path"],
 )
 def get_file_contents(client: GitHubClient, **kwargs) -> str:
     import base64, json
     data = client.get_file(kwargs["owner"], kwargs["repo"], kwargs["path"], kwargs.get("ref"))
+
+    # Directory listing (unchanged behaviour)
     if isinstance(data, list):
         items = []
         for item in data:
             icon = "📁" if item.get("type") == "dir" else "📄"
             items.append(f"{icon} {item['name']}")
         return "\n".join(items) if items else "(empty)"
-    if "content" in data:
-        try:
-            return base64.b64decode(data["content"]).decode("utf-8")
-        except Exception:
-            return f"[Binary: {data.get('size', '?')} bytes]"
-    return json.dumps(data, indent=2, ensure_ascii=False)
+
+    if "content" not in data:
+        return json.dumps(data, indent=2, ensure_ascii=False)
+
+    try:
+        text = base64.b64decode(data["content"]).decode("utf-8")
+    except Exception:
+        return f"[Binary: {data.get('size', '?')} bytes]"
+
+    # No pagination requested -> previous behaviour (whole file)
+    offset = kwargs.get("offset")
+    limit = kwargs.get("limit")
+    if offset is None and limit is None:
+        return text
+
+    lines = text.splitlines()
+    total = len(lines)
+    off = max(int(offset or 0), 0)
+    lim = int(limit) if limit else total
+    chunk = lines[off:off + lim]
+    first = off + 1 if chunk else off
+    last = off + len(chunk)
+    header = f"[строки {first}-{last} из {total}]"
+    return header + "\n" + "\n".join(chunk)
 
 
 @mcp_tool(
