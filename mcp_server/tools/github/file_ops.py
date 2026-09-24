@@ -16,31 +16,30 @@ MAX_CHUNK_LINES = 400
 MAX_GREP_MATCHES = 200
 
 # read_full_file tuning.
-# Byte budget we aim to stay under for each internal slice, with headroom below
-# MAX_CHUNK_BYTES so header/tail notes never push a slice over the transport cap.
 SAFE_CHUNK_BYTES = 24_576          # ~24 KB
 MIN_AUTO_CHUNK_LINES = 20
 MAX_AUTO_CHUNK_LINES = MAX_CHUNK_LINES
-# Safety budget for the assembled text of one read_full_file call.
 MAX_FULL_FILE_BYTES = 512_000      # 512 KB
 
 
 def _file_links(owner: str, repo: str, path: str, ref: str | None) -> str:
-    """Build web + raw URLs for a file so the user can open it in a browser.
-
-    GitHub API returns `html_url` in the file payload; for raw we use the
-    well-known raw.githubusercontent.com template. `ref` falls back to the
-    default branch placeholder 'HEAD' when not given.
-    """
+    """Build web + raw URLs for a file so the user can open it in a browser."""
     branch = ref or "HEAD"
     html_url = f"https://github.com/{owner}/{repo}/blob/{branch}/{path}"
     raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
     return f"🔗 {html_url}\n📄 {raw_url}"
 
 
+def _sha_line(blob_sha: str | None) -> str:
+    """One-line blob SHA hint, so callers can pass it straight to create_or_update_file."""
+    if not blob_sha:
+        return ""
+    return f"SHA: {blob_sha}"
+
+
 @mcp_tool(
     name="get_file_contents",
-    description="Получает содержимое файла из репозитория (со ссылками web/raw)",
+    description="Получает содержимое файла из репозитория (со ссылками web/raw и blob SHA)",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
@@ -55,15 +54,43 @@ def get_file_contents(client: GitHubClient, owner: str, repo: str, path: str, re
         data = client.get_file(owner, repo, path, ref)
         if "content" in data:
             decoded = base64.b64decode(data["content"]).decode("utf-8", errors="replace")
-            return _file_links(owner, repo, path, ref) + "\n\n" + decoded
+            header = _file_links(owner, repo, path, ref)
+            sha = _sha_line(data.get("sha"))
+            if sha:
+                header += "\n" + sha
+            return header + "\n\n" + decoded
         elif isinstance(data, list):
-            # Directory listing
             items = [f"{'📁' if item['type'] == 'dir' else '📄'} {item['name']}" for item in data]
             return "\n".join(items)
         else:
             return json.dumps(data, indent=2, ensure_ascii=False)
     except Exception as e:
         return f"❌ Ошибка: {e}"
+
+
+@mcp_tool(
+    name="get_file_sha",
+    description="Возвращает blob SHA файла (для последующего create_or_update_file)",
+    parameters={
+        "owner": {"type": "string", "description": "Владелец репозитория"},
+        "repo": {"type": "string", "description": "Имя репозитория"},
+        "path": {"type": "string", "description": "Путь к файлу"},
+        "ref": {"type": "string", "description": "Ветка/коммит (по умолчанию — дефолтная ветка)"},
+    },
+    required=["owner", "repo", "path"],
+)
+def get_file_sha(client: GitHubClient, owner: str, repo: str, path: str, ref: str | None = None) -> str:
+    """Return blob SHA of a file, or a friendly message if missing."""
+    try:
+        data = client.get_file(owner, repo, path, ref)
+    except Exception as e:
+        return f"❌ Ошибка: {e}"
+    if isinstance(data, list):
+        return f"❌ '{path}' — директория, SHA не применим."
+    sha = data.get("sha")
+    if not sha:
+        return f"❌ Не удалось получить SHA для {path}"
+    return f"SHA: {sha}"
 
 
 @mcp_tool(
@@ -218,14 +245,7 @@ def read_full_file(
     ref: str | None = None, max_bytes: int | None = None,
     include_line_numbers: bool | None = None
 ) -> str:
-    """Прочитать весь текстовый файл, автоматически выбрав безопасный размер чанка.
-
-    Алгоритм:
-      1. один раз получаем файл, узнаём общее число строк и среднюю длину строки;
-      2. вычисляем размер куска так, чтобы каждый внутренний срез был < SAFE_CHUNK_BYTES;
-      3. идём от начала до конца с гарантированно растущим offset;
-      4. склеиваем все куски и проверяем полное покрытие строк.
-    """
+    """Прочитать весь текстовый файл, автоматически выбрав безопасный размер чанка."""
     try:
         data = client.get_file(owner, repo, path, ref)
     except Exception as e:
@@ -241,6 +261,9 @@ def read_full_file(
         return f"❌ Не текстовый файл (или не UTF-8): {path}"
 
     links = _file_links(owner, repo, path, ref)
+    sha = _sha_line(data.get("sha"))
+    if sha:
+        links += "\n" + sha
 
     lines = text.splitlines()
     total = len(lines)
