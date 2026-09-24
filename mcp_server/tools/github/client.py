@@ -4,6 +4,8 @@ from typing import Any, Optional, List, Dict
 import httpx
 import base64
 import json
+import io
+import zipfile
 
 
 class GitHubClient:
@@ -166,7 +168,10 @@ class GitHubClient:
             return resp.content.decode('utf-8', errors='replace')
 
     def get_workflow_run_logs(self, owner: str, repo: str, run_id: int) -> bytes:
-        """Download workflow run logs as bytes.
+        """Download workflow run logs as raw bytes.
+
+        ВНИМАНИЕ: GitHub отдаёт это как ZIP-архив. Для текста используй
+        get_workflow_run_logs_text() / get_workflow_run_logs_files().
 
         Args:
             owner: Repository owner
@@ -174,7 +179,7 @@ class GitHubClient:
             run_id: Workflow run ID
 
         Returns:
-            Raw log content as bytes
+            Raw ZIP content as bytes
         """
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
 
@@ -191,6 +196,39 @@ class GitHubClient:
                 raise Exception(f"Failed to download logs: {log_resp.status_code}")
             raise Exception("Redirect URL not found")
         raise Exception(f"Unexpected status code: {resp.status_code}")
+
+    def get_workflow_run_logs_files(self, owner: str, repo: str, run_id: int) -> Dict[str, str]:
+        """Скачать ZIP-логи и распаковать в {filename: text}.
+
+        GitHub отдаёт /actions/runs/{id}/logs как ZIP. Раньше инструменты
+        декодировали ZIP как UTF-8 → мусор 'PK\\x03\\x04'. Здесь распаковываем.
+        """
+        raw = self.get_workflow_run_logs(owner, repo, run_id)  # bytes (ZIP)
+        if isinstance(raw, str):
+            raw = raw.encode("utf-8", errors="replace")
+        out: Dict[str, str] = {}
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+                for name in zf.namelist():
+                    if name.endswith("/"):
+                        continue
+                    try:
+                        out[name] = zf.read(name).decode("utf-8", errors="replace")
+                    except Exception:
+                        continue
+        except zipfile.BadZipFile:
+            # Не ZIP (например, отдали plain text) — вернём как один файл
+            out["(raw)"] = raw.decode("utf-8", errors="replace")
+        return out
+
+    def get_workflow_run_logs_text(self, owner: str, repo: str, run_id: int) -> str:
+        """Распакованные логи, склеенные в текст с заголовками файлов."""
+        files = self.get_workflow_run_logs_files(owner, repo, run_id)
+        parts = []
+        for name, text in files.items():
+            parts.append(f"===== {name} =====")
+            parts.append(text)
+        return "\n".join(parts)
 
     def get_commit_status(self, owner: str, repo: str, ref: str) -> dict:
         """Get combined commit status."""
