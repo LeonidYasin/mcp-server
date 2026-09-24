@@ -71,7 +71,12 @@ def html_to_markdown(client=None, **kwargs) -> str:
 
     # headings
     for i in range(1, 7):
-        html = re.sub(rf"<h{i}[^>]*>(.*?)</h{i}>", lambda m: "\n" + "#" * i + " " + m.group(1) + "\n", html, flags=re.S | re.I)
+        html = re.sub(
+            rf"<h{i}[^>]*>(.*?)</h{i}>",
+            lambda m: "\n" + "#" * i + " " + m.group(1) + "\n",
+            html,
+            flags=re.S | re.I,
+        )
     # links
     html = re.sub(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', r"[\2](\1)", html, flags=re.S | re.I)
     # bold / italic
@@ -91,8 +96,9 @@ def html_to_markdown(client=None, **kwargs) -> str:
     for a, b in (("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"), ("&quot;", '"'), ("&#39;", "'")):
         html = html.replace(a, b)
     html = re.sub(r"\n{3,}", "\n\n", html).strip()
+
     limit = int(kwargs.get("max_chars", 20000))
     if len(html) > limit:
-        html = html[:limit] + f"\n\n[...обрезано, всего {len(html)}]
-"
+        total = len(html)
+        html = html[:limit] + "\n\n[...обрезано, всего " + str(total) + "]"
     return html
