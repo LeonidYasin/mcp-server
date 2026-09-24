@@ -87,6 +87,9 @@ from mcp_server.tools.github.commits_extra import (
     get_file_blame,
 )
 
+# --- repo admin ---
+from mcp_server.tools.github.repo_admin import update_repo_info
+
 __all__ = [
     "GitHubClient",
     # existing
@@ -153,4 +156,6 @@ __all__ = [
     "get_commit_diff",
     "list_directory",
     "get_file_blame",
+    # repo admin
+    "update_repo_info",
 ]
