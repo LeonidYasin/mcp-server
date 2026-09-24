@@ -1,7 +1,6 @@
 """MCP HTTP Server for GitHub API - Modular version with auto-discovered tools.
 
 Token is passed via Authorization: Bearer <token> header.
-
 Implements the MCP Streamable HTTP transport (JSON-RPC 2.0 over POST /mcp).
 """
 
@@ -16,11 +15,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --- MCP protocol versions -------------------------------------------------
-# The client sends its requested version in `initialize` params.protocolVersion.
-# The server MUST answer with a version it supports. If the client's version is
-# unknown we answer with our latest supported one (the client decides whether to
-# continue) instead of erroring out.
-# See: https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle
 SUPPORTED_PROTOCOL_VERSIONS = [
     "2025-11-25",
     "2025-06-18",
@@ -30,13 +24,27 @@ SUPPORTED_PROTOCOL_VERSIONS = [
 LATEST_PROTOCOL_VERSION = SUPPORTED_PROTOCOL_VERSIONS[0]
 
 SERVER_NAME = "mcp-github-server"
-SERVER_VERSION = "0.4.0"
+SERVER_VERSION = "0.4.1"
+
+# Tools that don't need a GitHub token (pure functions / meta / web)
+TOKENLESS_PREFIXES = ("base64_", "hash_", "json_", "uuid_", "timestamp_", "date_", "regex_", "text_")
+TOKENLESS_NAMES = {"list_my_tools", "describe_tool", "web_fetch", "web_search"}
+
+
+def _tool_needs_token(tool_name: str) -> bool:
+    if tool_name in TOKENLESS_NAMES:
+        return False
+    return not tool_name.startswith(TOKENLESS_PREFIXES)
+
 
 app = Flask(__name__)
-CORS(app)  # allow requests from the browser extension (incl. preflight OPTIONS)
+CORS(app)
 
 registry = ToolRegistry()
 registry.discover()
+
+# Diagnostics for the last request (surfaced via /health)
+_last_request = {"token": "none", "auth_header_present": False}
 
 
 def _json_rpc_result(req_id, result):
@@ -48,25 +56,28 @@ def _json_rpc_error(req_id, code, message):
 
 
 def _negotiate_protocol_version(client_version):
-    """Return the protocol version we will speak.
-
-    Per the spec the server responds with a version it supports. If it does not
-    support the requested version it should respond with its latest supported
-    version and let the client decide what to do.
-    """
     if client_version in SUPPORTED_PROTOCOL_VERSIONS:
         return client_version
     return LATEST_PROTOCOL_VERSION
 
 
+def _extract_token(auth_header: str):
+    """Return (token, note). note explains a malformed header, if any."""
+    if not auth_header:
+        return None, "no Authorization header"
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        if not token:
+            return None, "'Bearer ' present but token is empty"
+        return token, None
+    # Header present but not in Bearer form — most common mistake
+    return None, "Authorization header present but missing 'Bearer ' prefix"
+
+
 @app.route("/mcp", methods=["POST", "GET", "OPTIONS"])
 def mcp_handler():
-    # CORS preflight
     if request.method == "OPTIONS":
         return ("", 204)
-
-    # Streamable HTTP: GET is optional (SSE stream). We do not offer a stream,
-    # so advertise POST only.
     if request.method == "GET":
         return ("Method Not Allowed", 405, {"Allow": "POST"})
 
@@ -76,13 +87,21 @@ def mcp_handler():
     params = data.get("params", {}) or {}
 
     auth_header = request.headers.get("Authorization", "")
-    token = auth_header[7:] if auth_header.startswith("Bearer ") else None
+    token, note = _extract_token(auth_header)
+
+    global _last_request
+    _last_request = {
+        "token": "present" if token else "missing",
+        "auth_header_present": bool(auth_header),
+        "note": note or "ok",
+    }
 
     logger.info(
-        "Request: method=%s, id=%s, token=%s",
+        "Request: method=%s, id=%s, token=%s%s",
         method,
         req_id,
         "present" if token else "missing",
+        f" ({note})" if note else "",
     )
 
     # --- Lifecycle ---------------------------------------------------------
@@ -90,20 +109,23 @@ def mcp_handler():
         client_version = params.get("protocolVersion")
         negotiated = _negotiate_protocol_version(client_version)
         logger.info(
-            "initialize: client requested %s -> negotiated %s",
-            client_version,
-            negotiated,
+            "initialize: client requested %s -> negotiated %s", client_version, negotiated
         )
+        server_info = {"name": SERVER_NAME, "version": SERVER_VERSION}
+        if not token:
+            server_info["warning"] = (
+                "No GitHub token received. Send header 'Authorization: Bearer <token>'. "
+                "Token-less tools (utils, meta, web) still work; GitHub tools will fail."
+            )
         return _json_rpc_result(
             req_id,
             {
                 "protocolVersion": negotiated,
                 "capabilities": {"tools": {"listChanged": False}},
-                "serverInfo": {"name": SERVER_NAME, "version": SERVER_VERSION},
+                "serverInfo": server_info,
             },
         )
 
-    # Notification (no id): acknowledge with 202 and empty body.
     if method == "notifications/initialized":
         return ("", 202)
 
@@ -116,9 +138,6 @@ def mcp_handler():
         return _json_rpc_result(req_id, {"tools": tools})
 
     if method == "tools/call":
-        if not token:
-            return _json_rpc_error(req_id, -32000, "Missing token")
-
         tool_name = params.get("name")
         args = params.get("arguments", {}) or {}
 
@@ -126,23 +145,29 @@ def mcp_handler():
         if not tool or not tool.handler:
             return _json_rpc_error(req_id, -32602, f"Tool not found: {tool_name}")
 
-        try:
-            client = GitHubClient(token)
-            output = tool.handler(client=client, **args)
+        needs_token = _tool_needs_token(tool_name)
+        if needs_token and not token:
+            hint = (
+                "Add header 'Authorization: Bearer <github_token>' to the MCP server config. "
+                "(No square brackets, keep the word 'Bearer' and one space before the token.)"
+            )
+            if note:
+                hint = f"{note}. {hint}"
+            logger.warning("tools/call '%s' without token: %s", tool_name, hint)
+            return _json_rpc_error(req_id, -32001, f"Missing GitHub token. {hint}")
 
-            # Tools may return either a full MCP result {"content": [...]} or a
-            # plain value/string. Normalise without double-wrapping.
+        try:
+            client = GitHubClient(token) if token else None
+            output = tool.handler(client=client, **args)
             if isinstance(output, dict) and "content" in output:
                 result = output
             else:
                 result = {"content": [{"type": "text", "text": str(output)}]}
-
             return _json_rpc_result(req_id, result)
         except Exception as e:  # noqa: BLE001
             logger.exception("Tool %s error", tool_name)
             return _json_rpc_error(req_id, -32000, str(e))
 
-    # Notifications are one-way: never answer with an error for them.
     if isinstance(method, str) and method.startswith("notifications/"):
         return ("", 202)
 
@@ -158,13 +183,17 @@ def health():
             "server": SERVER_NAME,
             "version": SERVER_VERSION,
             "protocol_versions": SUPPORTED_PROTOCOL_VERSIONS,
+            "last_request": _last_request,
+            "tool_count": len(tools),
             "tools": tools,
+            "hint": "Header must be: Authorization: Bearer <github_token>",
         }
     )
 
 
 def main():
     logger.info("Starting %s v%s on port 3001", SERVER_NAME, SERVER_VERSION)
+    logger.info("Expected header: Authorization: Bearer <github_token>")
     app.run(host="0.0.0.0", port=3001, debug=False)
 
 
