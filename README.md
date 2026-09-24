@@ -16,7 +16,7 @@
 
 | Группа | Инструменты |
 |--------|-------------|
-| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_binary_file`, `create_or_update_file_with_sha`, `delete_file`, `list_directory`, `get_file_blame` |
+| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_binary_file`, `create_or_update_file_with_sha`, `delete_file`, `read_file_chunk`, `grep_file`, `list_directory`, `get_file_blame` |
 | Коммиты | `list_commits`, `get_commit_status`, `get_commit_diff` |
 | Ветки / сравнение | `list_branches`, `get_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
 | PR / Issues | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`, `add_labels` |
@@ -26,6 +26,8 @@
 | Security | `list_dependabot_alerts`, `list_code_scanning_alerts`, `list_secret_scanning_alerts` |
 | Repo info | `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors` |
 | Batch | `push_multiple_files` |
+
+> **Большие файлы.** `get_file_contents` отдаёт файл целиком — для больших файлов клиент может обрезать ответ (`[truncated]`). Используйте `read_file_chunk(owner, repo, path, ref, offset, limit)`: он возвращает жёстко ограниченный кусок строк (≤ 32 KB) с заголовком `[строки N-M из K]` и подсказкой следующего `offset`. Для поиска по файлу без чтения всего тела — `grep_file(owner, repo, path, pattern, ref, regex, case_sensitive, max_matches)`.
 
 ### 🏗️ `build/` — сборка и отладка
 
@@ -199,85 +201,3 @@ python -m mcp_server.server
 2. Импортирует каждый подпакет.
 3. Ищет функции с атрибутом `_mcp_tool` — его ставит декоратор `@mcp_tool` из `core/registry.py`.
 4. Регистрирует найденные `Tool` в реестре.
-
----
-
-## Правила написания инструментов
-
-1. **Функция синхронная.** Первый аргумент — `client` (может быть `None` для инструментов без GitHub-токена).
-2. **Декоратор — только `@mcp_tool` из `mcp_server.core.registry`.** Он принимает:
-   - `name` — имя инструмента (как вызывается по MCP);
-   - `description` — описание для AI-ассистента;
-   - `parameters` — словарь параметров в формате JSON Schema;
-   - `required` — список обязательных параметров.
-3. **Возвращать `str` или `dict`.** `server.py` нормализует результат в строгий MCP-`content` (непустой список блоков, у каждого строковый `type`). Возвращать `dict` с `content` — можно, но не обязательно.
-4. **Для GitHub API** используйте `client._request(method, path, ...)`.
-5. **Опасные категории** (shell, local fs, local git) держите отдельными подпакетами и гейтите их env-флагом, как это сделано в `localfs`/`localgit`.
-
-> ⚠️ **Единственный канонический декоратор** — `mcp_server.core.registry.mcp_tool`.
-> Старый `mcp_server/decorators.py` удалён: он регистрировал инструменты в отдельном `ToolRegistry` и не был виден глобальному реестру.
-
----
-
-## Шаблон для копирования
-
-```python
-"""MCP tool: имя_инструмента - краткое описание."""
-
-from mcp_server.core.registry import mcp_tool
-from mcp_server.tools.github.client import GitHubClient
-
-
-@mcp_tool(
-    name="имя_инструмента",
-    description="Что делает инструмент",
-    parameters={
-        "owner": {"type": "string", "description": "Владелец репозитория"},
-        "repo": {"type": "string", "description": "Имя репозитория"},
-    },
-    required=["owner", "repo"],
-)
-def имя_инструмента(client: GitHubClient, owner: str, repo: str) -> str:
-    resp = client._request("GET", f"/repos/{owner}/{repo}")
-    return resp.text
-```
-
----
-
-## Требования к GitHub токену
-
-- `repo` (или `Contents: Read and write`) — файлы, PR, issues.
-- `Actions: Read` — просмотр workflow.
-- `Metadata: Read` — базовая информация (обычно по умолчанию).
-
----
-
-## Тестирование через curl
-
-```bash
-# Список инструментов
-curl -X POST http://127.0.0.1:3001/mcp \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <токен>" \
-  -d '{"jsonrpc":"2.0","id":"1","method":"tools/list","params":{}}'
-
-# Чтение файла
-curl -X POST http://127.0.0.1:3001/mcp \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <токен>" \
-  -d '{"jsonrpc":"2.0","id":"2","method":"tools/call","params":{"name":"get_file_contents","arguments":{"owner":"LeonidYasin","repo":"mcp-server","path":"README.md"}}}'
-
-# Health-check
-curl http://127.0.0.1:3001/health
-```
-
----
-
-## Версионирование
-
-- **v0.1.0** — stdio-транспорт, базовая модульная архитектура.
-- **v0.2.0** — Flask HTTP-транспорт, авто-обнаружение, инструкция для разработчиков.
-- **v0.3.0** — расширение инструментов GitHub, workflow, сборка.
-- **v0.4.0** — батчи 1–3: PR/Issues/Releases/Tags, meta, web, утилиты, data, branches, gists, Actions, security.
-- **v0.4.1** — sandboxed local filesystem (`localfs`, батч 4).
-- **v0.4.2** — sandboxed local git (`localgit`, батч 5) + нормализация MCP `content` в `server.py`.
