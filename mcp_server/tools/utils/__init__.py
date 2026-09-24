@@ -12,6 +12,13 @@ from mcp_server.tools.utils.utils_tools import (
     regex_test,
     text_diff,
 )
+from mcp_server.tools.utils.data_tools import (
+    csv_parse,
+    csv_generate,
+    yaml_to_json,
+    json_to_yaml,
+    markdown_to_html,
+)
 
 __all__ = [
     "base64_encode",
@@ -24,4 +31,10 @@ __all__ = [
     "date_convert",
     "regex_test",
     "text_diff",
+    # batch 3
+    "csv_parse",
+    "csv_generate",
+    "yaml_to_json",
+    "json_to_yaml",
+    "markdown_to_html",
 ]
