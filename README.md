@@ -16,7 +16,7 @@
 
 | Группа | Инструменты |
 |--------|-------------|
-| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_binary_file`, `create_or_update_file_with_sha`, `delete_file`, `read_file_chunk`, `grep_file`, `list_directory`, `get_file_blame` |
+| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_binary_file`, `create_or_update_file_with_sha`, `delete_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`, `get_file_blame` |
 | Коммиты | `list_commits`, `get_commit_status`, `get_commit_diff` |
 | Ветки / сравнение | `list_branches`, `get_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
 | PR / Issues | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`, `add_labels` |
@@ -28,6 +28,8 @@
 | Batch | `push_multiple_files` |
 
 > **Большие файлы.** `get_file_contents` отдаёт файл целиком — для больших файлов клиент может обрезать ответ (`[truncated]`). Используйте `read_file_chunk(owner, repo, path, ref, offset, limit)`: он возвращает жёстко ограниченный кусок строк (≤ 32 KB) с заголовком `[строки N-M из K]` и подсказкой следующего `offset`. Для поиска по файлу без чтения всего тела — `grep_file(owner, repo, path, pattern, ref, regex, case_sensitive, max_matches)`.
+>
+> Если нужно получить файл **целиком** и не угадывать чанки — используйте `read_full_file(owner, repo, path, ref, max_bytes, include_line_numbers)`. Он сам подбирает безопасный размер куска (по средней длине строки, бюджет ~24 KB на срез), склеивает все части и в конце ставит `(конец файла)` либо предупреждение о достижении защитного бюджета `max_bytes`.
 
 ### 🏗️ `build/` — сборка и отладка
 
