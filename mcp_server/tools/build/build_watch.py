@@ -16,14 +16,14 @@ def _get_build_status(client: GitHubClient, owner: str, repo: str, run_id: int) 
     """Get build status and jobs."""
     run = client.get_workflow_run(owner, repo, run_id)
     jobs = client.get_workflow_jobs(owner, repo, run_id)
-    
+
     status = run.get('status', 'unknown')
     conclusion = run.get('conclusion', 'unknown')
-    
+
     failed_jobs = [j for j in jobs if j.get('conclusion') == 'failure']
     success_jobs = [j for j in jobs if j.get('conclusion') == 'success']
     running_jobs = [j for j in jobs if j.get('status') == 'in_progress']
-    
+
     return {
         'status': status,
         'conclusion': conclusion,
@@ -68,7 +68,7 @@ def _detect_ios_error(logs: str) -> dict:
             'type': 'missing_pod',
             'message': 'Missing CocoaPods dependency',
             'file': 'ios/Podfile',
-            'content': 'platform :ios, \'13.0\'\n\ntarget \'synapse\' do\n  use_frameworks!\n  # Add your pods here\nend\n'
+            'content': "platform :ios, '13.0'\n\ntarget 'synapse' do\n  use_frameworks!\n  # Add your pods here\nend\n"
         }
     if 'Info.plist' in logs and 'not found' in logs:
         return {
@@ -103,30 +103,38 @@ def watch_build(client: GitHubClient, owner: str, repo: str, run_id: int, interv
     """Watch build progress and return result."""
     elapsed = 0
     last_status = None
-    
+
     result_lines = [
         f"🔍 Watching build #{run_id}",
         f"📦 Repository: {owner}/{repo}",
         f"⏱️ Check interval: {interval}s, Timeout: {timeout}s",
         ""
     ]
-    
+
     while elapsed < timeout:
         try:
             info = _get_build_status(client, owner, repo, run_id)
             status = info['status']
             conclusion = info['conclusion']
-            
+
             if status != last_status:
-                result_lines.append(f"⏳ Status: {status} (elapsed: {elapsed}s)")
-                if info['running']:
-                    result_lines.append(f"   🏃 Running jobs: {len(info['running'])}")
-                if info['success']:
-                    result_lines.append(f"   ✅ Success: {len(info['success'])}")
-                if info['failed']:
-                    result_lines.append(f"   ❌ Failed: {len(info['failed'])}")
+                running = len(info['running'])
+                success = len(info['success'])
+                failed = len(info['failed'])
+                pending = max(0, info['total_jobs'] - running - success - failed)
+                parts = []
+                if failed:
+                    parts.append(f"❌ {failed} failed")
+                if running:
+                    parts.append(f"🏃 {running} running")
+                if success:
+                    parts.append(f"✅ {success} passed")
+                if pending:
+                    parts.append(f"⏳ {pending} pending")
+                summary = ", ".join(parts) if parts else "нет job'ов"
+                result_lines.append(f"⏳ Status: {status} (elapsed: {elapsed}s) — {summary}")
                 last_status = status
-            
+
             if status == 'completed':
                 result_lines.append("")
                 if conclusion == 'success':
@@ -137,36 +145,32 @@ def watch_build(client: GitHubClient, owner: str, repo: str, run_id: int, interv
                     result_lines.append(f"❌ Failed jobs: {len(info['failed'])}")
                     for job in info['failed']:
                         result_lines.append(f"   📦 {job.get('name')} - {job.get('conclusion')}")
-                
+
                 result_lines.append("")
                 result_lines.append(f"📊 Total jobs: {info['total_jobs']}")
                 result_lines.append(f"🔄 Run URL: https://github.com/{owner}/{repo}/actions/runs/{run_id}")
                 return _safe_utf8('\n'.join(result_lines))
-            
+
             time.sleep(interval)
             elapsed += interval
-            
+
         except Exception as e:
             return _safe_utf8(f"❌ Error watching build: {e}")
-    
+
     return _safe_utf8(f"⏰ Timeout ({timeout}s) reached. Build still in progress. Check manually: https://github.com/{owner}/{repo}/actions/runs/{run_id}")
 
 
 def _create_or_update_file_with_sha(client: GitHubClient, owner: str, repo: str, path: str, content: str, message: str, branch: str = "main") -> dict:
     """Create or update a file, automatically getting SHA if needed."""
-    # Try to get existing file SHA
     try:
         existing = client.get_file(owner, repo, path, branch)
         sha = existing.get('sha')
         if sha:
-            # File exists, update it
             result = client.create_or_update_file(owner, repo, path, content, message, branch, sha)
             return {'action': 'updated', 'sha': sha, 'result': result}
     except Exception:
-        # File doesn't exist, create it
         pass
-    
-    # Create new file
+
     result = client.create_or_update_file(owner, repo, path, content, message, branch)
     return {'action': 'created', 'sha': None, 'result': result}
 
@@ -185,29 +189,26 @@ def _create_or_update_file_with_sha(client: GitHubClient, owner: str, repo: str,
 def auto_fix_build(client: GitHubClient, owner: str, repo: str, run_id: int, platform: str) -> str:
     """Auto-fix build errors."""
     try:
-        # Get logs
         jobs = client.get_workflow_jobs(owner, repo, run_id)
-        
-        # Find failed job for platform
+
         platform_job_name = f"build-{platform}"
         target_job = None
         for job in jobs:
             if platform_job_name in job.get('name', '').lower():
                 target_job = job
                 break
-        
+
         if not target_job:
             return _safe_utf8(f"❌ No {platform} job found in run #{run_id}")
-        
+
         job_id = target_job.get('id')
         logs = client.get_job_logs(owner, repo, job_id)
-        
-        # Detect error type
+
         if platform == 'android':
             detection = _detect_android_error(logs)
         else:
             detection = _detect_ios_error(logs)
-        
+
         result_lines = [
             f"🔧 AUTO-FIX BUILD ({platform.upper()})",
             f"📦 Repository: {owner}/{repo}",
@@ -216,7 +217,7 @@ def auto_fix_build(client: GitHubClient, owner: str, repo: str, run_id: int, pla
             f"📝 Message: {detection['message']}",
             ""
         ]
-        
+
         if detection['type'] == 'unknown':
             result_lines.append("❌ Unknown error. Manual intervention required.")
             result_lines.append("")
@@ -224,14 +225,12 @@ def auto_fix_build(client: GitHubClient, owner: str, repo: str, run_id: int, pla
             for line in logs.split('\n')[-20:]:
                 result_lines.append(f"  {_safe_utf8(line)}")
             return _safe_utf8('\n'.join(result_lines))
-        
-        # Fix by creating/updating file
+
         file_path = detection['file']
         file_content = detection['content']
-        
+
         result_lines.append(f"📄 Processing file: {file_path}")
-        
-        # Check if file exists and get SHA
+
         existing_sha = None
         try:
             existing = client.get_file(owner, repo, file_path)
@@ -240,12 +239,10 @@ def auto_fix_build(client: GitHubClient, owner: str, repo: str, run_id: int, pla
                 result_lines.append(f"📂 File exists, SHA: {existing_sha[:7] if existing_sha else 'N/A'}...")
         except Exception:
             result_lines.append("📂 File does not exist, creating new...")
-        
-        # Create or update file with SHA using the file_ops tool
+
         try:
             from mcp_server.tools.github.file_ops import create_or_update_file as create_file_tool
-            
-            # Call with all required parameters
+
             result = create_file_tool(
                 client=client,
                 owner=owner,
@@ -267,8 +264,8 @@ def auto_fix_build(client: GitHubClient, owner: str, repo: str, run_id: int, pla
             result_lines.append("2. Or use watch_build to monitor the new run")
         except Exception as e:
             result_lines.append(f"❌ Failed to process file: {e}")
-        
+
         return _safe_utf8('\n'.join(result_lines))
-        
+
     except Exception as e:
         return _safe_utf8(f"❌ Error in auto-fix: {e}")
