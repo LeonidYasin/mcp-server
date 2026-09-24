@@ -14,32 +14,52 @@ def _branch_hint(owner: str, repo: str, ref: str, err: Exception) -> str:
     )
 
 
+def _resolve_sha(client: GitHubClient, owner: str, repo: str, ref: str):
+    """Короткий SHA/ветка → полный SHA. Возвращает (sha, error)."""
+    ref = (ref or "").strip()
+    if not ref:
+        return None, "❌ Пустой sha/ref."
+    # Уже полный SHA?
+    if len(ref) == 40 and all(c in "0123456789abcdef" for c in ref.lower()):
+        return ref, None
+    try:
+        resp = client._request("GET", f"/repos/{owner}/{repo}/commits/{ref}")
+        return resp.json().get("sha"), None
+    except Exception as exc:
+        return None, _branch_hint(owner, repo, ref, exc)
+
+
 @mcp_tool(
     name="get_commit_diff",
-    description="Unified diff конкретного коммита",
+    description="Unified diff конкретного коммита (короткий SHA нормализуется в полный)",
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
-        "sha": {"type": "string", "description": "SHA коммита"},
+        "sha": {"type": "string", "description": "SHA коммита (можно короткий) или ветка"},
         "max_files": {"type": "integer", "description": "Сколько файлов показать (по умолчанию 20)"},
     },
     required=["owner", "repo", "sha"],
 )
 def get_commit_diff(client: GitHubClient, **kwargs) -> str:
+    owner, repo, ref = kwargs["owner"], kwargs["repo"], kwargs["sha"]
+    full_sha, err = _resolve_sha(client, owner, repo, ref)
+    if err:
+        return err
     try:
         resp = client._request(
             "GET",
-            f"{GitHubClient.BASE_URL}/repos/{kwargs['owner']}/{kwargs['repo']}/commits/{kwargs['sha']}",
+            f"{GitHubClient.BASE_URL}/repos/{owner}/{repo}/commits/{full_sha}",
             headers={"Accept": "application/vnd.github.v3.diff"},
         )
     except Exception as exc:
-        return _branch_hint(kwargs["owner"], kwargs["repo"], kwargs["sha"], exc)
+        return _branch_hint(owner, repo, ref, exc)
     diff = resp.text
     limit = int(kwargs.get("max_files", 20))
     parts = diff.split("diff --git ")
+    header = f"# {ref[:12]} → {full_sha[:12]}\n" if full_sha[:12] != ref[:12] else ""
     if len(parts) > limit + 1:
         diff = "diff --git ".join(parts[: limit + 1]) + f"\n\n[...ещё {len(parts) - limit - 1} файлов]"
-    return diff
+    return header + diff
 
 
 @mcp_tool(
@@ -179,11 +199,13 @@ def get_file_blame(client: GitHubClient, **kwargs) -> str:
         return f"❌ Не удалось получить историю {kwargs['path']}: {exc}"
     commits = resp.json()
     if not isinstance(commits, list) or not commits:
-        return "Коммитов по файлу не найдено"
+        return f"История пуста: {kwargs['path']}"
     lines = [f"История {kwargs['path']} ({len(commits)} коммитов):"]
     for c in commits:
-        author = (c.get("commit", {}).get("author") or {}).get("name", "?")
-        date = (c.get("commit", {}).get("author") or {}).get("date", "?")
-        msg = (c.get("commit", {}).get("message") or "").splitlines()[0]
-        lines.append(f"  {c['sha'][:8]} {date} {author}: {msg}")
+        sha_short = c.get("sha", "")[:7]
+        commit = c.get("commit", {})
+        author = (commit.get("author") or {}).get("name", "?")
+        date = (commit.get("author") or {}).get("date", "")[:10]
+        msg = (commit.get("message") or "").splitlines()[0][:70]
+        lines.append(f"  {sha_short} {date} {author}: {msg}")
     return "\n".join(lines)

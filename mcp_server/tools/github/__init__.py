@@ -98,6 +98,17 @@ from mcp_server.tools.github.commits_extra import (
 # --- batch 8 additions ---
 from mcp_server.tools.github.search import search_code
 
+# --- batch 10 additions ---
+from mcp_server.tools.github.pull_requests import (
+    resolve_review_thread,
+    unresolve_review_thread,
+)
+from mcp_server.tools.github.search import (
+    search_commits,
+    search_issues,
+    search_repositories,
+)
+
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
 
@@ -178,6 +189,12 @@ __all__ = [
     "get_repo_tree",
     # batch 8
     "search_code",
+    # batch 10
+    "resolve_review_thread",
+    "unresolve_review_thread",
+    "search_commits",
+    "search_issues",
+    "search_repositories",
     # repo admin
     "update_repo_info",
 ]

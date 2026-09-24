@@ -37,27 +37,29 @@ def create_pull_request(client: GitHubClient, **kwargs) -> str:
 
 @mcp_tool(
     name="list_pull_requests",
-    description="Список pull requests репозитория",
+    description="Список pull requests репозитория (с пагинацией)",
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
         "state": {"type": "string", "description": "open|closed|all (по умолчанию open)"},
-        "limit": {"type": "integer", "description": "Сколько вернуть (по умолчанию 20)"},
+        "limit": {"type": "integer", "description": "Сколько вернуть на странице (по умолчанию 20, максимум 100)"},
+        "page": {"type": "integer", "description": "Номер страницы (по умолчанию 1)"},
     },
     required=["owner", "repo"],
 )
 def list_pull_requests(client: GitHubClient, **kwargs) -> str:
     state = kwargs.get("state", "open")
-    limit = int(kwargs.get("limit", 20))
+    limit = max(1, min(int(kwargs.get("limit", 20)), 100))
+    page = max(1, int(kwargs.get("page", 1)))
     resp = client._request(
         "GET",
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls",
-        params={"state": state, "per_page": min(limit, 100)},
+        params={"state": state, "per_page": limit, "page": page},
     )
     items = resp.json()
     if not items:
-        return f"PR ({state}): нет"
-    lines = [f"PR ({state}), всего {len(items)}:"]
+        return f"PR ({state}, стр. {page}): нет"
+    lines = [f"PR ({state}), стр. {page}, всего {len(items)}:"]
     for pr in items:
         lines.append(
             f"  #{pr['number']} [{pr['state']}] {pr['title']} — {pr['html_url']}"
@@ -213,7 +215,7 @@ def add_pr_comment(client: GitHubClient, **kwargs) -> str:
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/issues/{kwargs['number']}/comments",
         json={"body": kwargs["body"]},
     )
-    return f"✅ Комментарий добавлен: {resp.json().get('html_url', '')}"
+    return f"✅ Комментарий: {resp.json().get('html_url', '')}"
 
 
 @mcp_tool(
@@ -228,12 +230,64 @@ def add_pr_comment(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number", "reviewers"],
 )
 def request_pr_review(client: GitHubClient, **kwargs) -> str:
-    reviewers = kwargs["reviewers"]
-    if isinstance(reviewers, str):
-        reviewers = [r.strip() for r in reviewers.split(",") if r.strip()]
     client._request(
         "POST",
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls/{kwargs['number']}/requested_reviewers",
-        json={"reviewers": reviewers},
+        json={"reviewers": kwargs["reviewers"]},
     )
-    return f"✅ Запрошено ревью у: {', '.join(reviewers)}"
+    return f"✅ Ревьюеры запрошены: {', '.join(kwargs['reviewers'])}"
+
+
+def _toggle_review_thread(client: GitHubClient, thread_id: str, resolve: bool) -> str:
+    """Resolve/unresolve review thread via GraphQL (REST API has no such endpoint)."""
+    tid = (thread_id or "").strip()
+    if not tid:
+        return "❌ Пустой thread_id. Нужен node ID вида 'PRRT_kwDO...'."
+    mutation = "resolveReviewThread" if resolve else "unresolveReviewThread"
+    query = (
+        f'mutation {{ {mutation}(input: {{threadId: "{tid}"}}) '
+        f'{{ thread {{ id isResolved }} }} }}'
+    )
+    try:
+        resp = client._request(
+            "POST",
+            f"{GitHubClient.BASE_URL}/graphql",
+            json={"query": query},
+        )
+    except Exception as exc:
+        return f"❌ Не удалось {'закрыть' if resolve else 'открыть'} thread {tid}: {exc}"
+    data = resp.json()
+    if data.get("errors"):
+        msgs = "; ".join(e.get("message", "") for e in data["errors"])
+        return f"❌ GraphQL error: {msgs}"
+    thread = ((data.get("data") or {}).get(mutation) or {}).get("thread") or {}
+    state = "закрыт ✅" if thread.get("isResolved") else "открыт ↩️"
+    return f"Thread {tid}: {state}"
+
+
+@mcp_tool(
+    name="resolve_review_thread",
+    description=(
+        "Закрывает (resolve) review-thread по его node_id. "
+        "GitHub не даёт это через REST — используется GraphQL resolveReviewThread. "
+        "thread_id — node ID вида 'PRRT_kwDO...'."
+    ),
+    parameters={
+        "thread_id": {"type": "string", "description": "Node ID review-thread (PRRT_...)"},
+    },
+    required=["thread_id"],
+)
+def resolve_review_thread(client: GitHubClient, **kwargs) -> str:
+    return _toggle_review_thread(client, kwargs["thread_id"], resolve=True)
+
+
+@mcp_tool(
+    name="unresolve_review_thread",
+    description="Снова открывает (unresolve) review-thread по его node_id (GraphQL unresolveReviewThread).",
+    parameters={
+        "thread_id": {"type": "string", "description": "Node ID review-thread (PRRT_...)"},
+    },
+    required=["thread_id"],
+)
+def unresolve_review_thread(client: GitHubClient, **kwargs) -> str:
+    return _toggle_review_thread(client, kwargs["thread_id"], resolve=False)
