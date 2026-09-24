@@ -25,9 +25,22 @@ MAX_AUTO_CHUNK_LINES = MAX_CHUNK_LINES
 MAX_FULL_FILE_BYTES = 512_000      # 512 KB
 
 
+def _file_links(owner: str, repo: str, path: str, ref: str | None) -> str:
+    """Build web + raw URLs for a file so the user can open it in a browser.
+
+    GitHub API returns `html_url` in the file payload; for raw we use the
+    well-known raw.githubusercontent.com template. `ref` falls back to the
+    default branch placeholder 'HEAD' when not given.
+    """
+    branch = ref or "HEAD"
+    html_url = f"https://github.com/{owner}/{repo}/blob/{branch}/{path}"
+    raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
+    return f"🔗 {html_url}\n📄 {raw_url}"
+
+
 @mcp_tool(
     name="get_file_contents",
-    description="Получает содержимое файла из репозитория",
+    description="Получает содержимое файла из репозитория (со ссылками web/raw)",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
@@ -42,7 +55,7 @@ def get_file_contents(client: GitHubClient, owner: str, repo: str, path: str, re
         data = client.get_file(owner, repo, path, ref)
         if "content" in data:
             decoded = base64.b64decode(data["content"]).decode("utf-8", errors="replace")
-            return decoded
+            return _file_links(owner, repo, path, ref) + "\n\n" + decoded
         elif isinstance(data, list):
             # Directory listing
             items = [f"{'📁' if item['type'] == 'dir' else '📄'} {item['name']}" for item in data]
@@ -227,10 +240,12 @@ def read_full_file(
     except Exception:
         return f"❌ Не текстовый файл (или не UTF-8): {path}"
 
+    links = _file_links(owner, repo, path, ref)
+
     lines = text.splitlines()
     total = len(lines)
     if total == 0:
-        return f"[полный файл] {path} — пустой (0 строк)\n(конец файла)"
+        return f"{links}\n[полный файл] {path} — пустой (0 строк)\n(конец файла)"
 
     budget = max(int(max_bytes or MAX_FULL_FILE_BYTES), MIN_AUTO_CHUNK_LINES)
     total_bytes = len(text.encode("utf-8"))
@@ -290,6 +305,7 @@ def read_full_file(
     full = read_lines >= total
 
     header = (
+        f"{links}\n"
         f"[полный файл] {path} — строк: {total}, "
         f"чанк: {auto_lines} строк (~{SAFE_CHUNK_BYTES} B), "
         f"прочитано: {read_lines}/{total}, байт: {collected_bytes}"
