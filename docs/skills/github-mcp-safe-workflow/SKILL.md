@@ -1,6 +1,7 @@
 ---
 name: github-mcp-safe-workflow
 description: Use this Skill for every GitHub-related task: creating or updating files, opening or merging pull requests, comparing branches, running or debugging GitHub Actions, reviewing diffs, diagnosing failed builds. Activate it whenever the request touches a GitHub repository — either the user's own mcp-server (LeonidYasin/mcp-server) or any external repo. It enforces the correct use of the ~109 MCP tools, prevents silently-lost tool calls, requires verification against real repository state instead of trusting the fact of a call, stops the agent from repeating known past mistakes (branch hygiene, SHA handling, architectural drift), and reads long-term memory on every activation so new lessons are applied automatically without editing this file.
+memoryEnabled: true
 ---
 
 # GitHub MCP Safe Workflow
@@ -27,17 +28,17 @@ After any write operation (`create_or_update_file`, `push_multiple_files`, `move
 
 If verification fails, treat the operation as failed and retry with the full-prefixed tag. Do NOT conclude "it worked" from the tool call being present in the transcript.
 
-## Rule 3 — SHA is required to update an existing file
+## Rule 3 — Read before write; prefer `_with_sha` for updates
 
-`create_or_update_file` on an existing file FAILS with `File already exists ... must provide the current file's SHA` if the `sha` argument is omitted.
+Before updating any existing file, obtain the current content and SHA — not just to satisfy the API but to **see what is actually there** before overwriting it. This prevents clobbering concurrent edits, silently reverting recently added code, or replacing a file that has changed since your last read.
 
-Correct pattern for updates:
-1. `get_file_contents(owner, repo, path)` or `get_file_sha(owner, repo, path)` → read `sha`.
-2. `create_or_update_file(owner, repo, path, content, message, branch, sha)` → pass the SHA.
+Two valid paths:
+1. **`get_file_contents` → `create_or_update_file_with_sha`** (preferred): read the file, verify what you are about to replace, then call the updater. `_with_sha` re-fetches the SHA internally, so you do not need a separate `get_file_sha`.
+2. **`get_file_sha` + `create_or_update_file`** (fallback): if you already fetched the SHA via the dedicated tool, pass it explicitly.
 
-For NEW files (file does not exist yet), `sha` must be omitted. Do not send an empty string — send nothing.
+For NEW files, `sha` must be omitted — send nothing, not an empty string.
 
-Convenience: `create_or_update_file_with_sha` wraps both steps and can be used when you do not already have the SHA.
+Never update a file you have not read in this session.
 
 ## Rule 4 — Branch hygiene: never reuse a merged branch
 
@@ -115,12 +116,42 @@ Do not approve or merge on your own initiative. Report findings and let the user
 ## Rule 10 — Search before reading the whole file
 
 For large files, use in order:
-1. `search_code(query)` — GitHub-wide code search with qualifiers (`repo:owner/name language:python path:...`).
-2. `grep_file(path, pattern)` — regex search inside one file, returns only matching lines with numbers.
-3. `read_file_chunk(path, offset, limit)` — paginated read, safe against truncation.
-4. `read_full_file(path)` — only if the file is small (< ~24 KB). Otherwise prefer chunked reads.
+1. `search_code(query)` — GitHub-wide code search with qualifiers.
+2. `grep_file(path, pattern)` — regex search inside one file.
+3. `read_file_chunk(path, offset, limit)` — paginated read.
+4. `read_full_file(path)` — only if the file is small (< ~24 KB).
 
 NEVER call `get_file_contents` on a large file expecting the full content — the client will truncate it. Use chunked reads or a raw permalink.
+
+## Rule 11 — One MCP call per assistant message
+
+When a task requires several dependent calls (branch → file → PR → verify), issue them **one per assistant message**. Do NOT batch multiple `mcp_t_...` calls in a single reply.
+
+Why: the DeepSeek++ extension processes MCP calls sequentially and may silently drop results when several are emitted together. From the user's perspective the agent then looks like it is looping, because it never receives the data it needs. Correct pattern:
+
+1. Send exactly one `<mcp_t_..._get_branch>` call. Wait for the result.
+2. Read the result.
+3. Send exactly one `<mcp_t_..._create_branch>` call. Wait for the result.
+4. Continue one call at a time.
+
+If you genuinely need two independent pieces of information, still fetch them one per message, in two turns.
+
+## Rule 12 — Do not open a duplicate PR; update the existing one
+
+When the user asks to fix, amend, or update a PR, or when new rules/edits belong to the same topic as an already-open PR:
+
+1. `list_pull_requests(state='open')` — find any open PR on the same topic (match by title, by `head` branch, or by the files it touches).
+2. If such a PR exists:
+   - `get_pull_request(number)` — get its `head` branch.
+   - `get_file_contents(path, ref=<head>)` — read the current content on that branch (Rule 3).
+   - `create_or_update_file_with_sha(path, content, branch=<head>)` — push the amendment **into the PR's own branch**. The PR updates automatically.
+   - **Do NOT** create a new `feat/*` branch from `main` and open a new PR.
+3. Create a new PR ONLY if:
+   - the previous PR is already merged (Rule 4), or
+   - the previous PR was closed without merging, or
+   - the topic is genuinely different.
+
+Why: duplicate PRs on the same topic create competing branches, split review attention, and pollute history. Real incident: PR #43 was opened as a duplicate of the still-open PR #42, forcing a clean-up. Do not repeat this.
 
 ## Output conventions
 
@@ -131,10 +162,10 @@ NEVER call `get_file_contents` on a large file expecting the full content — th
 
 ## How this Skill stays current
 
-This Skill's static rules cover stable patterns (full tags, SHA handling, branch hygiene, verification). Dynamic lessons from real sessions are stored in **long-term memory**, not in this file. When you learn something new that should affect future GitHub work:
+This Skill's static rules cover stable patterns. Dynamic lessons from real sessions are stored in **long-term memory**, not in this file. When you learn something new that should affect future GitHub work:
 
 1. Save it via `memory_save` with tags `github` and the relevant topic (`pr`, `branch`, `ci`, `mcp-server`, etc.).
-2. If the new lesson invalidates an existing rule in this Skill, tell the user: "This contradicts Rule N — should I update the Skill draft?" Do not silently ignore the Skill rule.
+2. If the new lesson invalidates an existing rule, tell the user: "This contradicts Rule N — should I update the Skill draft?" Do not silently ignore the Skill rule.
 3. Never write directly into `SKILL.md` — the file is managed by the user via the DeepSeek++ Skill UI.
 4. At the start of any GitHub task, treat memory as the newest source of truth. If a memory note and a Skill rule disagree, memory wins and you flag the conflict.
 
@@ -142,8 +173,9 @@ This Skill's static rules cover stable patterns (full tags, SHA handling, branch
 
 - [ ] Every tool call used the FULL prefixed tag name.
 - [ ] Every write was verified by reading the repository back.
-- [ ] Every file update used the correct SHA (or omitted it for new files).
+- [ ] Every file update read the current content first, then used `create_or_update_file_with_sha`.
 - [ ] Every branch operation respected the merge-then-new-branch rule.
 - [ ] No conclusion was drawn from a single failed request without a tree-level check.
-- [ ] If architecture or quality proposals were made, they were framed as proposals, not silent edits.
-- [ ] If a new lesson emerged during the session, it was saved to memory via `memory_save`.
+- [ ] No more than one MCP call was batched per assistant message (Rule 11).
+- [ ] Before opening any new PR, `list_pull_requests(state='open')` was checked and no open PR on the same topic existed (Rule 12).
+- [ ] If a new lesson emerged, it was saved via `memory_save`.
