@@ -113,6 +113,20 @@ from mcp_server.tools.github.search import (
 # --- batch 11 additions ---
 from mcp_server.tools.github.pull_requests import get_review_threads
 
+# --- batch 14 additions (grep_workflow_logs, move_file) ---
+from mcp_server.tools.github.workflow_logs_grep import grep_workflow_logs
+from mcp_server.tools.github.batch import move_file
+
+# --- batch 15/16 additions (status, logs offset/grep, rerun_failed_jobs) ---
+from mcp_server.tools.github.workflow_runs import get_workflow_run_status
+from mcp_server.tools.github.workflow_runs import read_run_logs_offset
+from mcp_server.tools.github.workflow_runs import grep_run_logs
+from mcp_server.tools.github.actions import rerun_failed_jobs
+
+# --- batch 15 additions (build_logs: auto-detect job) ---
+from mcp_server.tools.github.build_logs import get_android_build_error
+from mcp_server.tools.github.build_logs import get_ios_build_error
+
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
 
@@ -202,6 +216,16 @@ __all__ = [
     "search_repositories",
     # batch 11
     "get_review_threads",
+    # batch 14
+    "grep_workflow_logs",
+    "move_file",
+    # batch 15/16
+    "get_workflow_run_status",
+    "read_run_logs_offset",
+    "grep_run_logs",
+    "rerun_failed_jobs",
+    "get_android_build_error",
+    "get_ios_build_error",
     # repo admin
     "update_repo_info",
 ]
