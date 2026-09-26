@@ -127,6 +127,9 @@ from mcp_server.tools.github.actions import rerun_failed_jobs
 from mcp_server.tools.github.build_logs import get_android_build_error
 from mcp_server.tools.github.build_logs import get_ios_build_error
 
+# --- batch 17 additions (surgical file edit) ---
+from mcp_server.tools.github.file_edit_ops import replace_in_file
+
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
 
@@ -226,6 +229,8 @@ __all__ = [
     "rerun_failed_jobs",
     "get_android_build_error",
     "get_ios_build_error",
+    # batch 17
+    "replace_in_file",
     # repo admin
     "update_repo_info",
 ]
