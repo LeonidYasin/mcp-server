@@ -16,6 +16,13 @@ dev = ["pytest>=8.0"]
 [project.scripts]
 mcp-server = "mcp_server.server:main"
 
+[tool.setuptools.packages.find]
+# Пакет называется mcp_server, а проект — mcp-github-server.
+# Автодетект setuptools по имени проекта не находит пакет, поэтому
+# указываем явно — иначе editable wheel собирается пустым.
+include = ["mcp_server*"]
+namespaces = false
+
 [tool.setuptools.dynamic]
 version = {attr = "mcp_server.__version__"}
 
