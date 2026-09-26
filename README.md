@@ -132,8 +132,8 @@ mcp-server/
 ├── SANDBOX.md
 ├── TOOLS.md                 # полный каталог инструментов
 ├── docs/
-│   ├── synapse-protocol.md
-│   └── skills/
+│   ├── synapse-protocol.md   # JSON-схема item/profile/contact/exchange
+│   └── skills/               # Skills для ИИ-агентов (см. ниже)
 └── mcp_server/
     ├── server.py            # Flask HTTP-сервер (MCP transport, token handling)
     ├── core/
