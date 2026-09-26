@@ -282,7 +282,7 @@ def health():
 
 
 def main():
-    logger.info("Starting %s v%s on port 3001", SERVER_NAME, SERVER_VERSION)
+    logger.info("Starting %s on port 3001", _build_banner())
     logger.info("Expected header: Authorization: Bearer <github_token>")
     app.run(host="0.0.0.0", port=3001, debug=False)
 
