@@ -24,6 +24,10 @@ jobs:
         run: python -c "import mcp_server, mcp_server.server; print('import ok')"
       - name: Show version
         run: python -c "import mcp_server; print(mcp_server.__version__)"
+      - name: Run tests
+        run: |
+          pip install -e ".[dev]"
+          pytest -q
       - name: Build wheel
         run: |
           pip install build
