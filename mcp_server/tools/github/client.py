@@ -157,6 +157,26 @@ class GitHubClient:
         resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/jobs", params=params)
         return self._safe_json(resp.json()).get("jobs", [])
 
+    def get_workflows(self, owner: str, repo: str, per_page: int = 100) -> List[dict]:
+        """List workflows in a repository.
+
+        GET /repos/{owner}/{repo}/actions/workflows → поле 'workflows'.
+        Используется инструментом get_workflow_by_file.
+        """
+        params = {"per_page": per_page}
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/workflows", params=params)
+        return self._safe_json(resp.json()).get("workflows", [])
+
+    def get_workflow_runs_by_id(self, owner: str, repo: str, workflow_id: int, per_page: int = 10) -> List[dict]:
+        """List runs for a specific workflow id.
+
+        GET /repos/{owner}/{repo}/actions/workflows/{id}/runs → 'workflow_runs'.
+        Используется инструментом get_workflow_by_file.
+        """
+        params = {"per_page": per_page}
+        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs", params=params)
+        return self._safe_json(resp.json()).get("workflow_runs", [])
+
     def get_check_runs(self, owner: str, repo: str, ref: str, per_page: int = 100) -> List[dict]:
         """Get check-runs for a commit ref (GitHub Checks API).
 
