@@ -11,7 +11,7 @@
 ## 🐙 `github/` — GitHub API (83)
 
 ### Файлы (11)
-`get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
+`get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
 
 ### Коммиты (4)
 `list_commits`, `get_commit_status`, `get_commit_diff`, `get_file_blame`
