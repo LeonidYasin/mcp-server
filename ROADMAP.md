@@ -31,7 +31,7 @@
 
 ## Текущее состояние
 
-Фактически зарегистрировано **109 инструментов** (проверяется `list_my_tools`). Реализовано (смержено в `main`):
+Фактически зарегистрировано **110 инструментов** (проверяется `list_my_tools`). Реализовано (смержено в `main`):
 
 - **Батч 1** — PR / Issues / Releases / Tags / batch-push, meta (`list_my_tools`, `describe_tool`), web (`web_fetch`, `web_search`), утилиты (base64/hash/json/uuid/date/regex/diff).
 - **Батч 2** — branches, gists, Actions control, security alerts, repo info.
