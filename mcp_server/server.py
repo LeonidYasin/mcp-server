@@ -272,6 +272,7 @@ def health():
             "status": "ok",
             "server": SERVER_NAME,
             "version": SERVER_VERSION,
+            "build": _build_info(),
             "protocol_versions": SUPPORTED_PROTOCOL_VERSIONS,
             "last_request": _last_request,
             "tool_count": len(tools),
