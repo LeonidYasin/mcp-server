@@ -28,6 +28,7 @@ SERVER_NAME = "mcp-github-server"
 # Version is defined once, in mcp_server/__init__.py (__version__).
 SERVER_VERSION = __version__
 
+
 def _build_info() -> dict:
     """Return runtime build info: version, git commit, date, branch.
 
@@ -70,8 +71,8 @@ def _build_banner() -> str:
     """One-line human-readable banner printed at startup."""
     b = _build_info()
     return (
-        f"mcp-server v{b['version']} — commit {b['commit']} "
-        f"({b['branch']}) — {b['commit_date']}"
+        f"mcp-server v{b['version']} - commit {b['commit']} "
+        f"({b['branch']}) - {b['commit_date']}"
     )
 
 
@@ -204,7 +205,14 @@ def mcp_handler():
         logger.info(
             "initialize: client requested %s -> negotiated %s", client_version, negotiated
         )
-        server_info = {"name": SERVER_NAME, "version": SERVER_VERSION}
+        _b = _build_info()
+        server_info = {
+            "name": SERVER_NAME,
+            "version": SERVER_VERSION,
+            "commit": _b["commit"],
+            "commit_date": _b["commit_date"],
+            "branch": _b["branch"],
+        }
         if not token:
             server_info["warning"] = (
                 "No GitHub token received. Send header 'Authorization: Bearer <token>'. "
@@ -267,12 +275,16 @@ def mcp_handler():
 @app.route("/health")
 def health():
     tools = [t.name for t in registry.get_all()]
+    _b = _build_info()
     return jsonify(
         {
             "status": "ok",
             "server": SERVER_NAME,
             "version": SERVER_VERSION,
-            "build": _build_info(),
+            "build": _b,
+            "commit": _b["commit"],
+            "commit_date": _b["commit_date"],
+            "branch": _b["branch"],
             "protocol_versions": SUPPORTED_PROTOCOL_VERSIONS,
             "last_request": _last_request,
             "tool_count": len(tools),
