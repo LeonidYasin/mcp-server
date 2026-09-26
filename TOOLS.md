@@ -8,7 +8,7 @@
 
 ---
 
-## 🐙 `github/` — GitHub API (82)
+## 🐙 `github/` — GitHub API (83)
 
 ### Файлы (11)
 `get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
