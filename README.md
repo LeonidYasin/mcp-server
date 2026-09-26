@@ -1,7 +1,7 @@
 # MCP GitHub Server
 
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
-[![tools](https://img.shields.io/badge/tools-109-brightgreen)](TOOLS.md)
+[![tools](https://img.shields.io/badge/tools-110-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 Расширяемый MCP HTTP-сервер с модульной архитектурой и автоматическим обнаружением инструментов. Изначально вырос из обёртки над GitHub API, сейчас — универсальный набор инструментов для агента.
