@@ -240,4 +240,8 @@ __all__ = [
     "replace_in_file",
     # repo admin
     "update_repo_info",
+    # repo management
+    "create_repo",
+    "list_my_repos",
+    "update_repo",
 ]
