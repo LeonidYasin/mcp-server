@@ -122,6 +122,21 @@ python -m mcp_server.server
 
 ---
 
+## 📚 Документация и Skills
+
+| Файл | Что внутри |
+|------|------------|
+| [`README.md`](README.md) | этот файл: установка, запуск, обзор подпакетов, Source of truth |
+| [`TOOLS.md`](TOOLS.md) | **полный каталог всех 110 инструментов**, сгруппированный по подпакетам |
+| [`ROADMAP.md`](ROADMAP.md) | дорожная карта: сделанные батчи, Synapse 7b, token economy, безопасность |
+| [`SANDBOX.md`](SANDBOX.md) | изоляция локальных инструментов (localfs/localgit/shell), уровни 1–4 |
+| [`docs/synapse-protocol.md`](docs/synapse-protocol.md) | JSON-схема обмена (item: offer/want, profile, contact, exchange) |
+| [`docs/skills/github-mcp-safe-workflow/SKILL.md`](docs/skills/github-mcp-safe-workflow/SKILL.md) | **Skill для ИИ-агентов**: безопасный workflow работы с GitHub через MCP |
+
+> **Skills** (`docs/skills/`) — это инструкции для ИИ-агентов, как правильно и безопасно пользоваться инструментами этого сервера. Каждый Skill — отдельная папка с `SKILL.md`. Новые Skills добавляйте рядом и упоминайте здесь.
+
+---
+
 ## Структура проекта
 
 ```
