@@ -10,11 +10,29 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
 [project.scripts]
 mcp-server = "mcp_server.server:main"
 
+[tool.setuptools.packages.find]
+# Пакет называется mcp_server, а проект — mcp-github-server.
+# Автодетект setuptools по имени проекта не находит пакет, поэтому
+# указываем явно — иначе editable wheel собирается пустым.
+include = ["mcp_server*"]
+namespaces = false
+
 [tool.setuptools.dynamic]
 version = {attr = "mcp_server.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Страховка на случай, если pytest запущен из другого интерпретатора,
+# чем pip (на Windows легко: несколько Python в PATH). Тогда editable
+# install не виден, и тесты не находят mcp_server. Явный pythonpath
+# заставляет pytest искать пакет прямо из корня репозитория.
+pythonpath = ["."]
 
 [build-system]
 requires = ["setuptools>=61.0"]
