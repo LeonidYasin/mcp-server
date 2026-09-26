@@ -120,6 +120,8 @@ python -m mcp_server.server
 - **Тип:** HTTP
 - **Заголовок:** `Authorization: Bearer <ваш_github_token>`
 
+> **Какой транспорт выбирать в плагине DeepSeek++.** В поле **Transport** плагина есть отдельные варианты: `Streamable HTTP`, `HTTP`, `SSE`, `Studio Bridge`, `Native`. Для этого сервера выбирайте **`Streamable HTTP`** — он реализует MCP Streamable HTTP с persistent-сессией (`Mcp-Session-Id` переносится между запросами). Вариант `HTTP` в плагине — тоже HTTP, но **без сохранения сессии**; он часто работает, однако `Streamable HTTP` — корректный и рекомендуемый выбор (см. [MCP Transport Mechanisms](https://deepwiki.com/zhu1090093659/deepseek-pp/4.1-mcp-transport-mechanisms) в документации плагина).
+
 ---
 
 ## 📚 Документация и Skills
