@@ -23,7 +23,7 @@
 | **synapse** (старый) | Соцсеть на ИИ-чатах | концепция | Идейный предок |
 | **synapse2** | ИИ-платформа поиска связей | FastAPI, DeepSeek | Веб-версия |
 | **agora-mcp** | offers/wants, сетевой | TypeScript, Postgres+pgvector | Сетевой протокол |
-| **mcp-server** | **109 инструментов** + Synapse | Python, Flask | MCP-интерфейс |
+| **mcp-server** | **110 инструментов** + Synapse | Python, Flask | MCP-интерфейс |
 
 **Стратегия (вариант A):** не сливать репозитории, а унифицировать протокол. Общая спека `synapse-protocol` — JSON-схема для item (offer/want), profile, contact, exchange. На неё ссылаются и Synapse, и Agora, и NoKing.
 
