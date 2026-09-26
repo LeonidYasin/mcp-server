@@ -28,6 +28,54 @@ SERVER_NAME = "mcp-github-server"
 # Version is defined once, in mcp_server/__init__.py (__version__).
 SERVER_VERSION = __version__
 
+
+def _build_info() -> dict:
+    """Return runtime build info: version, git commit, date, branch.
+
+    Commit/date/branch come from local git if available; otherwise fall back to
+    CI-provided env vars (GIT_COMMIT / GIT_BUILD_DATE) or 'unknown'. This lets
+    a running server always report exactly which revision it was started from.
+    """
+    import os
+    import subprocess
+
+    info = {
+        "version": SERVER_VERSION,
+        "commit": os.environ.get("GIT_COMMIT", "unknown"),
+        "commit_date": os.environ.get("GIT_BUILD_DATE", "unknown"),
+        "branch": os.environ.get("GIT_BRANCH", "unknown"),
+    }
+
+    def _git(args):
+        try:
+            return subprocess.check_output(
+                ["git", *args], stderr=subprocess.DEVNULL, text=True
+            ).strip()
+        except Exception:
+            return None
+
+    commit = _git(["rev-parse", "--short", "HEAD"])
+    if commit:
+        info["commit"] = commit
+    date = _git(["log", "-1", "--format=%cd", "--date=iso"])
+    if date:
+        info["commit_date"] = date
+    branch = _git(["rev-parse", "--abbrev-ref", "HEAD"])
+    if branch:
+        info["branch"] = branch
+
+    return info
+
+
+def _build_banner() -> str:
+    """One-line human-readable banner printed at startup."""
+    b = _build_info()
+    return (
+        f"mcp-server v{b['version']} - commit {b['commit']} "
+        f"({b['branch']}) - {b['commit_date']}"
+    )
+
+
 # Tools that don't need a GitHub token (pure functions / meta / web)
 TOKENLESS_PREFIXES = ("base64_", "hash_", "json_", "uuid_", "timestamp_", "date_", "regex_", "text_")
 TOKENLESS_NAMES = {"list_my_tools", "describe_tool", "web_fetch", "web_search"}
@@ -157,7 +205,14 @@ def mcp_handler():
         logger.info(
             "initialize: client requested %s -> negotiated %s", client_version, negotiated
         )
-        server_info = {"name": SERVER_NAME, "version": SERVER_VERSION}
+        _b = _build_info()
+        server_info = {
+            "name": SERVER_NAME,
+            "version": SERVER_VERSION,
+            "commit": _b["commit"],
+            "commit_date": _b["commit_date"],
+            "branch": _b["branch"],
+        }
         if not token:
             server_info["warning"] = (
                 "No GitHub token received. Send header 'Authorization: Bearer <token>'. "
@@ -220,11 +275,16 @@ def mcp_handler():
 @app.route("/health")
 def health():
     tools = [t.name for t in registry.get_all()]
+    _b = _build_info()
     return jsonify(
         {
             "status": "ok",
             "server": SERVER_NAME,
             "version": SERVER_VERSION,
+            "build": _b,
+            "commit": _b["commit"],
+            "commit_date": _b["commit_date"],
+            "branch": _b["branch"],
             "protocol_versions": SUPPORTED_PROTOCOL_VERSIONS,
             "last_request": _last_request,
             "tool_count": len(tools),
@@ -235,7 +295,7 @@ def health():
 
 
 def main():
-    logger.info("Starting %s v%s on port 3001", SERVER_NAME, SERVER_VERSION)
+    logger.info("Starting %s on port 3001", _build_banner())
     logger.info("Expected header: Authorization: Bearer <github_token>")
     app.run(host="0.0.0.0", port=3001, debug=False)
 
