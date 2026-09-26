@@ -3,7 +3,7 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `pyproject.toml`; список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 1 · 2026-09-26** (см. README → Source of truth).
+> **Ревизия документации: 3 · 2026-09-26** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
@@ -23,7 +23,7 @@
 | **synapse** (старый) | Соцсеть на ИИ-чатах | концепция | Идейный предок |
 | **synapse2** | ИИ-платформа поиска связей | FastAPI, DeepSeek | Веб-версия |
 | **agora-mcp** | offers/wants, сетевой | TypeScript, Postgres+pgvector | Сетевой протокол |
-| **mcp-server** | **109 инструментов** + Synapse | Python, Flask | MCP-интерфейс |
+| **mcp-server** | **110 инструментов** + Synapse | Python, Flask | MCP-интерфейс |
 
 **Стратегия (вариант A):** не сливать репозитории, а унифицировать протокол. Общая спека `synapse-protocol` — JSON-схема для item (offer/want), profile, contact, exchange. На неё ссылаются и Synapse, и Agora, и NoKing.
 
@@ -31,7 +31,7 @@
 
 ## Текущее состояние
 
-Фактически зарегистрировано **109 инструментов** (проверяется `list_my_tools`). Реализовано (смержено в `main`):
+Фактически зарегистрировано **110 инструментов** (проверяется `list_my_tools`). Реализовано (смержено в `main`):
 
 - **Батч 1** — PR / Issues / Releases / Tags / batch-push, meta (`list_my_tools`, `describe_tool`), web (`web_fetch`, `web_search`), утилиты (base64/hash/json/uuid/date/regex/diff).
 - **Батч 2** — branches, gists, Actions control, security alerts, repo info.
@@ -105,6 +105,34 @@ OLLAMA_BASE_URL=http://localhost:11434
 - `search_people`/`search_notes` → эмбеддинги при заданном провайдере, иначе keyword-MVP (graceful fallback).
 - Freshness: `updated_at` + `active` + decay.
 - Outcome feedback: `report_match_outcome`.
+
+---
+
+## Батч 20 — Token economy (экономия токенов, план)
+
+**Зачем:** ИИ-агенту легче работать, когда «дешёвые» по токенам вызовы отдают короткий ответ. Сейчас часть инструментов возвращает «простыни» (полные файлы, полные логи, длинные списки) — это дорого по контексту.
+
+> **Принцип: не дублировать инструменты.** 110 + 110 `*_slim` = 220 раздует `tools/list` и запутает выбор. Вместо дублей — **параметр формата** в существующих методах (обратная совместимость: дефолт `full`).
+
+### Что сделать
+
+1. **`format: "full" | "compact"`** для «дорогих» list-методов:
+   - `list_commits`, `list_branches`, `list_pull_requests`, `list_issues`, `list_releases`, `list_tags`, `list_workflow_runs`, `list_repo_contributors`.
+   - `compact` → одна строка на элемент (`id | date | title`), без вложенных объектов.
+2. **Подсказки в `description`** «дорогих» методов (`read_full_file`, `get_file_contents`, `get_full_workflow_logs`, `get_workflow_run_logs`): явно писать «для больших файлов/логов предпочитай `grep_file` / `read_file_chunk` / `grep_workflow_logs`».
+3. **`fields=` (опционально)** — вернуть только запрошенные поля у list-методов.
+
+### Как делать осторожно (не сломать)
+
+- Дефолт остаётся `full` → существующие вызовы не меняются.
+- `compact` — **новый** код-путь; покрыть быстрым тестом (smoke: `format=compact` возвращает строки, `format=full` — как раньше).
+- Менять **по одному методу за PR**, после каждого — проверка, что `full` не сломан.
+- Проверка после правки: `describe_tool(name)` показывает новый параметр; вызов с `format=compact` и без него даёт ожидаемое.
+
+### Метрика
+
+- До/после: размер ответа (байты) на типовом вызове `list_commits(format=compact)` vs `full`.
+- Цель: −70…90% на листингах при сохранении `full` по запросу.
 
 ---
 

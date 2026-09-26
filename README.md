@@ -1,7 +1,7 @@
 # MCP GitHub Server
 
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
-[![tools](https://img.shields.io/badge/tools-109-brightgreen)](TOOLS.md)
+[![tools](https://img.shields.io/badge/tools-110-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 Расширяемый MCP HTTP-сервер с модульной архитектурой и автоматическим обнаружением инструментов. Изначально вырос из обёртки над GitHub API, сейчас — универсальный набор инструментов для агента.
@@ -15,17 +15,17 @@
 | Что | Где источник правды |
 |-----|---------------------|
 | **Версия** | `pyproject.toml` (single-source; читается динамически в коде) — **0.4.3** |
-| **Список инструментов** | рантайм-реестр: `list_my_tools`; полный каталог — [`TOOLS.md`](TOOLS.md) — **109** |
+| **Список инструментов** | рантайм-реестр: `list_my_tools`; полный каталог — [`TOOLS.md`](TOOLS.md) — **110** |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **1** от **2026-09-26** |
+| **Документация** | ревизия **3** от **2026-09-26** |
 
-> **Ревизия документации: 1 · 2026-09-26.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему.
+> **Ревизия документации: 3 · 2026-09-26.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему.
 
 ---
 
 ## Возможности
 
-**Всего инструментов: 109** (полный каталог — [`TOOLS.md`](TOOLS.md)). Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
+**Всего инструментов: 110** (полный каталог — [`TOOLS.md`](TOOLS.md)). Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
 
 ### 🐙 `github/` — GitHub API (82)
 
@@ -33,7 +33,7 @@
 
 | Группа | Инструменты |
 |--------|-------------|
-| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory` |
+| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory` |
 | Коммиты | `list_commits`, `get_commit_status`, `get_commit_diff`, `get_file_blame` |
 | Ветки / сравнение | `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
 | PR | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `update_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `get_review_threads`, `resolve_review_thread`, `unresolve_review_thread` |
@@ -122,6 +122,21 @@ python -m mcp_server.server
 
 ---
 
+## 📚 Документация и Skills
+
+| Файл | Что внутри |
+|------|------------|
+| [`README.md`](README.md) | этот файл: установка, запуск, обзор подпакетов, Source of truth |
+| [`TOOLS.md`](TOOLS.md) | **полный каталог всех 110 инструментов**, сгруппированный по подпакетам |
+| [`ROADMAP.md`](ROADMAP.md) | дорожная карта: сделанные батчи, Synapse 7b, token economy, безопасность |
+| [`SANDBOX.md`](SANDBOX.md) | изоляция локальных инструментов (localfs/localgit/shell), уровни 1–4 |
+| [`docs/synapse-protocol.md`](docs/synapse-protocol.md) | JSON-схема обмена (item: offer/want, profile, contact, exchange) |
+| [`docs/skills/github-mcp-safe-workflow/SKILL.md`](docs/skills/github-mcp-safe-workflow/SKILL.md) | **Skill для ИИ-агентов**: безопасный workflow работы с GitHub через MCP |
+
+> **Skills** (`docs/skills/`) — это инструкции для ИИ-агентов, как правильно и безопасно пользоваться инструментами этого сервера. Каждый Skill — отдельная папка с `SKILL.md`. Новые Skills добавляйте рядом и упоминайте здесь.
+
+---
+
 ## Структура проекта
 
 ```
@@ -132,8 +147,8 @@ mcp-server/
 ├── SANDBOX.md
 ├── TOOLS.md                 # полный каталог инструментов
 ├── docs/
-│   ├── synapse-protocol.md
-│   └── skills/
+│   ├── synapse-protocol.md   # JSON-схема item/profile/contact/exchange
+│   └── skills/               # Skills для ИИ-агентов (см. ниже)
 └── mcp_server/
     ├── server.py            # Flask HTTP-сервер (MCP transport, token handling)
     ├── core/
