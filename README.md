@@ -201,6 +201,30 @@ sudo systemctl status mcp-server
 
 > **Почему не запускать `python -m mcp_server.server` в проде.** Этот путь вызывает `app.run(host="0.0.0.0", port=3001)` (см. `mcp_server/server.py`) — сервер слушает все интерфейсы и становится доступен из глобального интернета без TLS и без аутентификации. Gunicorn за Caddy эту дыру закрывает.
 
+#### 6. Windows: Gunicorn не подходит — используйте Waitress
+
+**Gunicorn не работает на Windows.** Он зависит от POSIX-модуля `fcntl`, которого в Windows нет:
+
+```
+ModuleNotFoundError: No module named 'fcntl'
+```
+
+Для Windows production-запуска есть **Waitress** — чистый Python WSGI-сервер, многопоточный, без POSIX-зависимостей и с официальной поддержкой Windows.
+
+```bash
+pip install waitress
+waitress-serve --host=127.0.0.1 --port=3001 --threads=4 mcp_server.server:app
+```
+
+Остальная схема не меняется: Waitress так же слушает `127.0.0.1:3001` за reverse proxy (Caddy/Nginx/IIS), а Caddy терминирует TLS и проверяет `X-API-Key`.
+
+| Платформа | WSGI-сервер | Причина |
+|-----------|-------------|---------|
+| Linux / macOS | **Gunicorn** | стандарт де-факто, multi-process |
+| Windows | **Waitress** | чистый Python, multi-thread, без `fcntl` |
+
+> **Для локального тестирования PR на Windows** production-сервер не обязателен: dev-режим (`python -m mcp_server.server`) полностью достаточен, чтобы убедиться, что код работает. Waitress/Gunicorn нужны только для реального боевого запуска.
+
 ### Включение локальных инструментов
 
 ```bash
