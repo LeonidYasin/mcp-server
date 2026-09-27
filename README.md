@@ -96,13 +96,110 @@ pip install -e .
 
 ## Запуск
 
+### Локально / для разработки
+
 ```bash
 python -m mcp_server.server
 ```
 
 Сервер слушает `http://0.0.0.0:3001`, MCP-эндпоинт — `POST /mcp`. Health-check — `GET /health` (показывает `tool_count`, список инструментов и диагностику последнего запроса).
 
+> ⚠️ **Это dev-режим.** Внутри используется встроенный сервер Werkzeug, который сам Flask не рекомендует для продакшена: он однопоточный, не масштабируется и не рассчитан на публичный доступ. Для локальной работы и отладки — ок, для боевого сервера — нет (см. раздел «Продакшен» ниже).
+
 Токен GitHub передаётся заголовком `Authorization: Bearer <token>`.
+
+### Продакшен (Gunicorn + Caddy)
+
+Для боевого развёртывания используется классическая слоёная схема:
+
+```
+Интернет ──HTTPS(443)──▶ Caddy ──HTTP(127.0.0.1:3001)──▶ Gunicorn ──WSGI──▶ Flask app
+```
+
+- **Caddy** — принимает HTTPS, проверяет ключ клиента, проксирует на loopback.
+- **Gunicorn** — production WSGI-сервер: несколько воркеров, устойчивость к падениям, корректная обработка сигналов.
+- **Flask app** — сам код (`mcp_server.server:app`), без изменений.
+
+#### 1. Установка зависимостей
+
+```bash
+pip install -e ".[prod]"   # gunicorn (Linux/macOS)
+# или, если extra ещё не заведён в pyproject.toml:
+pip install -e . gunicorn
+```
+
+#### 2. Запуск через Gunicorn
+
+```bash
+# слушаем ТОЛЬКО локальный интерфейс — из интернета напрямую недоступно
+gunicorn mcp_server.server:app \
+  --bind 127.0.0.1:3001 \
+  --workers 2 \
+  --timeout 120 \
+  --access-logfile - \
+  --error-logfile -
+```
+
+Почему `--bind 127.0.0.1`: сервер не должен торчать в интернет сам по себе. Снаружи его закрывает Caddy, который терминирует TLS и аутентификацию. `--workers 2` — достаточно для одного пользователя/агента; при росте нагрузки увеличивается до `2 × CPU + 1`.
+
+#### 3. Caddy (TLS + аутентификация по ключу)
+
+Caddyfile (минимальный рабочий конфиг):
+
+```caddy
+mcp.example.com {
+    # ключ клиента Claude передаётся в отдельном заголовке,
+    # чтобы не конфликтовать с Authorization: Bearer <github_token>,
+    # который уходит дальше в GitHub API
+    @authorized header X-API-Key "<СЕКРЕТНЫЙ_КЛЮЧ_КЛИЕНТА>"
+
+    handle @authorized {
+        reverse_proxy 127.0.0.1:3001
+    }
+
+    handle {
+        respond "Unauthorized" 401
+    }
+}
+```
+
+`mcp.example.com` Caddy сам получит и будет продлевать TLS-сертификат Let's Encrypt. Запросы без правильного `X-API-Key` отсекаются на входе и до приложения не доходят.
+
+#### 4. systemd-юнит (автозапуск)
+
+`/etc/systemd/system/mcp-server.service`:
+
+```ini
+[Unit]
+Description=MCP GitHub Server
+After=network.target
+
+[Service]
+Type=simple
+User=mcp
+WorkingDirectory=/opt/mcp-server
+ExecStart=/opt/mcp-server/.venv/bin/gunicorn mcp_server.server:app \
+    --bind 127.0.0.1:3001 --workers 2 --timeout 120
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now mcp-server
+sudo systemctl status mcp-server
+```
+
+#### 5. Клиент (например, Claude как кастомный коннектор)
+
+- **URL:** `https://mcp.example.com/mcp`
+- **Request header:** `X-API-Key: <СЕКРЕТНЫЙ_КЛЮЧ_КЛИЕНТА>`
+- GitHub-токен по-прежнему передаётся в `Authorization: Bearer <github_token>` и доходит до приложения как есть — Caddy его не трогает.
+
+> **Почему не запускать `python -m mcp_server.server` в проде.** Этот путь вызывает `app.run(host="0.0.0.0", port=3001)` (см. `mcp_server/server.py`) — сервер слушает все интерфейсы и становится доступен из глобального интернета без TLS и без аутентификации. Gunicorn за Caddy эту дыру закрывает.
 
 ### Включение локальных инструментов
 
