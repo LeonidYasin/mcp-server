@@ -225,6 +225,163 @@ waitress-serve --host=127.0.0.1 --port=3001 --threads=4 mcp_server.server:app
 
 > **Для локального тестирования PR на Windows** production-сервер не обязателен: dev-режим (`python -m mcp_server.server`) полностью достаточен, чтобы убедиться, что код работает. Waitress/Gunicorn нужны только для реального боевого запуска.
 
+#### 7. Пошаговый деплой на Ubuntu VPS (проверено вживую)
+
+Ниже — последовательность, реально отработанная на Ubuntu 24.04 VPS (2026-09-27): Gunicorn + Caddy + DuckDNS, снаружи проверено `curl`.
+
+**Разделение ролей.** Команды помечены: `# root` — под root (или через sudo), `$ mcp` — под сервисным пользователем. Сервисный пользователь запускает приложение, но не имеет прав на systemd/apt/Caddy.
+
+**Шаг 1. Сервисный пользователь (под root).**
+
+Пользователь создаётся **с домашней папкой и shell**, но **без sudo**. Это важно: у него должны работать локальные инструменты (`localfs`, `localgit`, `shell`, работа с БД), поэтому нужен `$HOME` и `/bin/bash`. Ограничение только одно — нет прав за пределами `$HOME` и нет sudo.
+
+```bash
+# root
+adduser --disabled-password --gecos "" mcp
+# опционально: убедиться, что НЕ в группе sudo
+deluser mcp sudo 2>/dev/null || true
+```
+
+**Шаг 2. Установка venv-пакетов (под root).**
+
+Ubuntu 24.04 блокирует `pip install` в системный Python (PEP 668, `externally-managed-environment`). Поэтому ставим через venv:
+
+```bash
+# root
+apt install -y python3-venv python3-full
+```
+
+**Шаг 3. Проект и venv (под сервисным пользователем).**
+
+```bash
+# mcp
+cd ~
+git clone https://github.com/LeonidYasin/mcp-server.git
+cd mcp-server
+python3 -m venv .venv
+.venv/bin/pip install -e . gunicorn
+```
+
+Ключевое: `pip` — именно из venv (`.venv/bin/pip`), а не системный. И venv создаётся **под тем же пользователем**, который будет запускать сервис — чтобы файлы принадлежали ему.
+
+**Шаг 4. systemd-юнит (под root).**
+
+`/etc/systemd/system/mcp-server.service`:
+
+```ini
+[Unit]
+Description=MCP GitHub Server
+After=network.target
+
+[Service]
+Type=simple
+User=mcp
+Group=mcp
+WorkingDirectory=/home/mcp/mcp-server
+ExecStart=/home/mcp/mcp-server/.venv/bin/gunicorn mcp_server.server:app \
+    --bind 127.0.0.1:3001 --workers 2 --timeout 120
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+# root
+systemctl daemon-reload
+systemctl enable --now mcp-server
+systemctl status mcp-server      # ожидаем: active (running)
+```
+
+Проверка изнутри (можно под любым пользователем):
+
+```bash
+curl -s http://127.0.0.1:3001/health | head -c 200
+```
+
+Должен вернуться JSON с `tool_count` и списком инструментов.
+
+**Шаг 5. Домен.**
+
+Нужен публичный домен, указывающий на IP VPS. Бесплатный вариант — [DuckDNS](https://www.duckdns.org): регистрируешь поддомен `имя.duckdns.org`, указываешь IP VPS. Проверка:
+
+```bash
+dig +short имя.duckdns.org      # должен вернуть публичный IP VPS
+```
+
+Домен обязателен: клиенты (в т.ч. Claude как кастомный коннектор) требуют URL вида `https://домен`, а Let's Encrypt выдаёт сертификат на домен. GitHub Pages для этого не подходит — он отдаёт только статику и не умеет проксировать на VPS.
+
+**Шаг 6. Caddy: HTTPS + аутентификация по ключу (под root).**
+
+Сгенерировать ключ клиента:
+
+```bash
+# root
+openssl rand -hex 32
+```
+
+`/etc/caddy/Caddyfile`:
+
+```caddy
+имя.duckdns.org {
+    # ключ клиента в отдельном заголовке, чтобы не конфликтовать
+    # с Authorization: Bearer <github_token>, который уходит в GitHub API
+    @authorized header X-API-Key "<СЕКРЕТНЫЙ_КЛЮЧ_КЛИЕНТА>"
+
+    handle @authorized {
+        reverse_proxy 127.0.0.1:3001
+    }
+
+    handle {
+        respond "Unauthorized" 401
+    }
+}
+```
+
+```bash
+# root
+caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy
+systemctl status caddy           # ожидаем: active (running)
+```
+
+Caddy сам получит и будет продлевать сертификат Let's Encrypt. Запросы без правильного `X-API-Key` отсекаются на входе (401) и до приложения не доходят.
+
+**Шаг 7. Проверка снаружи (с любой машины, не с VPS).**
+
+```bash
+# без ключа — ожидаем 401
+curl -i https://имя.duckdns.org/health
+
+# с ключом — ожидаем 200 и JSON
+curl -i -H "X-API-Key: <СЕКРЕТНЫЙ_КЛЮЧ_КЛИЕНТА>" https://имя.duckdns.org/health
+```
+
+Заголовок `Server: gunicorn` и `Via: 1.1 Caddy` в ответе подтверждают, что цепочка Caddy → Gunicorn работает.
+
+**Шаг 8. Подключение клиента (например, Claude как кастомный коннектор).**
+
+- **URL:** `https://имя.duckdns.org/mcp`
+- **Request header:** `X-API-Key: <СЕКРЕТНЫЙ_КЛЮЧ_КЛИЕНТА>`
+
+GitHub-токен по-прежнему передаётся в `Authorization: Bearer <github_token>` и доходит до приложения как есть — Caddy его не трогает.
+
+**Шаг 9. Файрвол (опционально, под root).**
+
+Gunicorn слушает только `127.0.0.1`, поэтому порт 3001 извне недоступен и без файрвола. Как дополнительный слой:
+
+```bash
+# root
+ufw allow 22/tcp     # SSH — СНАЧАЛА, иначе потеряешь доступ
+ufw allow 80/tcp     # HTTP-01 challenge для Let's Encrypt
+ufw allow 443/tcp    # HTTPS
+ufw enable
+ufw status
+```
+
+Порт 3001 в UFW открывать не нужно.
+
 ### Включение локальных инструментов
 
 ```bash
