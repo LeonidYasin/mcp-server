@@ -12,6 +12,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+# Production WSGI server. Gunicorn не работает на Windows (зависит от POSIX fcntl),
+# поэтому маркер sys_platform. На Windows используйте Waitress — см. README.
+prod = ["gunicorn>=21.0; sys_platform != 'win32'"]
 
 [project.scripts]
 mcp-server = "mcp_server.server:main"
