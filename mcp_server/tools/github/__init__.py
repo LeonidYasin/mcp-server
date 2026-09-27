@@ -133,6 +133,13 @@ from mcp_server.tools.github.file_edit_ops import replace_in_file
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
 
+# --- repo management (create/list/update) ---
+from mcp_server.tools.github.repo_ops import (
+    create_repo,
+    list_my_repos,
+    update_repo,
+)
+
 __all__ = [
     "GitHubClient",
     # existing
@@ -233,4 +240,8 @@ __all__ = [
     "replace_in_file",
     # repo admin
     "update_repo_info",
+    # repo management
+    "create_repo",
+    "list_my_repos",
+    "update_repo",
 ]
