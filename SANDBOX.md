@@ -145,6 +145,33 @@ curl http://127.0.0.1:3001/health
 | `LOCAL_TOOLS_MAX_WRITE_BYTES` | `1000000` | Лимит на запись файла. |
 | `LOCAL_TOOLS_MAX_LIST_ENTRIES` | `1000` | Лимит элементов в листинге. |
 | `LOCAL_TOOLS_MAX_GREP_MATCHES` | `200` | Лимит совпадений в поиске. |
+| `ENABLE_LOCAL_SHELL` | (пусто) | `1` — включает `run_command`/`run_python`, а также `start_background`/`stop_process`/`process_status`/`tail_log` (см. ниже). |
+| `LOCAL_TOOLS_STOP_TIMEOUT` | `10` | Сколько секунд `stop_process` ждёт после SIGTERM, прежде чем сообщить, что процесс не завершился. |
+
+---
+
+## Фоновые процессы (`start_background` / `stop_process` / `process_status` / `tail_log`)
+
+Отдельная опасность внутри `ENABLE_LOCAL_SHELL`, а не новая категория: те же
+права, что и у `run_command`, но результат — **живой процесс, который остаётся
+после ответа инструмента**. `run_command` сам себя убивает по таймауту;
+`start_background` — нет, это его смысл (например, поднять `node dist/index.js`
+и не уронить его через 30 секунд).
+
+Что важно знать:
+
+- Bookkeeping (pid, cmd, cwd, лог) хранится в
+  `LOCAL_TOOLS_ROOT/.mcp_processes/<name>.{json,log}` — переживает перезапуск
+  самого MCP-сервера (systemd может рестартовать сервер независимо от того,
+  что он успел запустить).
+- `stop_process` шлёт сигнал **всей группе процессов** (`os.killpg`), не
+  только сохранённому pid — иначе `bash -c "...; sleep N"` может не
+  среагировать на SIGTERM вовремя (bash откладывает обработку trap до
+  возврата из синхронного foreground-потомка).
+- То же action deny-list, что у `run_command` (`sudo`, `rm -rf /`, `mkfs`, ...).
+- Никакой доп. изоляции по CPU/RAM/времени жизни — заглянувший сюда процесс
+  живёт, пока жив сам, или пока его не остановят явно. Уровень 2/3
+  (bwrap/Docker) ограничивает это так же, как и остальные local-tools.
 
 ---
 
