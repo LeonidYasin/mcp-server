@@ -5,6 +5,8 @@ Implements the MCP Streamable HTTP transport (JSON-RPC 2.0 over POST /mcp).
 """
 
 import logging
+import os
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
