@@ -297,9 +297,16 @@ def health():
 
 
 def main():
-    logger.info("Starting %s on port 3001", _build_banner())
+    # Host/port настраиваются через окружение. Дефолт — 127.0.0.1 (loopback):
+    # dev-запуск доступен локально, но не торчит в сеть. Для доступа извне
+    # (например за Caddy на том же хосте) loopback и нужен — reverse proxy
+    # ходит на 127.0.0.1. Явно открыть наружу можно MCP_HOST=0.0.0.0, но это
+    # только осознанно и с аутентификацией перед сервером.
+    host = os.environ.get("MCP_HOST", "127.0.0.1")
+    port = int(os.environ.get("MCP_PORT", "3001"))
+    logger.info("Starting %s on %s:%s", _build_banner(), host, port)
     logger.info("Expected header: Authorization: Bearer <github_token>")
-    app.run(host="0.0.0.0", port=3001, debug=False)
+    app.run(host=host, port=port, debug=False)
 
 
 if __name__ == "__main__":
