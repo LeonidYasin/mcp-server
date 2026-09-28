@@ -111,6 +111,9 @@ def get_pull_request(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number"],
 )
 def update_pull_request(client: GitHubClient, **kwargs) -> str:
+    missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
+    if missing:
+        return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
     owner, repo, number = kwargs["owner"], kwargs["repo"], kwargs["number"]
     payload = {}
     for k in ("title", "body", "state", "base"):
