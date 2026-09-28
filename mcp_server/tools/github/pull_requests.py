@@ -197,6 +197,9 @@ def merge_pull_request(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number"],
 )
 def close_pull_request(client: GitHubClient, **kwargs) -> str:
+    missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
+    if missing:
+        return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
     client._request(
         "PATCH",
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls/{kwargs['number']}",
