@@ -2,13 +2,13 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 3 · **Дата:** 2026-09-26 · **Всего инструментов: 110**
+> **Ревизия:** 5 · **Дата:** 2026-09-28 · **Всего инструментов: 117**
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
 ---
 
-## 🐙 `github/` — GitHub API (83)
+## 🐙 `github/` — GitHub API (86)
 
 ### Файлы (11)
 `get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
@@ -42,6 +42,9 @@
 
 ### Repo info / admin (6)
 `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors`, `update_repo_info`, `get_repo_tree`
+
+### Repo management (3)
+`create_repo`, `list_my_repos`, `update_repo`
 
 ### Batch / multiple (3)
 `push_multiple_files`, `read_multiple_files`
@@ -101,6 +104,16 @@
 
 ---
 
+## 🔒 `process/` — фоновые процессы (4, по умолчанию выключено)
+
+`start_background`, `stop_process`, `process_status`, `tail_log`
+
+Тот же флаг `ENABLE_LOCAL_SHELL=1`, что и у `shell/` — это дополнение к нему для
+долгоживущих процессов, которые `run_command` не может запустить (он
+блокирующий и убивает по таймауту). См. `SANDBOX.md`.
+
+---
+
 ## 🧠 `synapse/` — находимость людей (6+, флаг `ENABLE_SYNAPSE=1`)
 
 `publish_profile`, `search_people`, `propose_contact`, `save_note`, `search_notes`, `index_github`
@@ -109,4 +122,4 @@
 
 ---
 
-_Ревизия 3 · 2026-09-26 · всего 110 инструментов. При добавлении/удалении инструмента — обновить этот файл, счётчик и инкрементировать ревизию._
+_Ревизия 5 · 2026-09-28 · всего 117 инструментов. При добавлении/удалении инструмента — обновить этот файл, счётчик и инкрементировать ревизию._
