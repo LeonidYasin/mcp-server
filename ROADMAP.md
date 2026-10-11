@@ -70,8 +70,9 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 - [x] PR #57 слит: `5b7c2dd74715bdef32834102d423726bc2eac8a9`; 50 pytest + 28 live HTTP negative checks на тестовом VPS, CI Python 3.10–3.13 success. Production не обновлён.
 - [x] Шаг 1 / #65: [PR #71](https://github.com/LeonidYasin/mcp-server/pull/71) слит: `ccd1c6fb475c86dc9630d0b06cbf6527b721e150`; issue #65 закрыт. 92 pytest на VPS, live TEST MCP limits/patch/identical-SHA checks и CI Python 3.10–3.13 success. Production не обновлён.
 - [x] PR #56 слит: `85b3b5091864f26bc329cbc4f3ecf39ee068a579`; 150 pytest на VPS, remote TEST MCP TERM/KILL/status/log/metadata checks и systemd control-group restart cleanup passed. Linux identity/no-follow/limits и ограничения документированы. Production не обновлён, shell в production не включён.
-- [ ] Шаг 2 / #60: [PR #72](https://github.com/LeonidYasin/mcp-server/pull/72) открыт — modes сохраняются одним complete tree read, expected_head_sha/non-force guards, regression + native bare-Git fixture. Live GitHub write gate только на designated disposable branch; до merge issue остаётся открытым.
-- [ ] Шаги 3–11: запланированы, не реализованы этим обновлением.
+- [x] Шаг 2 / #60: [PR #72](https://github.com/LeonidYasin/mcp-server/pull/72) слит: `1dfd6ba98065ca8cc15261bb243b9a443e951641`; issue #60 закрыт. 206 pytest на VPS + native bare-Git fixture, live GitHub сохранение executable/symlink modes и stale-HEAD conflict на разрешённой отдельной test branch; CI Python 3.10–3.13 success. Production не обновлён.
+- [ ] Шаг 3 / #61: [PR #73](https://github.com/LeonidYasin/mcp-server/pull/73) открыт: SHA-pinned statuses + latest Check Runs, bounded pagination, honest unknown/incomplete, non-blocking neutral/skipped policy, metadata/docs. Локально 270 pytest и wheel/sdist build success. Deployed TEST live-read gate и merge пока не выполнены.
+- [ ] Шаги 4–11: запланированы, не реализованы этим обновлением.
 - [ ] Финальная синхронизация документации, майндмэпа и GitHub Pages: запланирована; опубликованный сайт ещё не проверен.
 
 ---
