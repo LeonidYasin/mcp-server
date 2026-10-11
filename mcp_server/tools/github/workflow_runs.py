@@ -5,6 +5,7 @@ import re
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 from .workflow_attempts import PARAMETERS as ATTEMPT_PARAMETERS, snapshot
+from .workflow_attempt_logs import PARAMETERS as LOG_PARAMETERS, query as query_logs
 
 
 def _safe_utf8(text: str) -> str:
@@ -171,214 +172,53 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
 
 @mcp_tool(
     name="read_run_logs_offset",
-    description=(
-        "Читает окно лога workflow run с произвольного смещения (offset/limit). "
-        "Нужно, когда ошибка в середине/конце лога, а get_run_logs_by_step "
-        "отдаёт только начало. job_name/step_name — необязательные фильтры "
-        "по имени файла в архиве (<job>/<N>_<step>.txt)."
-    ),
+    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter явно unsupported, без смешивания reruns.",
     parameters={
-        "owner": {"type": "string", "description": "Владелец репозитория"},
-        "repo": {"type": "string", "description": "Имя репозитория"},
-        "run_id": {"type": "integer", "description": "ID запуска workflow"},
-        "job_name": {"type": "string", "description": "Фильтр по имени job (подстрока)"},
-        "step_name": {"type": "string", "description": "Фильтр по имени шага (подстрока)"},
-        "offset": {"type": "integer", "description": "С какой строки начать (0-based, по умолчанию 0)"},
-        "limit": {"type": "integer", "description": "Сколько строк вернуть (по умолчанию 200, максимум 1000)"},
+        "owner": {"type":"string"}, "repo": {"type":"string"}, "run_id": {"type":"integer"},
+        "job_name": {"type":"string","description":"Фильтр только имени job (подстрока)"},
+        "step_name": {"type":"string","description":"Фильтр имени шага; combined архив => step_filter_unsupported"},
+        **LOG_PARAMETERS,
+        "offset": {"type":"integer","description":"0-based offset 0–100000"}, "limit": {"type":"integer","description":"Лимит строк 1–1000; alias max_lines"},
     },
-    required=["owner", "repo", "run_id"],
+    required=['owner', 'repo', 'run_id'],
 )
-def read_run_logs_offset(client: GitHubClient, **kwargs) -> str:
-    """Читает окно лога run с произвольного смещения."""
-    owner, repo, run_id = kwargs["owner"], kwargs["repo"], kwargs["run_id"]
-    offset = max(0, int(kwargs.get("offset", 0)))
-    limit = max(1, min(int(kwargs.get("limit", 200)), 1000))
-    job_name = kwargs.get("job_name")
-    step_name = kwargs.get("step_name")
-    try:
-        files = client.get_workflow_run_logs_files(owner, repo, run_id)
-        if not files:
-            return f"❌ В архиве логов run {run_id} нет файлов."
-        lines, matched = _collect_lines(files, job_name, step_name)
-        if not matched:
-            return (
-                f"❌ Нет файлов логов по фильтру job='{job_name or '-'}' "
-                f"step='{step_name or '-'}'. Доступны: {sorted(files.keys())[:20]}"
-            )
-        total = len(lines)
-        window = lines[offset:offset + limit]
-        if not window:
-            return f"❌ Пустое окно: offset={offset}, limit={limit}, всего строк={total}."
-        header = (
-            f"📄 Логи run {run_id}: строки {offset + 1}..{offset + len(window)} из {total} "
-            f"(файлов: {len(matched)})"
-        )
-        return header + "\n" + "\n".join(_safe_utf8(l) for l in window)
-    except Exception as e:
-        return f"❌ Ошибка read_run_logs_offset: {e}"
-
+def read_run_logs_offset(client: GitHubClient, **kwargs):
+    """Attempt-aware reader; source errors are not successful empty searches."""
+    if "limit" in kwargs:
+        kwargs["max_lines"] = kwargs.pop("limit")
+    return query_logs(client, "offset", **kwargs)
 
 @mcp_tool(
     name="grep_run_logs",
-    description=(
-        "Ищет regex в логах workflow run и возвращает совпадения ±context строк. "
-        "Маленький ответ — идеально для больших логов. Можно ограничить "
-        "job_name/step_name. Пример pattern='e: file|Unresolved|error:'."
-    ),
+    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter явно unsupported, без смешивания reruns.",
     parameters={
-        "owner": {"type": "string", "description": "Владелец репозитория"},
-        "repo": {"type": "string", "description": "Имя репозитория"},
-        "run_id": {"type": "integer", "description": "ID запуска workflow"},
-        "pattern": {"type": "string", "description": "Regex (обязателен)"},
-        "context": {"type": "integer", "description": "Строк контекста до/после (по умолчанию 3)"},
-        "max_matches": {"type": "integer", "description": "Максимум совпадений (по умолчанию 50, макс 500)"},
-        "job_name": {"type": "string", "description": "Фильтр по имени job (подстрока)"},
-        "step_name": {"type": "string", "description": "Фильтр по имени шага (подстрока)"},
-        "case_sensitive": {"type": "boolean", "description": "Учитывать регистр (по умолчанию false)"},
+        "owner": {"type":"string"}, "repo": {"type":"string"}, "run_id": {"type":"integer"},
+        "job_name": {"type":"string","description":"Фильтр только имени job (подстрока)"},
+        "step_name": {"type":"string","description":"Фильтр имени шага; combined архив => step_filter_unsupported"},
+        **LOG_PARAMETERS,
+        "pattern": {"type":"string","description":"Regex до 256 символов; worker timeout 3s"}, "context": {"type":"integer","description":"Контекст 0–20, default 3"}, "max_matches": {"type":"integer","description":"Совпадения 1–500, default 50"}, "case_sensitive": {"type":"boolean"},
     },
-    required=["owner", "repo", "run_id", "pattern"],
+    required=['owner', 'repo', 'run_id', 'pattern'],
 )
-def grep_run_logs(client: GitHubClient, **kwargs) -> str:
-    """Ищет regex в логах run с контекстом (распаковывает ZIP)."""
-    owner, repo, run_id = kwargs["owner"], kwargs["repo"], kwargs["run_id"]
-    pattern = (kwargs.get("pattern") or "").strip()
-    if not pattern:
-        return "❌ Нужен непустой pattern."
-    context = max(0, int(kwargs.get("context", 3)))
-    max_matches = max(1, min(int(kwargs.get("max_matches", 50)), 500))
-    flags = 0 if kwargs.get("case_sensitive") else re.IGNORECASE
-    job_name = kwargs.get("job_name")
-    step_name = kwargs.get("step_name")
-
-    try:
-        rx = re.compile(pattern, flags)
-    except re.error as e:
-        return f"❌ Некорректный regex '{pattern}': {e}"
-
-    try:
-        files = client.get_workflow_run_logs_files(owner, repo, run_id)
-        if not files:
-            return f"❌ В архиве логов run {run_id} нет файлов."
-        lines, matched = _collect_lines(files, job_name, step_name)
-        if not matched:
-            return (
-                f"❌ Нет файлов логов по фильтру job='{job_name or '-'}' "
-                f"step='{step_name or '-'}'. Доступны: {sorted(files.keys())[:20]}"
-            )
-
-        hits = [i for i, ln in enumerate(lines) if rx.search(ln)]
-        if not hits:
-            return (
-                f"🔍 По шаблону '{pattern}' ничего не найдено "
-                f"(файлов: {len(matched)}, строк: {len(lines)})."
-            )
-
-        blocks = []
-        last_end = -1
-        for idx in hits[:max_matches]:
-            start = max(0, idx - context)
-            end = min(len(lines), idx + context + 1)
-            if start <= last_end and blocks:
-                blocks[-1][1] = max(blocks[-1][1], end)
-            else:
-                blocks.append([start, end])
-            last_end = end
-
-        out = [
-            f"🔍 Шаблон: {pattern} | совпадений: {len(hits)} "
-            f"(показаны первые {min(len(hits), max_matches)}), "
-            f"файлов: {len(matched)}, строк: {len(lines)}"
-        ]
-        for start, end in blocks:
-            out.append(f"--- строки {start + 1}..{end} ---")
-            for i in range(start, end):
-                mark = ">>" if rx.search(lines[i]) else "  "
-                out.append(f"{mark} {i + 1}: {_safe_utf8(lines[i])}")
-        return "\n".join(out)
-    except Exception as e:
-        return f"❌ Ошибка grep_run_logs: {e}"
-
+def grep_run_logs(client: GitHubClient, **kwargs):
+    """Attempt-aware reader; source errors are not successful empty searches."""
+    return query_logs(client, "grep", **kwargs)
 
 @mcp_tool(
     name="get_run_logs_by_step",
-    description=(
-        "Получает логи конкретного шага workflow по имени шага (распаковывает ZIP). "
-        "direction='head' — с начала (по умолчанию), 'tail' — с конца."
-    ),
+    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter явно unsupported, без смешивания reruns.",
     parameters={
-        "owner": {"type": "string", "description": "Владелец репозитория"},
-        "repo": {"type": "string", "description": "Имя репозитория"},
-        "run_id": {"type": "integer", "description": "ID запуска workflow"},
-        "step_name": {"type": "string", "description": "Название шага (часть имени, регистр не важен)"},
-        "max_lines": {"type": "integer", "description": "Максимум строк для вывода (по умолчанию 200)"},
-        "start_time": {"type": "string", "description": "ISO 8601 время начала (например 2026-08-22T10:30:00Z)"},
-        "direction": {"type": "string", "description": "head (с начала, по умолчанию) | tail (с конца)"},
+        "owner": {"type":"string"}, "repo": {"type":"string"}, "run_id": {"type":"integer"},
+        "job_name": {"type":"string","description":"Фильтр только имени job (подстрока)"},
+        "step_name": {"type":"string","description":"Фильтр имени шага; combined архив => step_filter_unsupported"},
+        **LOG_PARAMETERS,
+        "direction": {"type":"string","description":"head|tail, default head"}, "start_time": {"type":"string","description":"Строка-маркер начала; не найдено => start_time_not_found"},
     },
-    required=["owner", "repo", "run_id", "step_name"],
+    required=['owner', 'repo', 'run_id', 'step_name'],
 )
-def get_run_logs_by_step(
-    client: GitHubClient,
-    owner: str,
-    repo: str,
-    run_id: int,
-    step_name: str,
-    max_lines: int = 200,
-    start_time: str = None,
-    direction: str = "head"
-):
-    """Получает логи конкретного шага workflow, распаковывая ZIP."""
-    try:
-        # Логи run'а — это ZIP с файлами вида "<job>/<N>_<step>.txt"
-        files = client.get_workflow_run_logs_files(owner, repo, run_id)
-        if not files:
-            return {"error": "No log files found in run archive"}
-
-        needle = step_name.lower()
-        matched = {name: text for name, text in files.items() if needle in name.lower()}
-        if not matched:
-            return {
-                "error": f"No log file matched step: {step_name}",
-                "available_files": sorted(files.keys())[:30],
-            }
-
-        # Склеиваем совпавшие файлы
-        logs = "\n".join(
-            f"===== {name} =====\n{text}" for name, text in matched.items()
-        )
-        log_lines = logs.split('\n')
-
-        if start_time:
-            filtered_lines = []
-            found_start = False
-            for line in log_lines:
-                if start_time in line:
-                    found_start = True
-                if found_start:
-                    filtered_lines.append(line)
-            log_lines = filtered_lines
-
-        if not log_lines:
-            return {"error": f"No logs found for step: {step_name}"}
-
-        total = len(log_lines)
-        if str(direction).lower() == "tail":
-            shown = log_lines[-max_lines:]
-        else:
-            shown = log_lines[:max_lines]
-
-        return {
-            "run_id": run_id,
-            "step_name": step_name,
-            "matched_files": list(matched.keys()),
-            "total_lines": total,
-            "returned_lines": len(shown),
-            "direction": str(direction).lower(),
-            "start_time": start_time,
-            "logs": shown
-        }
-    except Exception as e:
-        return {"error": _safe_utf8(str(e))}
-
+def get_run_logs_by_step(client: GitHubClient, **kwargs):
+    """Attempt-aware reader; source errors are not successful empty searches."""
+    return query_logs(client, "step", **kwargs)
 
 @mcp_tool(
     name="get_step_logs_via_checks",
