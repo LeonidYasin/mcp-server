@@ -16,11 +16,16 @@ Safety model, same class as shell_ops.py:
 Process bookkeeping is a JSON file per named process under
 LOCAL_TOOLS_ROOT/.mcp_processes/<name>.json, plus its own log file next to
 it. Disk-backed (not just in-memory) on purpose: this MCP server can be
-restarted by systemd independently of the processes it started, and
-status/stop/tail must keep working for those orphaned-but-alive children.
+restarted while bookkeeping remains. Actual child survival depends on the
+service manager KillMode/cgroup policy; new sessions do not escape a cgroup.
 """
 
 import json
+import stat
+import uuid
+from contextlib import contextmanager
+from functools import wraps
+from itertools import islice
 import os
 import shlex
 import shutil
@@ -32,8 +37,8 @@ from pathlib import Path
 
 from mcp_server.core.registry import mcp_tool
 
-MAX_OUTPUT_BYTES = int(os.environ.get("LOCAL_TOOLS_MAX_OUTPUT_BYTES", 200_000))
-DEFAULT_STOP_TIMEOUT = int(os.environ.get("LOCAL_TOOLS_STOP_TIMEOUT", 10))
+MAX_OUTPUT_BYTES = min(max(int(os.environ.get("LOCAL_TOOLS_MAX_OUTPUT_BYTES", 200_000)), 1), 1_000_000)
+DEFAULT_STOP_TIMEOUT = min(max(int(os.environ.get("LOCAL_TOOLS_STOP_TIMEOUT", 10)), 0), 30)
 
 # Same guard-rail list as shell_ops.py. Duplicated rather than imported —
 # every local-tools module here is self-contained (see localfs/files.py,
@@ -81,27 +86,72 @@ def _safe_dir(user_path: str) -> Path:
 
 def _processes_dir() -> Path:
     d = _root() / ".mcp_processes"
-    d.mkdir(parents=True, exist_ok=True)
+    if d.is_symlink():
+        raise ValueError("Bookkeeping directory must not be a symlink")
+    d.mkdir(mode=0o700, parents=False, exist_ok=True)
+    if not d.is_dir() or d.stat().st_uid != os.geteuid():
+        raise ValueError("Bookkeeping directory must belong to the server user")
     return d
 
 
+@contextmanager
+def _store():
+    # Anchor all opens/renames/unlinks to a no-follow directory descriptor.
+    directory = _processes_dir()
+    fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        if os.fstat(fd).st_uid != os.geteuid():
+            raise ValueError("Bookkeeping owner mismatch")
+        os.fchmod(fd, 0o700)
+        yield fd
+    finally:
+        os.close(fd)
+
+
+def _regular_fd(directory_fd, filename, flags):
+    fd = os.open(filename, flags | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK, 0o600,
+                 dir_fd=directory_fd)
+    st = os.fstat(fd)
+    if not stat.S_ISREG(st.st_mode) or st.st_nlink != 1 or st.st_uid != os.geteuid():
+        os.close(fd)
+        raise ValueError("Bookkeeping/log must be a single-link regular file owned by the server")
+    return fd
+
+
+def _locked_result(func):
+    @wraps(func)
+    def guarded(*args, **kwargs):
+        try:
+            if not Path("/proc/sys/kernel/random/boot_id").is_file():
+                raise ValueError("Safe process management requires Linux /proc")
+            import fcntl
+            with _store() as directory_fd:
+                lock_fd = _regular_fd(directory_fd, ".lock", os.O_CREAT | os.O_RDWR)
+                try:
+                    fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return func(*args, **kwargs)
+                finally:
+                    os.close(lock_fd)
+        except (ValueError, OSError, TypeError) as error:
+            return f"❌ {error}"
+    return guarded
+
+
 def _validate_name(name: str) -> str:
-    name = (name or "").strip()
-    if not name:
-        raise ValueError("'name' не может быть пустым")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("'name' не может быть пустым и должен быть строкой")
+    name = name.strip()
     if len(name) > 64 or any(c not in _NAME_ALLOWED for c in name):
-        raise ValueError(
-            "'name' должно быть из букв/цифр/'-'/'_', не длиннее 64 символов"
-        )
+        raise ValueError("'name' должно быть из букв/цифр/'-'/'_', не длиннее 64 символов")
     return name
 
 
 def _meta_path(name: str) -> Path:
-    return _processes_dir() / f"{name}.json"
+    return _processes_dir() / f"{_validate_name(name)}.json"
 
 
 def _log_path(name: str) -> Path:
-    return _processes_dir() / f"{name}.log"
+    return _processes_dir() / f"{_validate_name(name)}.log"
 
 
 def _is_denied(argv: list[str]) -> str | None:
@@ -113,21 +163,107 @@ def _is_denied(argv: list[str]) -> str | None:
 
 
 def _to_argv(cmd) -> list[str]:
-    if isinstance(cmd, list):
-        return [str(a) for a in cmd]
     if isinstance(cmd, str):
-        return shlex.split(cmd)
-    raise ValueError("cmd must be a string or a list of strings")
+        cmd = shlex.split(cmd)
+    if not isinstance(cmd, list) or not all(isinstance(a, str) and "\x00" not in a for a in cmd):
+        raise ValueError("cmd must be a string or a list of NUL-free strings")
+    return cmd
 
 
 def _load_meta(name: str) -> dict | None:
-    p = _meta_path(name)
-    if not p.exists():
+    with _store() as directory_fd:
+        try:
+            fd = _regular_fd(directory_fd, f"{name}.json", os.O_RDONLY)
+        except FileNotFoundError:
+            return None
+        with os.fdopen(fd, "r", encoding="utf-8") as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            raise ValueError("Metadata exceeds the read limit")
+        try:
+            meta = json.loads(raw)
+        except json.JSONDecodeError:
+            raise ValueError("Invalid process metadata") from None
+    if (not isinstance(meta, dict) or meta.get("name") != name
+            or type(meta.get("pid")) is not int or meta["pid"] <= 1
+            or not isinstance(meta.get("cmd"), list)
+            or not all(isinstance(arg, str) for arg in meta["cmd"])
+            or not isinstance(meta.get("started_at"), str)):
+        raise ValueError("Invalid process metadata fields")
+    return meta
+
+
+def _write_meta(name: str, meta: dict) -> None:
+    temporary = f".{name}-{uuid.uuid4().hex}.tmp"
+    with _store() as directory_fd:
+        try:
+            fd = _regular_fd(directory_fd, temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+            with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                json.dump(meta, stream, ensure_ascii=False)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, f"{name}.json", src_dir_fd=directory_fd,
+                       dst_dir_fd=directory_fd)
+        finally:
+            try:
+                os.unlink(temporary, dir_fd=directory_fd)
+            except FileNotFoundError:
+                pass
+
+
+def _forget(name: str) -> None:
+    with _store() as directory_fd:
+        try:
+            os.unlink(f"{name}.json", dir_fd=directory_fd)
+        except FileNotFoundError:
+            pass
+
+
+def _process_identity(pid: int) -> dict | None:
+    if type(pid) is not int or pid <= 1:
         return None
     try:
-        return json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        raw = Path(f"/proc/{pid}/stat").read_text()
+        fields = raw.rsplit(")", 1)[1].split()
+        uid_line = next(line for line in Path(f"/proc/{pid}/status").read_text().splitlines()
+                        if line.startswith("Uid:"))
+        return {
+            "start_ticks": fields[19],
+            "uid": int(uid_line.split()[2]),
+            "pgid": int(fields[2]), "sid": int(fields[3]),
+            "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
+        }
+    except (FileNotFoundError, PermissionError, IndexError, ValueError, StopIteration):
         return None
+
+
+def _same_process(meta: dict) -> bool:
+    saved = meta.get("identity")
+    current = _process_identity(meta["pid"])
+    return (isinstance(saved, dict) and saved == current
+            and saved.get("uid") == os.geteuid()
+            and saved.get("pgid") == meta["pid"]
+            and saved.get("sid") == meta["pid"])
+
+
+def _cancel_start(proc, identity) -> None:
+    """Best-effort cleanup of a just-created child after tracking failure."""
+    meta = {"pid": proc.pid, "identity": identity}
+    if identity and _same_process(meta):
+        try:
+            os.killpg(proc.pid, signal_module.SIGTERM)
+        except ProcessLookupError:
+            pass
+    else:
+        proc.terminate()
+    try:
+        proc.wait(timeout=3)
+    except subprocess.TimeoutExpired:
+        if identity and _same_process(meta):
+            os.killpg(proc.pid, signal_module.SIGKILL)
+        else:
+            proc.kill()
+        proc.wait(timeout=3)
 
 
 def _proc_state(pid: int) -> str | None:
@@ -182,8 +318,8 @@ def _is_alive(pid: int) -> bool:
 
 
 def _truncate(text: str) -> str:
-    if len(text) > MAX_OUTPUT_BYTES:
-        return text[-MAX_OUTPUT_BYTES:]
+    if len(text.encode("utf-8")) > MAX_OUTPUT_BYTES:
+        return text.encode("utf-8")[-MAX_OUTPUT_BYTES:].decode("utf-8", errors="ignore")
     return text
 
 
@@ -216,6 +352,7 @@ def _truncate(text: str) -> str:
     },
     required=["name", "cmd"],
 )
+@_locked_result
 def start_background(client=None, **kwargs) -> str:
     try:
         name = _validate_name(kwargs.get("name"))
@@ -228,6 +365,9 @@ def start_background(client=None, **kwargs) -> str:
             f"❌ Процесс '{name}' уже запущен (pid={existing['pid']}). "
             f"Останови его через stop_process сначала."
         )
+
+    if existing is None and len(list(islice(_processes_dir().glob("*.json"), 100))) >= 100:
+        return "❌ Лимит 100 tracked processes; сначала очисти завершённые записи через stop_process"
 
     try:
         argv = _to_argv(kwargs.get("cmd"))
@@ -249,12 +389,17 @@ def start_background(client=None, **kwargs) -> str:
         return f"❌ Команда не найдена в PATH: {argv[0]}"
 
     env_overrides = kwargs.get("env") or {}
-    if not isinstance(env_overrides, dict):
-        return "❌ 'env' должен быть объектом строка->строка"
-    env = {**os.environ, **{str(k): str(v) for k, v in env_overrides.items()}}
+    if (not isinstance(env_overrides, dict)
+            or not all(isinstance(k, str) and k and "=" not in k and "\x00" not in k
+                       and isinstance(v, str) and "\x00" not in v
+                       for k, v in env_overrides.items())):
+        return "❌ 'env' должен быть объектом строка->строка без NUL"
+    env = {**os.environ, **env_overrides}
 
     log_file = _log_path(name)
-    log_handle = open(log_file, "ab")
+    with _store() as directory_fd:
+        log_fd = _regular_fd(directory_fd, f"{name}.log", os.O_CREAT | os.O_WRONLY | os.O_APPEND)
+    log_handle = os.fdopen(log_fd, "ab")
     try:
         proc = subprocess.Popen(
             argv,
@@ -272,7 +417,14 @@ def start_background(client=None, **kwargs) -> str:
     finally:
         log_handle.close()
 
+    identity = _process_identity(proc.pid)
+    exited = identity is None and proc.poll() is not None
+    if identity is None and not exited:
+        _cancel_start(proc, identity)
+        return "❌ Не удалось подтвердить identity процесса; запуск отменён"
+
     meta = {
+        "identity": identity, "exited": exited,
         "name": name,
         "pid": proc.pid,
         "cmd": argv,
@@ -280,7 +432,12 @@ def start_background(client=None, **kwargs) -> str:
         "log_file": str(log_file),
         "started_at": datetime.now(timezone.utc).isoformat(),
     }
-    _meta_path(name).write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        _write_meta(name, meta)
+    except (ValueError, OSError):
+        # Do not leave an untracked direct child when persistence fails.
+        _cancel_start(proc, identity)
+        return "❌ Не удалось сохранить metadata; запуск отменён"
 
     return (
         f"✅ Запущен '{name}' (pid={proc.pid})\n"
@@ -305,11 +462,13 @@ def start_background(client=None, **kwargs) -> str:
         },
         "timeout": {
             "type": "integer",
-            "description": f"Секунд ждать после SIGTERM перед выводом статуса (по умолчанию {DEFAULT_STOP_TIMEOUT})",
+            "minimum": 0, "maximum": 30,
+            "description": f"Секунд ждать после сигнала: 0–30 (по умолчанию {DEFAULT_STOP_TIMEOUT})",
         },
     },
     required=["name"],
 )
+@_locked_result
 def stop_process(client=None, **kwargs) -> str:
     try:
         name = _validate_name(kwargs.get("name"))
@@ -321,14 +480,22 @@ def stop_process(client=None, **kwargs) -> str:
         return f"❌ Процесс '{name}' не найден (не запускался через start_background или уже забыт)"
 
     pid = meta["pid"]
-    if not _is_alive(pid):
-        _meta_path(name).unlink(missing_ok=True)
+    if meta.get("exited") or not _is_alive(pid):
+        _forget(name)
         return f"ℹ️ '{name}' (pid={pid}) уже не выполняется. Запись убрана."
 
-    force = bool(kwargs.get("force"))
-    timeout = int(kwargs.get("timeout") or DEFAULT_STOP_TIMEOUT)
+    if not _same_process(meta):
+        return "❌ Identity/owner/group не подтверждены; сигнал НЕ отправлен (stale или legacy metadata)"
+    force = kwargs.get("force", False)
+    timeout = kwargs.get("timeout", DEFAULT_STOP_TIMEOUT)
+    if type(force) is not bool or type(timeout) is not int or not 0 <= timeout <= 30:
+        return "❌ force должен быть boolean, timeout — целым числом 0–30"
 
     try:
+        # Recheck just before signaling; group signaling still has a narrow
+        # OS-level race and is not an atomic pidfd-based group operation.
+        if not _same_process(meta):
+            return "❌ Identity изменилась перед сигналом; сигнал НЕ отправлен"
         target = signal_module.SIGKILL if force else signal_module.SIGTERM
         # pid == its own process group id here (start_new_session=True made
         # it a session/group leader), so signal the whole group — otherwise
@@ -337,7 +504,7 @@ def stop_process(client=None, **kwargs) -> str:
         # trap handling until a synchronous foreground child returns.
         os.killpg(pid, target)
     except ProcessLookupError:
-        _meta_path(name).unlink(missing_ok=True)
+        _forget(name)
         return f"ℹ️ '{name}' (pid={pid}) исчез между проверкой и сигналом. Запись убрана."
     except PermissionError as e:
         return f"❌ Нет прав отправить сигнал pid={pid}: {e}"
@@ -345,7 +512,7 @@ def stop_process(client=None, **kwargs) -> str:
     if not force:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            if not _is_alive(pid):
+            if not _is_alive(pid) or not _same_process(meta):
                 break
             time.sleep(0.2)
     else:
@@ -353,11 +520,11 @@ def stop_process(client=None, **kwargs) -> str:
         # moment to reap it. Poll briefly instead of checking immediately.
         deadline = time.monotonic() + min(timeout, 3)
         while time.monotonic() < deadline:
-            if not _is_alive(pid):
+            if not _is_alive(pid) or not _same_process(meta):
                 break
             time.sleep(0.05)
 
-    if _is_alive(pid):
+    if _is_alive(pid) and _same_process(meta):
         if force:
             return f"❌ Не удалось остановить '{name}' (pid={pid}) даже SIGKILL'ом"
         return (
@@ -365,7 +532,7 @@ def stop_process(client=None, **kwargs) -> str:
             f"Повтори с force=true для SIGKILL."
         )
 
-    _meta_path(name).unlink(missing_ok=True)
+    _forget(name)
     return f"✅ '{name}' (pid={pid}) остановлен"
 
 
@@ -380,14 +547,17 @@ def stop_process(client=None, **kwargs) -> str:
     },
     required=[],
 )
+@_locked_result
 def process_status(client=None, **kwargs) -> str:
     name = kwargs.get("name")
 
     def _line(meta: dict) -> str:
-        alive = _is_alive(meta["pid"])
-        icon = "🟢" if alive else "🔴"
+        alive = not meta.get("exited") and _is_alive(meta["pid"])
+        verified = alive and _same_process(meta)
+        icon = "🟢" if verified else ("⚠️" if alive else "🔴")
+        state = "работает" if verified else ("identity не подтверждена" if alive else "остановлен")
         return (
-            f"{icon} {meta['name']} (pid={meta['pid']}, {'работает' if alive else 'остановлен'}) "
+            f"{icon} {meta['name']} (pid={meta['pid']}, {state}) "
             f"— $ {' '.join(meta['cmd'])} — started {meta['started_at']}"
         )
 
@@ -402,14 +572,20 @@ def process_status(client=None, **kwargs) -> str:
         return _line(meta)
 
     metas = []
-    for f in sorted(_processes_dir().glob("*.json")):
+    paths = list(islice(_processes_dir().glob("*.json"), 101))
+    for f in sorted(paths[:100]):
         try:
-            metas.append(json.loads(f.read_text(encoding="utf-8")))
-        except (OSError, json.JSONDecodeError):
+            meta = _load_meta(_validate_name(f.stem))
+            if meta:
+                metas.append(meta)
+        except (OSError, ValueError):
             continue
     if not metas:
         return "Нет отслеживаемых процессов."
-    return "\n".join(_line(m) for m in metas)
+    result = "\n".join(_line(m) for m in metas)
+    if len(paths) > 100:
+        result += "\n... truncated=true: максимум 100 записей; запроси конкретное name"
+    return result
 
 
 @mcp_tool(
@@ -420,28 +596,36 @@ def process_status(client=None, **kwargs) -> str:
     ),
     parameters={
         "name": {"type": "string", "description": "Имя процесса (как в start_background)"},
-        "lines": {"type": "integer", "description": "Сколько последних строк (по умолчанию 100)"},
+        "lines": {"type": "integer", "minimum": 0, "maximum": 1000,
+                  "description": "Сколько последних строк: 0–1000 (по умолчанию 100; 0 — пустой вывод)"},
     },
     required=["name"],
 )
+@_locked_result
 def tail_log(client=None, **kwargs) -> str:
     try:
         name = _validate_name(kwargs.get("name"))
     except ValueError as e:
         return f"❌ {e}"
 
-    meta = _load_meta(name)
-    log_file = Path(meta["log_file"]) if meta else _log_path(name)
-    if not log_file.exists():
-        return f"❌ Лог-файл не найден: {log_file}"
-
-    n = int(kwargs.get("lines") or 100)
-    try:
-        text = log_file.read_text(encoding="utf-8", errors="replace")
-    except OSError as e:
-        return f"❌ Не удалось прочитать лог: {e}"
-
-    all_lines = text.splitlines()
-    tail = all_lines[-n:] if n > 0 else all_lines
+    # Never trust log_file from mutable metadata. Canonical name only.
+    n = kwargs.get("lines", 100)
+    if type(n) is not int or not 0 <= n <= 1000:
+        return "❌ lines должен быть целым числом 0–1000"
+    log_file = _log_path(name)
+    with _store() as directory_fd:
+        try:
+            fd = _regular_fd(directory_fd, f"{name}.log", os.O_RDONLY)
+        except FileNotFoundError:
+            return f"❌ Лог-файл не найден: {log_file}"
+        with os.fdopen(fd, "rb") as stream:
+            size = os.fstat(stream.fileno()).st_size
+            budget = max(MAX_OUTPUT_BYTES, 0)
+            stream.seek(max(0, size - budget))
+            raw = stream.read(budget)
+    text = raw.decode("utf-8", errors="ignore")
+    tail = text.splitlines()[-n:] if n else []
     body = _truncate("\n".join(tail))
-    return f"--- {log_file} (последние {len(tail)} из {len(all_lines)} строк) ---\n{body}"
+    clipped = size > len(raw)
+    return (f"--- {log_file} (последние {len(tail)} строк; "
+            f"bytes_truncated={str(clipped).lower()}) ---\n{body}")

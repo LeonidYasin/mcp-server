@@ -146,7 +146,7 @@ curl http://127.0.0.1:3001/health
 | `LOCAL_TOOLS_MAX_LIST_ENTRIES` | `1000` | Лимит элементов в листинге. |
 | `LOCAL_TOOLS_MAX_GREP_MATCHES` | `200` | Лимит совпадений в поиске. |
 | `ENABLE_LOCAL_SHELL` | (пусто) | `1` — включает `run_command`/`run_python`, а также `start_background`/`stop_process`/`process_status`/`tail_log` (см. ниже). |
-| `LOCAL_TOOLS_STOP_TIMEOUT` | `10` | Сколько секунд `stop_process` ждёт после SIGTERM, прежде чем сообщить, что процесс не завершился. |
+| `LOCAL_TOOLS_STOP_TIMEOUT` | `10` | Сколько секунд `stop_process` ждёт после SIGTERM; допустимо 0–30, без автоматического SIGKILL. |
 
 ---
 
@@ -160,10 +160,16 @@ curl http://127.0.0.1:3001/health
 
 Что важно знать:
 
-- Bookkeeping (pid, cmd, cwd, лог) хранится в
-  `LOCAL_TOOLS_ROOT/.mcp_processes/<name>.{json,log}` — переживает перезапуск
-  самого MCP-сервера (systemd может рестартовать сервер независимо от того,
-  что он успел запустить).
+- Bookkeeping (pid + Linux identity, cmd, cwd, лог) хранится в
+  `LOCAL_TOOLS_ROOT/.mcp_processes/<name>.{json,log}`. Файлы сохраняются при
+  перезапуске, но живые процессы **не обязаны** его переживать: default systemd
+  `KillMode=control-group` останавливает потомков сервиса. Новая session не
+  выводит процесс из cgroup. Не ослабляйте KillMode неявно.
+- Перед сигналом сверяются boot ID, start ticks, UID, PGID и SID; stale/legacy
+  identity не получает сигнал. Управление требует Linux `/proc`.
+- Metadata/logs открываются без следования symlinks, hardlinks/FIFO отклоняются;
+  tail_log использует canonical path и bounded UTF-8 bytes вместо чтения всего лога.
+- Подробный контракт, ограничения PID race, lifetime и секретов: [process manager](docs/process-manager.md).
 - `stop_process` шлёт сигнал **всей группе процессов** (`os.killpg`), не
   только сохранённому pid — иначе `bash -c "...; sleep N"` может не
   среагировать на SIGTERM вовремя (bash откладывает обработку trap до

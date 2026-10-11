@@ -29,6 +29,10 @@ from mcp_server.tools.process import process_ops as po
 def sandbox_root(tmp_path, monkeypatch):
     """Каждый тест — в своём чистом LOCAL_TOOLS_ROOT."""
     monkeypatch.setattr(po, "_root", lambda: tmp_path)
+    monkeypatch.setattr(po, "_process_identity", lambda pid: {
+        "uid": po.os.geteuid(), "pgid": pid, "sid": pid,
+        "boot_id": "test-boot", "start_ticks": str(pid),
+    })
     return tmp_path
 
 
@@ -60,7 +64,7 @@ def test_start_background_rejects_missing_binary():
 
 def test_start_background_refuses_duplicate_when_alive(sandbox_root):
     meta = {
-        "name": "a", "pid": 111, "cmd": ["sleep", "5"],
+        "name": "a", "pid": 111, "identity": po._process_identity(111), "cmd": ["sleep", "5"],
         "cwd": str(sandbox_root), "log_file": str(sandbox_root / "a.log"),
         "started_at": "2026-01-01T00:00:00+00:00",
     }
@@ -119,7 +123,7 @@ def test_start_background_cwd_confined_to_root(sandbox_root):
 def _write_meta(root, name, pid):
     po._processes_dir().mkdir(parents=True, exist_ok=True)
     meta = {
-        "name": name, "pid": pid, "cmd": ["sleep", "30"],
+        "name": name, "pid": pid, "identity": po._process_identity(pid), "cmd": ["sleep", "30"],
         "cwd": str(root), "log_file": str(po._log_path(name)),
         "started_at": "2026-01-01T00:00:00+00:00",
     }
@@ -192,9 +196,9 @@ def test_process_status_empty():
 
 
 def test_process_status_lists_alive_and_dead(sandbox_root):
-    _write_meta(sandbox_root, "alive-one", 1)
-    _write_meta(sandbox_root, "dead-one", 2)
-    with patch.object(po, "_is_alive", side_effect=lambda pid: pid == 1):
+    _write_meta(sandbox_root, "alive-one", 101)
+    _write_meta(sandbox_root, "dead-one", 102)
+    with patch.object(po, "_is_alive", side_effect=lambda pid: pid == 101):
         result = po.process_status()
     assert "🟢 alive-one" in result
     assert "🔴 dead-one" in result

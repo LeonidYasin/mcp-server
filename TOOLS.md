@@ -110,6 +110,8 @@
 
 `start_background`, `stop_process`, `process_status`, `tail_log`
 
+Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, no-follow bookkeeping, bounded log reads. [Lifecycle и safety contract](docs/process-manager.md).
+
 Тот же флаг `ENABLE_LOCAL_SHELL=1`, что и у `shell/` — это дополнение к нему для
 долгоживущих процессов, которые `run_command` не может запустить (он
 блокирующий и убивает по таймауту). См. `SANDBOX.md`.
