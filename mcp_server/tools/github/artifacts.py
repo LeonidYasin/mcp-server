@@ -97,7 +97,7 @@ def download_artifact(client: GitHubClient, **kwargs) -> str:
                 or art["size_in_bytes"] < 0):
             raise ValueError("invalid artifact metadata")
         workflow = art.get("workflow_run")
-        if run_id is not None and (not isinstance(workflow, dict) or workflow.get("id") != run_id):
+        if run_id is not None and (not isinstance(workflow, dict) or not _positive(workflow.get("id")) or workflow["id"] != run_id):
             raise ValueError("foreign run")
         info = {"artifact_id": artifact_id, "name": _safe_text(art["name"]), "size_in_bytes": art["size_in_bytes"],
                 "created_at": _safe_text(art.get("created_at")), "artifact_expires_at": _safe_text(art.get("expires_at")),

@@ -247,3 +247,9 @@ def test_mcp_transport_schema_and_resolved_result(monkeypatch):
     schema=download_artifact._mcp_tool.to_mcp_tool_definition()['inputSchema']
     assert schema['required']==['owner','repo']
     assert schema['properties']['max_pages']['type']=='integer'
+
+
+def test_boolean_workflow_identity_is_not_run_one():
+    c,calls=mock_client(row=art(workflow_run={'id':True}))
+    assert invoke(c,artifact_id=7,run_id=1)['outcome']=='unknown'
+    c.resolve_artifact_download.assert_not_called()
