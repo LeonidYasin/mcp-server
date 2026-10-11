@@ -51,6 +51,8 @@
 ### Batch / multiple (3)
 `push_multiple_files`, `read_multiple_files`
 
+`push_multiple_files`: existing blob modes сохраняются; explicit `files[].mode`, optional `expected_head_sha`, один complete tree read и non-force ref update. [Modes/concurrency contract](docs/batch-push.md).
+
 ### Search (4)
 `search_code`, `search_commits`, `search_issues`, `search_repositories`
 

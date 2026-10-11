@@ -48,6 +48,8 @@ def test_push_multiple_files_bootstraps_empty_repo():
             # GitHub на пустом репо отдаёт 409; client._request
             # превращает это в Exception с текстом "HTTP error 409: ..."
             return Exception("HTTP error 409: Git Repository is empty.")
+        if method == "GET" and "/git/trees/" in url:
+            return {"truncated": False, "tree": []}
         if method == "POST" and url.endswith("/git/blobs"):
             return {"sha": "blob-sha"}
         if method == "POST" and url.endswith("/git/trees"):
@@ -98,6 +100,8 @@ def test_push_multiple_files_keeps_single_commit_on_nonempty_repo():
             return {"object": {"sha": "base-sha"}}
         if method == "GET" and "/git/commits/" in url:
             return {"tree": {"sha": "base-tree-sha"}}
+        if method == "GET" and "/git/trees/" in url:
+            return {"truncated": False, "tree": []}
         if method == "POST" and url.endswith("/git/blobs"):
             return {"sha": "blob-sha"}
         if method == "POST" and url.endswith("/git/trees"):
