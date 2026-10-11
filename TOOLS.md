@@ -28,6 +28,8 @@
 
 `get_pull_request`: structured SHA/draft/mergeability/timestamps и repo method flags в `metadata:`. `merge_pull_request`: обязательно `expected_head_sha`, enum метода, checks/preflight и один guarded PUT; нет автоматического retry/fallback или обхода protection. [Контракт и safety change](docs/pr-preflight.md).
 
+`update_pull_request`: `draft` меняется через GraphQL с независимым REST read-back; bool-only, already-target no-op, закрытый/merged PR отклоняется. `metadata:` различает requested/actual/applied и partial/unconfirmed. Draft-only не отправляет REST PATCH и не меняет прочие поля. [Контракт draft/ready](docs/pr-draft.md).
+
 ### Issues (5)
 `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`
 
