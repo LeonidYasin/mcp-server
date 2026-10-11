@@ -33,6 +33,12 @@ and group leadership before signaling, then checks again immediately before
 receives a signal. A live but unverified PID is not reported as our running
 process. Dead entries can be removed through `stop_process`.
 
+Linux `/proc` entries can disappear after open while being read: ENOENT/ESRCH
+are treated as gone, including during iteration. Permission and unrelated I/O
+errors are not silently converted into proof of death. After zombie reaping,
+one saved state read is used rather than combining two inconsistent reads.
+This reduces observation races; it is not an atomic PID/identity or group lock.
+
 Timeout is an integer 0–30 seconds; force is a boolean. Without force, only
 SIGTERM is sent; timeout reports the still-running process and asks for explicit
 force. Force sends SIGKILL. Signals reach the verified group, not processes that
