@@ -16,6 +16,8 @@
 ### Коммиты (4)
 `list_commits`, `get_commit_status`, `get_commit_diff`, `get_file_blame`
 
+`get_commit_status`: агрегирует legacy statuses и Check Runs по resolved SHA; `success/failure/pending/no_checks/unknown`, постраничные лимиты `max_pages` и лимит вывода `max_rows`. JSON-строка `metadata:` содержит sources/completeness/counts; не определяет merge eligibility. [Контракт и neutral/skipped policy](docs/commit-status.md).
+
 ### Ветки / сравнение (6)
 `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches`
 
