@@ -1,2 +1,2 @@
 #!/bin/sh
-printf 'pr72-seed\n'
+printf 'pr72-updated\n'
