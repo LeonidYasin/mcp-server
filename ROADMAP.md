@@ -3,12 +3,58 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `pyproject.toml`; список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 3 · 2026-09-26** (см. README → Source of truth).
+> **Ревизия ROADMAP: 4 · 2026-10-11** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
 - 🟡 средний — ощутимо расширяет возможности
 - 🟢 низкий — нишевое / требует осторожности
+
+---
+
+## План надёжности GitHub — 2026-10-11
+
+Срез: открытые issues #53, #58–#69; открытые PR #56 и #57. Это план разработки через небольшие PR, **не разрешение менять production, сливать PR, публиковать releases или менять настройки чужих репозиториев**. Предыдущие функциональные батчи ниже сохранены как долгосрочный backlog.
+
+### Порядок реализации
+
+| Шаг | Приоритет | Issue / область | Отдельный PR и критерий завершения |
+| --- | --- | --- | --- |
+| 1 | Быстрое исправление | [#65](https://github.com/LeonidYasin/mcp-server/issues/65) — compare bounds | Единый max_files для summary/patch; 0 допустим, неверные лимиты отклоняются до API; SHA снимка, total/returned/truncated, ограничения patch bytes/lines, честная неполнота upstream; three-dot документирован. |
+| 2 | P0 — сохранность данных | [#60](https://github.com/LeonidYasin/mcp-server/issues/60) — batch push | Сохранение executable/symlink modes одним tree-read, whitelist явных modes, expected_head_sha и отказ при конкурентном изменении. Не обходить ограничения force-push. |
+| 3 | P0 — честный статус | [#61](https://github.com/LeonidYasin/mcp-server/issues/61) — statuses + checks | Пагинация обоих источников; success/failure/pending/no_checks/unknown; cancelled/timed_out не success, пустые legacy statuses не pending сами по себе. Branch protection отдельно. |
+| 4 | P0 — безопасный merge | [#62](https://github.com/LeonidYasin/mcp-server/issues/62) — PR preflight | Полные SHA/draft/mergeable metadata; expected_head_sha передаётся как sha; disallowed method и изменившийся HEAD завершаются без merge. Зависит от достоверного чтения checks, но не обещает protection eligibility. |
+| 5 | P0 — ложный success | [#67](https://github.com/LeonidYasin/mcp-server/issues/67) — draft transitions | GraphQL ready/draft mutations, ошибки permissions/closed/merged, идемпотентность и read-after-write. Согласовать с #57, не дублировать его проверку required args. |
+| 6 | P0 — скачивание | [#63](https://github.com/LeonidYasin/mcp-server/issues/63) — artifacts | Получать 302 Location на сервере; HTTPS/host validation; Authorization не уходит на CDN; signed URL не попадает в persistent logs. Проверять 401/403/expired. |
+| 7a | P1 — Actions identity | [#69](https://github.com/LeonidYasin/mcp-server/issues/69) — run attempts | run_attempt и SHA/time metadata; attempt-specific endpoints/cache; точные artifact ID, duplicate names. Не смешивать старую и новую попытки. |
+| 7b | P1 — Actions diagnostics | [#69](https://github.com/LeonidYasin/mcp-server/issues/69), [#58](https://github.com/LeonidYasin/mcp-server/issues/58) — logs / Android | Fixtures per-step и combined-job ZIP, границы job/step или явный unsupported fallback. Затем compiler errors Kotlin/Java/Rust выше warnings, failed run не success. |
+| 8a | P1 — диагностика доступа | [#53](https://github.com/LeonidYasin/mcp-server/issues/53) — HTTP errors | 403 может означать permissions, policy или rate limit; 404 — not found либо скрытый доступ. Подсказки без утверждения единственной причины и без раскрытия токена; никаких скрытых fallback. |
+| 8b | P1 — диагностика протокола | [#59](https://github.com/LeonidYasin/mcp-server/issues/59) — create_issue persistence | Разделить GitHub effect и сохранение истории клиента. В main уже есть _normalize_content: сначала regression tests и проверка причины; не объявлять labels виноватыми без репро и не делать автоматический повтор потенциально успешного POST. |
+| 9 | P1 — lifecycle releases | [#64](https://github.com/LeonidYasin/mcp-server/issues/64) — tags/releases | Сначала atomic update_tag + expected_old_sha и explicit force; затем отдельный PR get/update release + assets. Stable tags не перезаписывать неявно; сохранить assets, без delete/create обхода permissions. |
+| 10 | P2 — новые возможности | [#68](https://github.com/LeonidYasin/mcp-server/issues/68) — repo features / Pages | Сначала only-supplied has_issues/has_discussions + read-back; затем Pages GET/POST/PUT с проверкой branch/path и deployment status. Configured, deployed и HTTP verified — разные состояния. |
+| 11 | P2 — secrets boundary | [#66](https://github.com/LeonidYasin/mcp-server/issues/66) — Actions secrets | Public key + metadata listing; encrypted_value/key_id mutation. Plaintext только через реальную secure-input capability; без неё только заранее зашифрованный payload. Delete — отдельно и явно; values читать невозможно. |
+
+P0 — приоритет по риску; шаг 1 выбран как маленькое изолированное исправление для запуска PR-процесса. Шаги 7a/7b и 8a/8b намеренно разделены, чтобы не объединять несколько независимых подсистем в один PR.
+
+### Уже открытые PR
+
+- [#57](https://github.com/LeonidYasin/mcp-server/pull/57): required args в update_pull_request. Нужны regression tests и актуальный CI; не заменяет #67 и #62.
+- [#56](https://github.com/LeonidYasin/mcp-server/pull/56): background process manager. Отдельный security review: PID reuse, process-group ownership, cwd/env, logs и восстановление bookkeeping. Не дублировать ветку; не считать безопасность доказанной описанием PR.
+
+### Gate для каждого шага
+
+1. Прочитать issue, комментарии, актуальный код и пересекающиеся PR.
+2. Отдельная feature/fix ветка от актуального main; regression test сначала, затем минимальное изменение и schema/docs в том же PR.
+3. Локально весь pytest + smoke import; CI Python 3.10–3.13 и wheel build. В PR различать фактически выполненные проверки и запланированные.
+4. Проверка tool schema/runtime discovery; negative cases, bounds, redaction, no incidental mutation. Mocked тесты не заменяют live-тесты.
+5. Изменяющий GitHub integration test — только на явно разрешённом disposable объекте, без настоящих секретов и production deployment. Если не выполнен, явно указать это.
+6. Ревью и зелёный CI до merge; issue закрывается только после merge и выполнения критериев. Невыполненные части — явные follow-ups, не ложный «готово».
+
+### Статус выполнения
+
+- [x] Выполнен triage открытых issues и учтены #56/#57.
+- [ ] Шаг 1 / #65: подготовить fix PR с тестами и документацией; до merge issue остаётся открытым.
+- [ ] Шаги 2–11: запланированы, не реализованы этим обновлением.
 
 ---
 
@@ -23,7 +69,7 @@
 | **synapse** (старый) | Соцсеть на ИИ-чатах | концепция | Идейный предок |
 | **synapse2** | ИИ-платформа поиска связей | FastAPI, DeepSeek | Веб-версия |
 | **agora-mcp** | offers/wants, сетевой | TypeScript, Postgres+pgvector | Сетевой протокол |
-| **mcp-server** | **110 инструментов** + Synapse | Python, Flask | MCP-интерфейс |
+| **mcp-server** | GitHub/MCP-инструменты + Synapse | Python, Flask | MCP-интерфейс |
 
 **Стратегия (вариант A):** не сливать репозитории, а унифицировать протокол. Общая спека `synapse-protocol` — JSON-схема для item (offer/want), profile, contact, exchange. На неё ссылаются и Synapse, и Agora, и NoKing.
 
@@ -31,7 +77,7 @@
 
 ## Текущее состояние
 
-Фактически зарегистрировано **110 инструментов** (проверяется `list_my_tools`). Реализовано (смержено в `main`):
+Точный набор зарегистрированных инструментов зависит от feature flags и проверяется `list_my_tools` на выбранной сборке; старые статические счётчики не подтверждают runtime-каталог. Реализовано (смержено в `main`):
 
 - **Батч 1** — PR / Issues / Releases / Tags / batch-push, meta (`list_my_tools`, `describe_tool`), web (`web_fetch`, `web_search`), утилиты (base64/hash/json/uuid/date/regex/diff).
 - **Батч 2** — branches, gists, Actions control, security alerts, repo info.
@@ -138,7 +184,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 ## Батч 8 — Авторизация и безопасность для публичного IP
 
-⚠️ **Критично до любого публичного развёртывания.** Сейчас сервер слушает `0.0.0.0:3001`, не проверяет собственный токен, CORS открыт.
+⚠️ **Критично до любого публичного развёртывания.** В текущем `main` сервер по умолчанию слушает `127.0.0.1:3001` (можно явно переопределить `MCP_HOST`), не проверяет отдельный собственный токен, CORS открыт. Loopback не заменяет аутентификацию при публикации через reverse proxy.
 
 1. **`MCP_AUTH_TOKEN`** — требовать `Authorization: Bearer <MCP_AUTH_TOKEN>` на каждый запрос к `/mcp`.
 2. **Разделить заголовки:** `X-MCP-Auth` (доступ к серверу) vs `Authorization: Bearer <github_token>` (GitHub API).
