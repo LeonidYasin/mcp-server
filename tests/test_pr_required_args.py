@@ -55,7 +55,8 @@ def test_get_valid_args_preserves_get_request():
 def test_update_valid_args_preserves_only_supplied_fields():
     client = MagicMock()
     result = pr.update_pull_request(client=client, **ARGS, title='new title')
-    assert result == '✅ PR #123 обновлён (title)'
+    assert result.splitlines()[0] == '✅ PR #123 обновлён (title)'  # #67 appends structured result
+    assert '"outcome":"updated"' in result
     client._request.assert_called_once_with('PATCH', '/repos/test-owner/test-repo/pulls/123',
                                             json={'title': 'new title'})
 
