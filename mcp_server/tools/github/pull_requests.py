@@ -76,6 +76,9 @@ def list_pull_requests(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number"],
 )
 def get_pull_request(client: GitHubClient, **kwargs) -> str:
+    missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
+    if missing:
+        return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
     resp = client._request(
         "GET", f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls/{kwargs['number']}"
     )
@@ -111,6 +114,9 @@ def get_pull_request(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number"],
 )
 def update_pull_request(client: GitHubClient, **kwargs) -> str:
+    missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
+    if missing:
+        return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
     owner, repo, number = kwargs["owner"], kwargs["repo"], kwargs["number"]
     payload = {}
     for k in ("title", "body", "state", "base"):
@@ -161,6 +167,9 @@ def update_pull_request(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number"],
 )
 def merge_pull_request(client: GitHubClient, **kwargs) -> str:
+    missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
+    if missing:
+        return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
     payload = {}
     if kwargs.get("merge_method"):
         payload["merge_method"] = kwargs["merge_method"]
@@ -188,6 +197,9 @@ def merge_pull_request(client: GitHubClient, **kwargs) -> str:
     required=["owner", "repo", "number"],
 )
 def close_pull_request(client: GitHubClient, **kwargs) -> str:
+    missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
+    if missing:
+        return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
     client._request(
         "PATCH",
         f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls/{kwargs['number']}",
