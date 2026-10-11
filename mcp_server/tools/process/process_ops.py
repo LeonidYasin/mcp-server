@@ -274,7 +274,9 @@ def _proc_state(pid: int) -> str | None:
                 if line.startswith("State:"):
                     # e.g. "State:\tZ (zombie)"
                     return line.split()[1]
-    except FileNotFoundError:
+    except (FileNotFoundError, ProcessLookupError):
+        # A Linux /proc entry can vanish after open, while iterating its contents.
+        # Catch only confirmed disappearance, not permission or unrelated I/O errors.
         return None
     return None
 
@@ -302,7 +304,8 @@ def _is_alive(pid: int) -> bool:
     if state is not None:
         if state == "Z":
             _reap_if_zombie(pid)
-            return _proc_state(pid) is not None and _proc_state(pid) != "Z"
+            after_reap = _proc_state(pid)
+            return after_reap is not None and after_reap != "Z"
         return True
     if Path("/proc").is_dir():
         # /proc exists but this pid doesn't — definitely gone.
