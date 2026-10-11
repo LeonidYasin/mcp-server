@@ -68,7 +68,8 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 
 - [x] Выполнен triage открытых issues и учтены #56/#57.
 - [x] PR #57 слит: `5b7c2dd74715bdef32834102d423726bc2eac8a9`; 50 pytest + 28 live HTTP negative checks на тестовом VPS, CI Python 3.10–3.13 success. Production не обновлён.
-- [ ] Шаг 1 / #65: [PR #71](https://github.com/LeonidYasin/mcp-server/pull/71) открыт, обновлён относительно main после #57; следующий gate — тестовый VPS. До merge issue остаётся открытым.
+- [x] Шаг 1 / #65: [PR #71](https://github.com/LeonidYasin/mcp-server/pull/71) слит: `ccd1c6fb475c86dc9630d0b06cbf6527b721e150`; issue #65 закрыт. 92 pytest на VPS, live TEST MCP limits/patch/identical-SHA checks и CI Python 3.10–3.13 success. Production не обновлён.
+- [ ] PR #56: обновлён относительно main; security hardening identity/no-follow/limits и lifecycle docs добавлены; 150 локальных тестов прошли. Следующий gate — отдельный TEST VPS с Linux process lifecycle и default KillMode cleanup; shell в production не включать.
 - [ ] Шаги 2–11: запланированы, не реализованы этим обновлением.
 - [ ] Финальная синхронизация документации, майндмэпа и GitHub Pages: запланирована; опубликованный сайт ещё не проверен.
 
