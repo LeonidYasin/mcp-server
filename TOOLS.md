@@ -70,6 +70,8 @@
 
 `watch_build`, `auto_fix_build`, `get_android_build_error`, `get_ios_build_error`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `get_latest_workflow_error`, `get_workflow_run_logs`, `get_full_workflow_logs`, `get_workflow_by_file`, `list_workflow_runs`, `get_latest_run_id`, `get_workflow_run_steps`
 
+`get_workflow_run_status`, `get_workflow_run_steps`: optional `run_attempt`, `max_pages` (1–20, default 5), `max_jobs` (0–100, default 20), `max_steps` (0–500, default 100). Attempt identity, source completeness and output truncation are separate. [Attempt snapshot contract](docs/workflow-attempts.md). Log readers are not yet attempt-aware.
+
 > Часть инструментов `build/` функционально пересекается с группой Actions в `github/` — это исторически сложившееся разделение (build-специфичные обёртки).
 
 ---
