@@ -26,6 +26,8 @@
 ### Pull Requests (11)
 `create_pull_request`, `list_pull_requests`, `get_pull_request`, `update_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `get_review_threads`, `resolve_review_thread`, `unresolve_review_thread`
 
+`get_pull_request`: structured SHA/draft/mergeability/timestamps и repo method flags в `metadata:`. `merge_pull_request`: обязательно `expected_head_sha`, enum метода, checks/preflight и один guarded PUT; нет автоматического retry/fallback или обхода protection. [Контракт и safety change](docs/pr-preflight.md).
+
 ### Issues (5)
 `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`
 

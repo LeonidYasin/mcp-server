@@ -1,5 +1,10 @@
 """MCP tools: GitHub pull requests."""
 
+import json
+import re
+from urllib.parse import quote
+
+from mcp_server.tools.github.commits import get_commit_status, _safe_text, _safe_url, _SHA
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
@@ -65,33 +70,93 @@ def list_pull_requests(client: GitHubClient, **kwargs) -> str:
     return "\n".join(lines)
 
 
+def _pr_path(kwargs):
+    owner, repo, number = kwargs.get("owner"), kwargs.get("repo"), kwargs.get("number")
+    if (not isinstance(owner, str) or not re.fullmatch(r"[A-Za-z0-9-]+", owner)
+            or not isinstance(repo, str) or repo in (".", "..")
+            or not re.fullmatch(r"[A-Za-z0-9_.-]+", repo)
+            or type(number) is not int or number < 1):
+        raise ValueError("invalid PR identity")
+    return f"/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/pulls/{number}"
+
+
+def _full_sha(value):
+    return value.lower() if isinstance(value, str) and _SHA.fullmatch(value) else None
+
+
+def _pr_metadata(row):
+    if not isinstance(row, dict):
+        raise ValueError("invalid PR response")
+    data = {key: _safe_text(row.get(key)) for key in
+            ("title", "state", "mergeable_state", "created_at", "updated_at", "closed_at", "merged_at")}
+    data["number"] = row.get("number") if type(row.get("number")) is int else None
+    for key in ("merged", "draft", "mergeable"):
+        data[key] = row.get(key) if type(row.get(key)) is bool else None
+    data["merge_commit_sha"] = _full_sha(row.get("merge_commit_sha"))
+    data["html_url"] = _safe_url(row.get("html_url"))
+    for key in ("head", "base"):
+        ref = row.get(key) if isinstance(row.get(key), dict) else {}
+        repo = ref.get("repo") if isinstance(ref.get("repo"), dict) else {}
+        data[key] = {"sha": _full_sha(ref.get("sha")), "ref": _safe_text(ref.get("ref")),
+                     "repo": _safe_text(repo.get("full_name"))}
+    data["merge_eligibility"] = "not_evaluated"
+    user = row.get("user") if isinstance(row.get("user"), dict) else {}
+    data["author"] = _safe_text(user.get("login"))
+    for key in ("additions", "deletions", "changed_files"):
+        data[key] = row.get(key) if type(row.get(key)) is int else None
+    return data
+
+
+def _repo_methods(client, path):
+    try:
+        row = client._request("GET", path.split("/pulls/")[0]).json()
+        if not isinstance(row, dict):
+            raise ValueError("invalid repo response")
+        flags = {method: row.get(flag) if type(row.get(flag)) is bool else None
+                 for method, flag in (("merge", "allow_merge_commit"),
+                                      ("squash", "allow_squash_merge"), ("rebase", "allow_rebase_merge"))}
+        return flags, None
+    except Exception:
+        return dict.fromkeys(("merge", "squash", "rebase")), "unavailable_or_invalid_repo"
+
+
+def _metadata_line(data):
+    return "metadata: " + json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+
+
 @mcp_tool(
     name="get_pull_request",
-    description="Детали pull request",
-    parameters={
-        "owner": {"type": "string"},
-        "repo": {"type": "string"},
-        "number": {"type": "integer", "description": "Номер PR"},
-    },
+    description="Данные PR: SHA, draft, mergeable tri-state, timestamps и repo merge methods; не разрешение merge",
+    parameters={"owner": {"type": "string"}, "repo": {"type": "string"},
+                "number": {"type": "integer", "description": "Номер PR"}},
     required=["owner", "repo", "number"],
 )
 def get_pull_request(client: GitHubClient, **kwargs) -> str:
     missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
     if missing:
         return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
-    resp = client._request(
-        "GET", f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls/{kwargs['number']}"
-    )
-    pr = resp.json()
-    return (
-        f"PR #{pr['number']}: {pr['title']}\n"
-        f"Состояние: {pr['state']} (merged={pr.get('merged')})\n"
-        f"Автор: {pr['user']['login']}\n"
-        f"Ветки: {pr['head']['ref']} -> {pr['base']['ref']}\n"
-        f"Изменений: +{pr.get('additions', 0)} / -{pr.get('deletions', 0)} в {pr.get('changed_files', 0)} файлах\n"
-        f"URL: {pr['html_url']}\n\n"
-        f"{(pr.get('body') or '')[:2000]}"
-    )
+    try:
+        path = _pr_path(kwargs)
+    except ValueError:
+        return "❌ Invalid PR identity\n" + _metadata_line({"error": "invalid_input"})
+    try:
+        row = client._request("GET", path).json()
+        data = _pr_metadata(row)
+        if data["number"] != kwargs["number"]:
+            raise ValueError("wrong PR")
+    except Exception:
+        return "❌ PR read unavailable\n" + _metadata_line({"error": "unavailable_or_invalid_pr"})
+    methods, error = _repo_methods(client, path)
+    data["merge_method_flags"] = methods
+    data["allowed_merge_methods"] = [method for method, allowed in methods.items() if allowed is True]
+    data["merge_methods_complete"] = all(value is not None for value in methods.values())
+    data["merge_methods_error"] = error
+    return (f"PR #{data['number']}: {data['title'] or ''}\n"
+            f"Состояние: {data['state']} (merged={data['merged']})\n"
+            f"Автор: {data['author']}\n"
+            f"Ветки: {data['head']['ref']} -> {data['base']['ref']}\n"
+            f"Изменений: +{data['additions']} / -{data['deletions']} в {data['changed_files']} файлах\n"
+            f"URL: {data['html_url']}\n" + _metadata_line(data) + "\n\n" + (_safe_text(row.get("body"), 2000) or ""))
 
 
 @mcp_tool(
@@ -154,36 +219,125 @@ def update_pull_request(client: GitHubClient, **kwargs) -> str:
     return f"✅ PR #{number} обновлён ({'; '.join(changes)})"
 
 
+def _merge_output(number, outcome, message, merged=False, sha=None, **extra):
+    data = {"number": number if type(number) is int else None, "outcome": outcome,
+            "merged": merged, "sha": sha, "message": message, **extra}
+    label = "✅" if merged is True else "⚠️" if merged is None else "❌"
+    return f"{label} PR #{data['number']}: {message}\n" + _metadata_line(data)
+
+
+def _snapshot_block(row, number, expected):
+    data = _pr_metadata(row)
+    if data["number"] != number or data["head"]["sha"] is None:
+        return data, "preflight_unknown"
+    if data["head"]["sha"] != expected:
+        return data, "head_conflict"
+    if data["merged"] is True:
+        return data, "already_merged"
+    if data["state"] == "closed" and data["merged"] is False:
+        return data, "closed"
+    if data["state"] != "open" or data["merged"] is not False or data["draft"] is None:
+        return data, "preflight_unknown"
+    if data["draft"]:
+        return data, "draft"
+    if data["mergeable"] is None:
+        return data, "mergeability_unknown"
+    if data["mergeable"] is False:
+        return data, "not_mergeable"
+    if data["mergeable_state"] not in ("clean", "has_hooks"):
+        return data, "mergeability_unknown"
+    return data, None
+
+
 @mcp_tool(
     name="merge_pull_request",
-    description="Мержит pull request",
+    description="Merge после read-only preflight; обязательно expected_head_sha, без обхода protection или повторов PUT",
     parameters={
-        "owner": {"type": "string"},
-        "repo": {"type": "string"},
-        "number": {"type": "integer"},
-        "merge_method": {"type": "string", "description": "merge|squash|rebase"},
-        "commit_title": {"type": "string"},
+        "owner": {"type": "string"}, "repo": {"type": "string"}, "number": {"type": "integer"},
+        "expected_head_sha": {"type": "string", "description": "Обязательный полный 40-hex SHA проверенного HEAD"},
+        "merge_method": {"type": "string", "enum": ["merge", "squash", "rebase"], "description": "Default merge; запрещённый метод не заменяется автоматически"},
+        "commit_title": {"type": "string"}, "commit_message": {"type": "string"},
     },
-    required=["owner", "repo", "number"],
+    required=["owner", "repo", "number", "expected_head_sha"],
 )
 def merge_pull_request(client: GitHubClient, **kwargs) -> str:
     missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
     if missing:
         return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
-    payload = {}
-    if kwargs.get("merge_method"):
-        payload["merge_method"] = kwargs["merge_method"]
-    if kwargs.get("commit_title"):
-        payload["commit_title"] = kwargs["commit_title"]
-    resp = client._request(
-        "PUT",
-        f"/repos/{kwargs['owner']}/{kwargs['repo']}/pulls/{kwargs['number']}/merge",
-        json=payload,
-    )
-    data = resp.json()
-    if data.get("merged"):
-        return f"✅ PR #{kwargs['number']} смержен: {data.get('sha', '')}"
-    return f"❌ Не удалось смержить: {data.get('message', 'unknown')}"
+    number = kwargs.get("number")
+    expected = _full_sha(kwargs.get("expected_head_sha"))
+    method = kwargs.get("merge_method", "merge")
+    try:
+        path = _pr_path(kwargs)
+        if expected is None or method not in ("merge", "squash", "rebase"):
+            raise ValueError("guard or method")
+        if any(key in kwargs and (not isinstance(kwargs[key], str) or len(kwargs[key]) > 10000)
+               for key in ("commit_title", "commit_message")):
+            raise ValueError("message")
+    except ValueError:
+        return _merge_output(number, "invalid_input", "Valid expected_head_sha, method and PR identity required")
+    evidence = {"expected_head_sha": expected, "merge_method": method, "merge_eligibility": "not_evaluated"}
+    try:
+        data, block = _snapshot_block(client._request("GET", path).json(), number, expected)
+    except Exception:
+        return _merge_output(number, "preflight_unknown", "PR read unavailable or invalid", **evidence)
+    evidence["head_sha"] = data["head"]["sha"]
+    if block:
+        confirmed = block == "already_merged" and data["merge_commit_sha"] is not None
+        return _merge_output(number, block if block != "already_merged" or confirmed else "unconfirmed",
+                             block, merged=True if confirmed else None if block == "already_merged" else False,
+                             sha=data["merge_commit_sha"] if confirmed else None,
+                             **evidence, **({"http_status": 409} if block == "head_conflict" else {}))
+    methods, error = _repo_methods(client, path)
+    evidence["merge_method_flags"] = methods
+    if methods[method] is not True:
+        reason = "method_not_allowed" if methods[method] is False else "policy_unknown"
+        return _merge_output(number, reason, reason, **evidence)
+    try:
+        text = get_commit_status(client, kwargs["owner"], kwargs["repo"], expected, max_rows=0)
+        checks = json.loads(next(line[10:] for line in text.splitlines() if line.startswith("metadata: ")))
+        valid = (checks.get("head_sha") == expected and checks.get("complete") is True
+                 and checks.get("aggregate_state") in ("success", "no_checks"))
+        evidence["checks"] = {"head_sha": checks.get("head_sha"), "aggregate_state": checks.get("aggregate_state"),
+                              "complete": checks.get("complete"), "counts": checks.get("counts")}
+    except Exception:
+        valid = False
+    if not valid:
+        return _merge_output(number, "checks_not_ready", "Checks failed, pending, unavailable or incomplete", **evidence)
+    # Re-read after potentially slow check pagination. The API SHA guard closes the final HEAD race.
+    try:
+        final, block = _snapshot_block(client._request("GET", path).json(), number, expected)
+    except Exception:
+        return _merge_output(number, "preflight_unknown", "Final PR read unavailable or invalid", **evidence)
+    evidence["head_sha"] = final["head"]["sha"]
+    if block:
+        confirmed = block == "already_merged" and final["merge_commit_sha"] is not None
+        return _merge_output(number, block if block != "already_merged" or confirmed else "unconfirmed",
+                             "PR changed during preflight; inspect before another request",
+                             merged=True if confirmed else None if block == "already_merged" else False,
+                             sha=final["merge_commit_sha"] if confirmed else None, **evidence,
+                             **({"http_status": 409} if block == "head_conflict" else {}))
+    payload = {"sha": expected, "merge_method": method}
+    for key in ("commit_title", "commit_message"):
+        if key in kwargs:
+            payload[key] = kwargs[key]
+    try:
+        response = client._request("PUT", path + "/merge", json=payload)
+        result = response.json()
+    except Exception as error:
+        # Never reflect raw bodies/headers; classify only explicit HTTP refusal codes.
+        match = re.match(r"^(?:Request failed: )*HTTP error (401|403|404|405|409|422)\b", str(error))
+        if match:
+            status = int(match.group(1))
+            return _merge_output(number, "head_conflict" if status == 409 else "rejected", "GitHub refused merge",
+                                 **evidence, http_status=status)
+        return _merge_output(number, "unconfirmed", "Merge result unknown; inspect PR before any retry", merged=None, **evidence)
+    if isinstance(result, dict) and result.get("merged") is False:
+        return _merge_output(number, "rejected", _safe_text(result.get("message")) or "GitHub refused merge", **evidence)
+    result_sha = _full_sha(result.get("sha")) if isinstance(result, dict) else None
+    if isinstance(result, dict) and result.get("merged") is True and result_sha:
+        return _merge_output(number, "merged", _safe_text(result.get("message")) or "Merged", merged=True, sha=result_sha, **evidence)
+    return _merge_output(number, "unconfirmed", "Invalid merge response; inspect PR before any retry", merged=None, **evidence)
 
 
 @mcp_tool(
