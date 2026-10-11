@@ -4,6 +4,7 @@ import re
 
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
+from .workflow_attempts import PARAMETERS as ATTEMPT_PARAMETERS, snapshot
 
 
 def _safe_utf8(text: str) -> str:
@@ -83,7 +84,10 @@ def list_workflow_runs(client: GitHubClient, owner: str, repo: str, limit: int =
                 "updated_at": run.get("updated_at"),
                 "workflow_id": run.get("workflow_id"),
                 "head_branch": run.get("head_branch"),
-                "head_sha": run.get("head_sha")
+                "head_sha": run.get("head_sha"),
+                "run_attempt": run.get("run_attempt"),
+                "run_started_at": run.get("run_started_at"),
+                "completed_at": run.get("completed_at")
             })
 
         return {
@@ -120,7 +124,10 @@ def get_latest_run_id(client: GitHubClient, owner: str, repo: str):
             "status": run.get("status"),
             "conclusion": run.get("conclusion"),
             "created_at": run.get("created_at"),
-            "head_sha": run.get("head_sha")
+            "head_sha": run.get("head_sha"),
+                "run_attempt": run.get("run_attempt"),
+                "run_started_at": run.get("run_started_at"),
+                "completed_at": run.get("completed_at")
         }
     except Exception as e:
         return {"error": _safe_utf8(str(e))}
@@ -128,103 +135,39 @@ def get_latest_run_id(client: GitHubClient, owner: str, repo: str):
 
 @mcp_tool(
     name="get_workflow_run_status",
-    description=(
-        "Мгновенный (неблокирующий) снимок статуса запуска workflow: "
-        "status, conclusion, jobs[] со статусами/результатами и список "
-        "проваленных шагов. Заменяет polling в watch_build."
-    ),
+    description="Снимок выбранной попытки workflow; latest фиксируется при чтении, bounded jobs/steps, complete показывает полноту.",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        **ATTEMPT_PARAMETERS,
     },
     required=["owner", "repo", "run_id"],
 )
-def get_workflow_run_status(client: GitHubClient, owner: str, repo: str, run_id: int):
-    """Мгновенный снимок статуса workflow run (без polling)."""
-    try:
-        run = client.get_workflow_run(owner, repo, run_id)
-        jobs = client.get_workflow_jobs(owner, repo, run_id)
-
-        job_list = []
-        failed_steps = []
-        for job in jobs:
-            steps = []
-            for step in job.get("steps", []):
-                steps.append({
-                    "name": step.get("name"),
-                    "status": step.get("status"),
-                    "conclusion": step.get("conclusion"),
-                })
-                if step.get("conclusion") == "failure":
-                    failed_steps.append(f"{job.get('name')} / {step.get('name')}")
-            job_list.append({
-                "name": job.get("name"),
-                "status": job.get("status"),
-                "conclusion": job.get("conclusion"),
-                "steps": steps,
-            })
-
-        return {
-            "owner": owner,
-            "repo": repo,
-            "run_id": run_id,
-            "status": run.get("status"),
-            "conclusion": run.get("conclusion"),
-            "head_branch": run.get("head_branch"),
-            "head_sha": run.get("head_sha"),
-            "html_url": run.get("html_url"),
-            "total_jobs": len(job_list),
-            "failed_steps": failed_steps,
-            "jobs": job_list,
-        }
-    except Exception as e:
-        return {"error": _safe_utf8(str(e))}
-
+def get_workflow_run_status(client: GitHubClient, owner: str, repo: str, run_id: int,
+                           run_attempt: int = None, max_pages: int = 5,
+                           max_jobs: int = 20, max_steps: int = 100):
+    """Return an attempt-pinned, non-transactional snapshot; no polling."""
+    return snapshot(client, owner, repo, run_id, run_attempt, max_pages,
+                    max_jobs, max_steps, flat=False)
 
 @mcp_tool(
     name="get_workflow_run_steps",
-    description="Получает список всех шагов для указанного запуска workflow с их статусами.",
+    description="Снимок выбранной попытки workflow; latest фиксируется при чтении, bounded jobs/steps, complete показывает полноту.",
     parameters={
         "owner": {"type": "string", "description": "Владелец репозитория"},
         "repo": {"type": "string", "description": "Имя репозитория"},
         "run_id": {"type": "integer", "description": "ID запуска workflow"},
+        **ATTEMPT_PARAMETERS,
     },
     required=["owner", "repo", "run_id"],
 )
-def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: int):
-    """Получает список всех шагов для указанного запуска workflow."""
-    try:
-        jobs = client.get_workflow_jobs(owner, repo, run_id)
-        if not jobs:
-            return {"error": "No jobs found for this run"}
-
-        result = []
-        for job in jobs:
-            job_name = job.get("name", "")
-            job_id = job.get("id")
-            for step in job.get("steps", []):
-                result.append({
-                    "job": job_name,
-                    "job_id": job_id,
-                    "step": step.get("name", ""),
-                    "number": step.get("number"),
-                    "status": step.get("status"),
-                    "conclusion": step.get("conclusion"),
-                    "started_at": step.get("started_at"),
-                    "completed_at": step.get("completed_at")
-                })
-
-        return {
-            "owner": owner,
-            "repo": repo,
-            "run_id": run_id,
-            "total_steps": len(result),
-            "steps": result
-        }
-    except Exception as e:
-        return {"error": _safe_utf8(str(e))}
-
+def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: int,
+                           run_attempt: int = None, max_pages: int = 5,
+                           max_jobs: int = 20, max_steps: int = 100):
+    """Return an attempt-pinned, non-transactional snapshot; no polling."""
+    return snapshot(client, owner, repo, run_id, run_attempt, max_pages,
+                    max_jobs, max_steps, flat=True)
 
 @mcp_tool(
     name="read_run_logs_offset",
