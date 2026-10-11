@@ -172,11 +172,11 @@ def get_workflow_run_steps(client: GitHubClient, owner: str, repo: str, run_id: 
 
 @mcp_tool(
     name="read_run_logs_offset",
-    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter явно unsupported, без смешивания reruns.",
+    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter по доказанным timeline/markers, ambiguous явно; без смешивания reruns.",
     parameters={
         "owner": {"type":"string"}, "repo": {"type":"string"}, "run_id": {"type":"integer"},
         "job_name": {"type":"string","description":"Фильтр только имени job (подстрока)"},
-        "step_name": {"type":"string","description":"Фильтр имени шага; combined архив => step_filter_unsupported"},
+        "step_name": {"type":"string","description":"Фильтр шага; combined timeline/markers или явный ambiguous/unsupported"},
         **LOG_PARAMETERS,
         "offset": {"type":"integer","description":"0-based offset 0–100000"}, "limit": {"type":"integer","description":"Лимит строк 1–1000; alias max_lines"},
     },
@@ -190,11 +190,11 @@ def read_run_logs_offset(client: GitHubClient, **kwargs):
 
 @mcp_tool(
     name="grep_run_logs",
-    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter явно unsupported, без смешивания reruns.",
+    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter по доказанным timeline/markers, ambiguous явно; без смешивания reruns.",
     parameters={
         "owner": {"type":"string"}, "repo": {"type":"string"}, "run_id": {"type":"integer"},
         "job_name": {"type":"string","description":"Фильтр только имени job (подстрока)"},
-        "step_name": {"type":"string","description":"Фильтр имени шага; combined архив => step_filter_unsupported"},
+        "step_name": {"type":"string","description":"Фильтр шага; combined timeline/markers или явный ambiguous/unsupported"},
         **LOG_PARAMETERS,
         "pattern": {"type":"string","description":"Regex до 256 символов; worker timeout 3s"}, "context": {"type":"integer","description":"Контекст 0–20, default 3"}, "max_matches": {"type":"integer","description":"Совпадения 1–500, default 50"}, "case_sensitive": {"type":"boolean"},
     },
@@ -206,11 +206,11 @@ def grep_run_logs(client: GitHubClient, **kwargs):
 
 @mcp_tool(
     name="get_run_logs_by_step",
-    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter явно unsupported, без смешивания reruns.",
+    description="Логи выбранной попытки: bounded ZIP/ответ; combined step filter по доказанным timeline/markers, ambiguous явно; без смешивания reruns.",
     parameters={
         "owner": {"type":"string"}, "repo": {"type":"string"}, "run_id": {"type":"integer"},
         "job_name": {"type":"string","description":"Фильтр только имени job (подстрока)"},
-        "step_name": {"type":"string","description":"Фильтр имени шага; combined архив => step_filter_unsupported"},
+        "step_name": {"type":"string","description":"Фильтр шага; combined timeline/markers или явный ambiguous/unsupported"},
         **LOG_PARAMETERS,
         "direction": {"type":"string","description":"head|tail, default head"}, "start_time": {"type":"string","description":"Строка-маркер начала; не найдено => start_time_not_found"},
     },

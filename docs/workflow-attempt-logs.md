@@ -13,15 +13,15 @@ after an older attempt fails. The snapshot must have complete valid jobs metadat
   against **only the step portion**, not the job folder. Job-name filtering is
   against the job portion. `grep_workflow_logs.file_filter` retains its historical
   path-substring semantics; it is not a job/step identity guarantee.
-- Combined `N_job.txt` files are labelled `combined_job`. A requested step filter
-  in such an archive returns `error=step_filter_unsupported`, `complete=false`
-  and a bounded job-search suggestion with the **same selected attempt**.
-- No guess that a `##[group]Run ...` command equals a display step name, no broad
-  fallback presented as step-specific. A mixed per-step/combined selection also
-  refuses to silently skip an unfilterable job; scope by job_name if appropriate.
-- This implements the explicit unsupported alternative from issue #69. Exact
-  combined step-boundary parsing is not claimed. Job search can contain multiple
-  smoke stages and must not be attributed to one selected step.
+- Combined `N_job.txt` now supports completed step segmentation when exact
+  attempt timeline + unique top-level Run markers establish boundaries. See the
+  [supported format and residual cases](workflow-step-boundaries.md).
+- `Run ...` command titles alone are never treated as step display names.
+  Missing/ambiguous boundaries return a case-specific error and a same-attempt
+  bounded job-search suggestion; job fallback is NOT step-scoped.
+- In mixed archives, fully covering original step files are preferred over a
+  proven combined copy. Incomplete/contradictory copies fail closed, not duplicate
+  hits or silently dropped steps. Unknown archive formats remain unsupported.
 - Each returned segment labels file/job/step when known, attempt, filter mode,
   and source-relative line numbers. Regex context never crosses files.
 

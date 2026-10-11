@@ -30,7 +30,7 @@ def search(segments, pattern, case_sensitive, context, max_matches, max_lines, m
                 text = lines[i][:max_chars-chars]
                 if len(text) != len(lines[i]):
                     truncated = True
-                returned.append({'line': i+1, 'text': text})
+                returned.append({'line': i+1+segment.get('line_offset',0), 'text': text})
                 chars += len(text)
                 remaining -= 1
         if returned:
