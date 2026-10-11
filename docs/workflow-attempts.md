@@ -51,8 +51,9 @@ caching must include this identity, not just run ID or artifact name.
 
 ## Deliberately deferred to part 2
 
-Log readers, combined-log step boundary selection, safe bounded ZIP downloads,
-step/job filtering, and artifact attempt attribution are NOT implemented here.
-They still have their existing latest-run semantics. Do not treat a pinned
-snapshot as proof that legacy logs or a same-named artifact belong to its attempt.
+Four primary readers now have a separate [attempt logs contract](workflow-attempt-logs.md)
+with bounded downloads and explicit combined-step unsupported fallback. Legacy
+diagnostics/full/preview/checks wrappers and artifact attempt attribution remain
+unmigrated. Do not treat a pinned snapshot as proof those legacy results or a
+same-named artifact belong to its attempt.
 Issue #69 remains open until these cases and live rerun checks pass.
