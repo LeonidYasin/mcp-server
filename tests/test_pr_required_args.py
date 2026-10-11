@@ -1,5 +1,5 @@
 """Required-argument regression coverage for PR #57; no live mutations."""
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 
@@ -35,7 +35,8 @@ def test_all_missing_args_reported_in_stable_order(tool):
 @pytest.mark.parametrize('tool', TOOLS, ids=lambda t: t.__name__)
 def test_required_schema_unchanged(tool):
     schema = tool._mcp_tool.to_mcp_tool_definition()['inputSchema']
-    assert schema['required'] == ['owner', 'repo', 'number']
+    assert schema['required'] == (['owner', 'repo', 'number', 'expected_head_sha']
+                                  if tool is pr.merge_pull_request else ['owner', 'repo', 'number'])
 
 
 def test_get_valid_args_preserves_get_request():
@@ -46,7 +47,9 @@ def test_get_valid_args_preserves_get_request():
         'base': {'ref': 'main'}, 'html_url': 'https://example.invalid/pr/123',
     }
     assert 'PR #123: test' in pr.get_pull_request(client=client, **ARGS)
-    client._request.assert_called_once_with('GET', '/repos/test-owner/test-repo/pulls/123')
+    assert client._request.call_args_list == [
+        call('GET', '/repos/test-owner/test-repo/pulls/123'),
+        call('GET', '/repos/test-owner/test-repo')]  # #62 reads repo method flags too
 
 
 def test_update_valid_args_preserves_only_supplied_fields():
@@ -63,13 +66,12 @@ def test_update_no_fields_does_not_call_github():
     client._request.assert_not_called()
 
 
-def test_merge_valid_args_preserves_put_payload():
+def test_legacy_merge_without_guard_is_read_only():
+    # #62 intentionally removes unguarded merge. Required-arg diagnostics above remain stable.
     client = MagicMock()
-    client._request.return_value.json.return_value = {'merged': True, 'sha': 'test-sha'}
     result = pr.merge_pull_request(client=client, **ARGS, merge_method='squash', commit_title='test')
-    assert result == '✅ PR #123 смержен: test-sha'
-    client._request.assert_called_once_with('PUT', '/repos/test-owner/test-repo/pulls/123/merge',
-                                            json={'merge_method': 'squash', 'commit_title': 'test'})
+    assert 'invalid_input' in result
+    client._request.assert_not_called()
 
 
 def test_close_valid_args_preserves_patch_payload():
