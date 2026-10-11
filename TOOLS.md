@@ -45,6 +45,8 @@
 ### Actions / Workflows (17)
 `dispatch_workflow`, `rerun_workflow`, `rerun_failed_jobs`, `cancel_workflow`, `list_workflows`, `list_workflow_runs`, `get_workflow_by_file`, `list_artifacts`, `download_artifact`, `get_workflow_run_status`, `get_workflow_run_steps`, `get_workflow_logs_preview`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `read_run_logs_offset`, `grep_run_logs`, `grep_workflow_logs`
 
+`download_artifact`: разрешает настоящий 302 Location без follow/CDN-запроса и передачи PAT; `artifact_id` или точное `name` + `run_id`, bounded lookup `max_pages`, отказ при неоднозначности/неполноте. Компактный `metadata:` содержит чувствительный short-lived download_url только при resolved; не путать с API URL/retention expiry. [Контракт и credential boundary](docs/artifact-download.md).
+
 ### Security (3)
 `list_dependabot_alerts`, `list_code_scanning_alerts`, `list_secret_scanning_alerts`
 

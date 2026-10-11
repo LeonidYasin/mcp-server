@@ -6,6 +6,8 @@ import base64
 import json
 import io
 import zipfile
+import re
+from urllib.parse import urlsplit, unquote, quote
 
 
 class GitHubClient:
@@ -62,6 +64,48 @@ class GitHubClient:
             raise Exception("Request timeout after 30 seconds")
         except Exception as e:
             raise Exception(f"Request failed: {str(e)}")
+
+    def resolve_artifact_download(self, owner: str, repo: str, artifact_id: int) -> dict:
+        """Resolve only the fixed GitHub API redirect; never fetch its destination/body."""
+        result = {"outcome": "unknown", "download_url": None, "http_status": None, "error": None}
+        if (not isinstance(owner, str) or not re.fullmatch(r"[A-Za-z0-9-]+", owner)
+                or not isinstance(repo, str) or repo in (".", "..")
+                or not re.fullmatch(r"[A-Za-z0-9_.-]+", repo)
+                or type(artifact_id) is not int or artifact_id < 1):
+            return {**result, "outcome": "invalid_input", "error": "invalid_identity"}
+        path = f"/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/actions/artifacts/{artifact_id}/zip"
+        try:
+            # _request calls raise_for_status (302 raises in httpx), and ordinary
+            # client requests follow redirects. Neither path is safe for this purpose.
+            with self._client.stream("GET", path, headers=dict(self._headers), follow_redirects=False) as response:
+                result["http_status"] = response.status_code
+                if response.status_code != 302:
+                    return {**result, "outcome": "api_refused" if response.status_code >= 400 else "unexpected_response",
+                            "error": "download_endpoint_not_302"}
+                location = response.headers.get("Location", "")
+                if not isinstance(location, str) or not location or len(location) > 16384:
+                    raise ValueError("invalid redirect")
+                if any(ord(c) < 33 or ord(c) > 126 for c in location) or "\\" in location:
+                    raise ValueError("invalid redirect characters")
+                parts = urlsplit(location)
+                host = parts.hostname or ""
+                allowed = (host == "objects.githubusercontent.com"
+                           or re.fullmatch(r"[a-z0-9-]+(?:\.[a-z0-9-]+)*\.actions\.githubusercontent\.com", host)
+                           or re.fullmatch(r"productionresultssa[0-9]+\.blob\.core\.windows\.net", host))
+                if (parts.scheme != "https" or not allowed or parts.port not in (None, 443)
+                        or parts.username is not None or parts.password is not None or parts.fragment
+                        or not parts.path.startswith("/")):
+                    raise ValueError("untrusted redirect")
+                # A signed CDN capability may be returned, but never reflect our PAT.
+                auth = self._headers.get("Authorization", "")
+                token = auth[7:] if auth.startswith("Bearer ") else ""
+                if token and (token in location or token in unquote(location)):
+                    raise ValueError("credential reflected in redirect")
+                return {**result, "outcome": "resolved", "download_url": location}
+        except ValueError:
+            return {**result, "outcome": "redirect_rejected", "error": "untrusted_or_missing_location"}
+        except Exception:
+            return {**result, "error": "download_request_failed"}
 
     def _ensure_utf8_dict(self, data: dict) -> dict:
         """Ensure all string values in dict are properly encoded as UTF-8."""
