@@ -19,6 +19,8 @@
 ### Ветки / сравнение (6)
 `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches`
 
+`compare_branches`: `max_files` (0–300, default 10) ограничивает summary и patches; `max_patch_bytes` / `max_patch_lines` ограничивают общий patch. SHA и completeness/truncation — в JSON-строке `metadata:`. Three-dot, не diff двух деревьев. [Подробный контракт](docs/compare-branches.md).
+
 ### Pull Requests (11)
 `create_pull_request`, `list_pull_requests`, `get_pull_request`, `update_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `get_review_threads`, `resolve_review_thread`, `unresolve_review_thread`
 
