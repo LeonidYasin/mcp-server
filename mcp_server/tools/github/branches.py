@@ -1,5 +1,8 @@
 """MCP tools: GitHub branches."""
 
+import json
+from urllib.parse import quote
+
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
 
@@ -135,51 +138,138 @@ def delete_branch(client: GitHubClient, **kwargs) -> str:
     return f"✅ Ветка '{kwargs['branch']}' удалена"
 
 
+def _compare_limit(kwargs: dict, name: str, default: int, maximum: int) -> int:
+    value = kwargs.get(name, default)
+    # bool is an int subclass, but not a valid integer tool argument.
+    if type(value) is not int or not 0 <= value <= maximum:
+        raise ValueError(f"{name}: требуется целое число от 0 до {maximum}")
+    return value
+
+
+def _bounded_compare_patch(files: list, max_bytes: int, max_lines: int):
+    """One UTF-8 budget across all patches, including diff headers/newlines."""
+    chunks = []
+    used_bytes = used_lines = unavailable = 0
+    truncated = False
+    for index, file in enumerate(files):
+        patch = file.get("patch")
+        if not patch:
+            unavailable += 1
+            continue
+        text = f"diff --git a/{file['filename']} b/{file['filename']}\n{patch}"
+        for line in text.splitlines():
+            raw = (line + "\n").encode("utf-8")
+            remaining = max_bytes - used_bytes
+            if used_lines >= max_lines or remaining <= 0:
+                truncated = True
+                break
+            if len(raw) > remaining:
+                # Never cut a multibyte character in half.
+                chunk = raw[:remaining].decode("utf-8", errors="ignore")
+                chunks.append(chunk)
+                used_bytes += len(chunk.encode("utf-8"))
+                used_lines += bool(chunk)
+                truncated = True
+                break
+            chunks.append(raw.decode("utf-8"))
+            used_bytes += len(raw)
+            used_lines += 1
+        # Continue to count unavailable patches, but no more output after truncation.
+        if truncated:
+            unavailable += sum(not f.get("patch") for f in files[index + 1:])
+            break
+    return "".join(chunks), used_bytes, used_lines, truncated, unavailable
+
+
 @mcp_tool(
     name="compare_branches",
     description=(
-        "Сравнивает две ветки (base...head): коммиты и файлы. "
-        "include_patch=True добавляет unified diff по изменённым файлам."
+        "Сравнивает base...head (three-dot, изменения head от merge-base, не diff двух деревьев). "
+        "max_files ограничивает и список файлов, и patches. SHA и признаки усечения в metadata. "
+        "include_patch=True добавляет unified diff с общим лимитом UTF-8 bytes/lines."
     ),
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
-        "base": {"type": "string", "description": "Базовая ветка"},
-        "head": {"type": "string", "description": "Ветка для сравнения"},
+        "base": {"type": "string", "description": "Базовая ветка/ref"},
+        "head": {"type": "string", "description": "Ветка/ref для сравнения"},
         "include_patch": {"type": "boolean", "description": "Добавить unified diff (по умолчанию false)"},
-        "max_files": {"type": "integer", "description": "Сколько файлов показать в диффе (по умолчанию 10)"},
+        "max_files": {"type": "integer", "minimum": 0, "maximum": 300, "default": 10,
+                      "description": "Лимит файлов для summary И patches; 0 — только metadata"},
+        "max_patch_bytes": {"type": "integer", "minimum": 0, "maximum": 262144, "default": 65536,
+                            "description": "Общий лимит UTF-8 bytes patches, включая diff headers"},
+        "max_patch_lines": {"type": "integer", "minimum": 0, "maximum": 5000, "default": 1000,
+                            "description": "Общий лимит строк patches, включая diff headers"},
     },
     required=["owner", "repo", "base", "head"],
 )
 def compare_branches(client: GitHubClient, **kwargs) -> str:
-    resp = client._request(
-        "GET",
-        f"/repos/{kwargs['owner']}/{kwargs['repo']}/compare/{kwargs['base']}...{kwargs['head']}",
-    )
+    limit = _compare_limit(kwargs, "max_files", 10, 300)
+    max_bytes = _compare_limit(kwargs, "max_patch_bytes", 65536, 262144)
+    max_lines = _compare_limit(kwargs, "max_patch_lines", 1000, 5000)
+    prefix = f"/repos/{kwargs['owner']}/{kwargs['repo']}"
+    # Resolve each ref once, then compare immutable SHAs. Additional GETs avoid
+    # guessing head SHA from a potentially truncated commits list.
+    shas = {}
+    for role in ("base", "head"):
+        data = client._request("GET", f"{prefix}/commits/{quote(kwargs[role], safe='')}").json()
+        sha = data.get("sha")
+        if not isinstance(sha, str) or not sha:
+            raise ValueError(f"GitHub не вернул SHA для {role}")
+        shas[role] = sha
+    resp = client._request("GET", f"{prefix}/compare/{shas['base']}...{shas['head']}")
     d = resp.json()
+    files = d.get("files") or []
+    selected = files[:limit]
+    # GitHub compare returns at most 300 files, without an exact total for
+    # larger comparisons. At the cap, completeness is deliberately unknown.
+    files_complete = "files" in d and len(files) < 300
+    total_files = len(files) if files_complete else None
+    commits = d.get("commits") or []
+    total_commits = d.get("total_commits")
+    commits_complete = (
+        isinstance(total_commits, int) and len(commits) == total_commits
+        and 'rel="next"' not in resp.headers.get("Link", "")
+    )
+    info = {
+        "base_sha": shas["base"], "head_sha": shas["head"],
+        "merge_base_sha": (d.get("merge_base_commit") or {}).get("sha"),
+        "total_files": total_files, "fetched_files": len(files),
+        "returned_files": len(selected),
+        "truncated": len(selected) < len(files) or not files_complete,
+        "upstream_files_complete": files_complete,
+        "total_commits": total_commits, "fetched_commits": len(commits),
+        "upstream_commits_complete": commits_complete,
+    }
+    patch_output = None
+    if kwargs.get("include_patch"):
+        patch_output, byte_count, line_count, truncated, unavailable = _bounded_compare_patch(
+            selected, max_bytes, max_lines
+        )
+        info.update({
+            "patch_bytes": byte_count, "patch_lines": line_count,
+            "patch_truncated": truncated, "patch_unavailable_files": unavailable,
+            "patch_complete": not (truncated or unavailable or info["truncated"]),
+        })
     lines = [
         f"{kwargs['base']}...{kwargs['head']}",
         f"Статус: {d.get('status')} | ahead_by={d.get('ahead_by')} behind_by={d.get('behind_by')}",
-        f"Коммитов: {d.get('total_commits')} | Файлов: {len(d.get('files', []))}",
+        f"Коммитов: {total_commits} | Файлов: {total_files if total_files is not None else 'unknown'}",
+        "metadata: " + json.dumps(info, ensure_ascii=False, sort_keys=True),
+        "Three-dot: изменения head от merge-base; ahead_by после squash не означает новые функции.",
     ]
-    files = d.get("files", [])
-    for f in files[:30]:
-        lines.append(f"  [{f['status']}] {f['filename']} (+{f.get('additions', 0)}/-{f.get('deletions', 0)})")
-
-    if kwargs.get("include_patch"):
-        limit = max(int(kwargs.get("max_files", 10)), 1)
-        lines.append("")
-        lines.append("--- patch ---")
-        for f in files[:limit]:
-            patch = f.get("patch")
-            if not patch:
-                continue
-            lines.append(f"diff --git a/{f['filename']} b/{f['filename']}")
-            lines.append(patch)
-        if len(files) > limit:
-            lines.append(f"... ещё {len(files) - limit} файлов не показано")
-
-    return "\n".join(lines)
+    for file in selected:
+        lines.append(f"  [{file['status']}] {file['filename']} (+{file.get('additions', 0)}/-{file.get('deletions', 0)})")
+    if len(selected) < len(files):
+        lines.append(f"... ещё {len(files) - len(selected)} полученных файлов не показано")
+    if not files_complete:
+        lines.append("GitHub: полный список файлов не подтверждён; total_files=unknown (лимит API 300).")
+    if not commits_complete:
+        lines.append("GitHub: список коммитов неполный или его полнота не подтверждена.")
+    result = "\n".join(lines)
+    if patch_output is not None:
+        result += "\n\n--- patch ---\n" + patch_output
+    return result
 
 
 @mcp_tool(

@@ -2,13 +2,13 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 3 · **Дата:** 2026-09-26 · **Всего инструментов: 110**
+> **Ревизия:** 5 · **Дата:** 2026-09-28 · **Всего инструментов: 117**
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
 ---
 
-## 🐙 `github/` — GitHub API (83)
+## 🐙 `github/` — GitHub API (86)
 
 ### Файлы (11)
 `get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
@@ -18,6 +18,8 @@
 
 ### Ветки / сравнение (6)
 `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches`
+
+`compare_branches`: `max_files` (0–300, default 10) ограничивает summary и patches; `max_patch_bytes` / `max_patch_lines` ограничивают общий patch. SHA и completeness/truncation — в JSON-строке `metadata:`. Three-dot, не diff двух деревьев. [Подробный контракт](docs/compare-branches.md).
 
 ### Pull Requests (11)
 `create_pull_request`, `list_pull_requests`, `get_pull_request`, `update_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `get_review_threads`, `resolve_review_thread`, `unresolve_review_thread`
@@ -42,6 +44,9 @@
 
 ### Repo info / admin (6)
 `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors`, `update_repo_info`, `get_repo_tree`
+
+### Repo management (3)
+`create_repo`, `list_my_repos`, `update_repo`
 
 ### Batch / multiple (3)
 `push_multiple_files`, `read_multiple_files`
@@ -101,6 +106,18 @@
 
 ---
 
+## 🔒 `process/` — фоновые процессы (4, по умолчанию выключено)
+
+`start_background`, `stop_process`, `process_status`, `tail_log`
+
+Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, no-follow bookkeeping, bounded log reads. [Lifecycle и safety contract](docs/process-manager.md).
+
+Тот же флаг `ENABLE_LOCAL_SHELL=1`, что и у `shell/` — это дополнение к нему для
+долгоживущих процессов, которые `run_command` не может запустить (он
+блокирующий и убивает по таймауту). См. `SANDBOX.md`.
+
+---
+
 ## 🧠 `synapse/` — находимость людей (6+, флаг `ENABLE_SYNAPSE=1`)
 
 `publish_profile`, `search_people`, `propose_contact`, `save_note`, `search_notes`, `index_github`
@@ -109,4 +126,4 @@
 
 ---
 
-_Ревизия 3 · 2026-09-26 · всего 110 инструментов. При добавлении/удалении инструмента — обновить этот файл, счётчик и инкрементировать ревизию._
+_Ревизия 5 · 2026-09-28 · всего 117 инструментов. При добавлении/удалении инструмента — обновить этот файл, счётчик и инкрементировать ревизию._
