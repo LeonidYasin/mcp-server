@@ -159,21 +159,86 @@ def get_pull_request(client: GitHubClient, **kwargs) -> str:
             f"URL: {data['html_url']}\n" + _metadata_line(data) + "\n\n" + (_safe_text(row.get("body"), 2000) or ""))
 
 
+def _update_output(number, outcome, changes, requested=None, actual=None,
+                   draft_outcome=None, draft_applied=None, error=None):
+    data = {"number": number if type(number) is int else None, "outcome": outcome, "changes": changes,
+            "requested_draft": requested, "actual_draft": actual,
+            "draft_outcome": draft_outcome, "draft_applied": draft_applied, "error": error}
+    if outcome == "updated":
+        label = f"✅ PR #{number} обновлён ({'; '.join(changes)})"
+    elif outcome == "no_op":
+        label = f"ℹ️ PR #{number}: уже в запрошенном состоянии"
+    else:
+        label = f"{'⚠️' if outcome in ('partial', 'unconfirmed') else '❌'} PR #{data['number']}: {outcome}"
+    return label + "\n" + _metadata_line(data)
+
+
+def _draft_snapshot(row, number, node=None):
+    if (not isinstance(row, dict) or type(row.get("number")) is not int
+            or row["number"] != number or type(row.get("draft")) is not bool
+            or type(row.get("merged")) is not bool or row.get("state") not in ("open", "closed")):
+        raise ValueError("invalid PR snapshot")
+    if node is not None and row.get("node_id") != node:
+        raise ValueError("PR node changed")
+    return row
+
+
+def _transition_draft(client, path, number, requested, before):
+    actual = before["draft"]
+    if actual is requested:
+        return "no_op", actual, False, None
+    node = before.get("node_id")
+    if not isinstance(node, str) or not node or len(node) > 256 or any(ord(c) < 32 for c in node):
+        return "rejected", actual, False, "invalid_node_id"
+    mutation = "convertPullRequestToDraft" if requested else "markPullRequestReadyForReview"
+    query = ("mutation DraftTransition($pullRequestId: ID!) { " + mutation +
+             "(input: {pullRequestId: $pullRequestId}) { pullRequest { id number isDraft state } } }")
+    error = None
+    echo_valid = False
+    try:
+        payload = client._request("POST", "/graphql", json={
+            "query": query, "variables": {"pullRequestId": node}}).json()
+        if not isinstance(payload, dict):
+            error = "invalid_graphql_response"
+        elif payload.get("errors"):
+            error = "graphql_error"
+        else:
+            data = payload.get("data")
+            result = data.get(mutation) if isinstance(data, dict) else None
+            observed = result.get("pullRequest") if isinstance(result, dict) else None
+            echo_valid = (isinstance(observed, dict) and observed.get("id") == node
+                          and type(observed.get("number")) is int and observed["number"] == number
+                          and observed.get("isDraft") is requested and observed.get("state") == "OPEN")
+            if not echo_valid:
+                error = "invalid_graphql_response"
+    except Exception:
+        error = "graphql_request_unconfirmed"
+    # HTTP 200 is not proof. Even GraphQL errors/timeouts can have side effects.
+    # Always inspect the actual PR; never retry the mutation automatically.
+    try:
+        after = _draft_snapshot(client._request("GET", path).json(), number, node)
+        actual = after["draft"]
+    except Exception:
+        return "unconfirmed", None, None, error or "readback_unavailable_or_invalid"
+    if after["state"] != "open" or after["merged"]:
+        return "unconfirmed", actual, None, error or "pr_closed_during_transition"
+    if echo_valid and error is None and actual is requested:
+        return "applied", actual, True, None
+    if error == "graphql_error" and actual is not requested:
+        return "rejected", actual, False, error
+    return "unconfirmed", actual, None, error or "readback_mismatch"
+
+
 @mcp_tool(
     name="update_pull_request",
-    description=(
-        "Обновляет существующий PR: title, body, state, base, draft, reviewers. "
-        "Передавай только те поля, которые нужно изменить."
-    ),
+    description=("Обновляет только переданные поля PR. Draft/ready через GraphQL с обязательным read-back; "
+                 "partial/unconfirmed не означает полный успех."),
     parameters={
-        "owner": {"type": "string"},
-        "repo": {"type": "string"},
+        "owner": {"type": "string"}, "repo": {"type": "string"},
         "number": {"type": "integer", "description": "Номер PR"},
-        "title": {"type": "string"},
-        "body": {"type": "string"},
-        "state": {"type": "string", "description": "open|closed"},
-        "base": {"type": "string", "description": "Новая целевая ветка"},
-        "draft": {"type": "boolean", "description": "true = draft, false = ready"},
+        "title": {"type": "string"}, "body": {"type": "string"},
+        "state": {"type": "string", "enum": ["open", "closed"]}, "base": {"type": "string"},
+        "draft": {"type": "boolean", "description": "true = draft, false = ready; GraphQL + REST read-back"},
         "reviewers": {"type": "array", "items": {"type": "string"}, "description": "GitHub-логины для ревью"},
     },
     required=["owner", "repo", "number"],
@@ -182,41 +247,69 @@ def update_pull_request(client: GitHubClient, **kwargs) -> str:
     missing = [k for k in ("owner", "repo", "number") if kwargs.get(k) is None]
     if missing:
         return f"❌ Не переданы обязательные параметры: {', '.join(missing)}"
-    owner, repo, number = kwargs["owner"], kwargs["repo"], kwargs["number"]
-    payload = {}
-    for k in ("title", "body", "state", "base"):
-        if kwargs.get(k) is not None:
-            payload[k] = kwargs[k]
-    if kwargs.get("draft") is not None:
-        payload["draft"] = bool(kwargs["draft"])
-
+    number = kwargs.get("number")
+    requested = kwargs.get("draft")
+    try:
+        path = _pr_path(kwargs)
+        if requested is not None and type(requested) is not bool:
+            raise ValueError("invalid draft")
+        payload = {k: kwargs[k] for k in ("title", "body", "state", "base") if kwargs.get(k) is not None}
+        if any(not isinstance(value, str) for value in payload.values()):
+            raise ValueError("invalid REST fields")
+        if "state" in payload and payload["state"] not in ("open", "closed"):
+            raise ValueError("invalid state")
+        if requested is not None and payload.get("state") == "closed":
+            raise ValueError("cannot close and transition draft together")
+        reviewers = kwargs.get("reviewers")
+        if isinstance(reviewers, str):
+            reviewers = [r.strip() for r in reviewers.split(",") if r.strip()]
+        if reviewers is not None and (not isinstance(reviewers, list) or len(reviewers) > 100
+                or any(not isinstance(r, str) or not re.fullmatch(r"[A-Za-z0-9-]+", r) for r in reviewers)):
+            raise ValueError("invalid reviewers")
+    except ValueError:
+        return _update_output(number, "invalid_input", [], error="invalid_update_arguments")
+    if not payload and not reviewers and requested is None:
+        return "ℹ️ Нечего обновлять — не передано ни одного поля."
+    before = None
+    actual = None
+    if requested is not None:
+        try:
+            before = _draft_snapshot(client._request("GET", path).json(), number)
+            actual = before["draft"]
+        except Exception:
+            return _update_output(number, "unconfirmed", [], requested, error="initial_read_unavailable_or_invalid")
+        if before["state"] != "open" or before["merged"]:
+            return _update_output(number, "rejected", [], requested, actual, "rejected", False, "pr_not_open")
+        # Validate identity before any mixed-operation writes.
+        if actual is not requested:
+            node = before.get("node_id")
+            if not isinstance(node, str) or not node or len(node) > 256 or any(ord(c) < 32 for c in node):
+                return _update_output(number, "rejected", [], requested, actual, "rejected", False, "invalid_node_id")
     changes = []
     if payload:
         try:
-            client._request(
-                "PATCH", f"/repos/{owner}/{repo}/pulls/{number}", json=payload
-            )
-            changes.append(", ".join(payload.keys()))
-        except Exception as e:
-            return f"❌ Не удалось обновить PR #{number}: {e}"
-
-    reviewers = kwargs.get("reviewers")
+            client._request("PATCH", path, json=payload)
+            changes.extend(payload)
+        except Exception:
+            return _update_output(number, "unconfirmed", changes, requested, actual,
+                                  error="rest_update_unconfirmed")
+    draft_outcome = draft_applied = None
+    if requested is not None:
+        draft_outcome, actual, draft_applied, error = _transition_draft(client, path, number, requested, before)
+        if draft_outcome == "applied":
+            changes.append("draft")
+        elif draft_outcome != "no_op":
+            outcome = "partial" if changes else "unconfirmed" if draft_outcome == "unconfirmed" else "rejected"
+            return _update_output(number, outcome, changes, requested, actual, draft_outcome, draft_applied, error)
     if reviewers:
-        if isinstance(reviewers, str):
-            reviewers = [r.strip() for r in reviewers.split(",") if r.strip()]
         try:
-            client._request(
-                "POST",
-                f"/repos/{owner}/{repo}/pulls/{number}/requested_reviewers",
-                json={"reviewers": reviewers},
-            )
-            changes.append(f"reviewers: {', '.join(reviewers)}")
-        except Exception as e:
-            return f"⚠️ PR обновлён, но ревьюеры не назначены: {e}"
-
-    if not changes:
-        return "ℹ️ Нечего обновлять — не передано ни одного поля."
-    return f"✅ PR #{number} обновлён ({'; '.join(changes)})"
+            client._request("POST", path + "/requested_reviewers", json={"reviewers": reviewers})
+            changes.append("reviewers: " + ", ".join(reviewers))
+        except Exception:
+            return _update_output(number, "partial" if changes else "unconfirmed", changes, requested, actual,
+                                  draft_outcome, draft_applied, "reviewer_request_unconfirmed")
+    return _update_output(number, "updated" if changes else "no_op", changes, requested, actual,
+                          draft_outcome, draft_applied)
 
 
 def _merge_output(number, outcome, message, merged=False, sha=None, **extra):
