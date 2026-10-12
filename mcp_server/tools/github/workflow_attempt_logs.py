@@ -28,7 +28,7 @@ def _scrub(value, token='', limit=None):
     return value if limit is None else value[:limit]
 
 
-def segments(files, job_name=None, step_name=None, identity=None):
+def segments(files, job_name=None, step_name=None, identity=None, exact_job_name=None):
     """Filter step portion only, not job folder; keep context per source file."""
     result = []
     for filename, text in sorted(files.items()):
@@ -41,6 +41,8 @@ def segments(files, job_name=None, step_name=None, identity=None):
         else:
             match = re.fullmatch(r'\d+_(.+)\.txt', name, re.I)
             job, step, mode = (match.group(1) if match else name[:-4]), None, 'combined_job'
+        if exact_job_name is not None and job!=exact_job_name:
+            continue
         if job_name and job_name.casefold() not in job.casefold():
             continue
         if step_name:
@@ -124,12 +126,19 @@ def query(client, mode, **args):
         'updated_at','run_started_at','completed_at','status','conclusion')})
     if not identity.get('complete'):
         return {**base,'error':identity.get('error','jobs_snapshot_incomplete')}
+    exact = args.get('_exact_job_name')
+    expected_id = args.get('_expected_job_id')
+    if exact is not None:
+        candidates = [j for j in identity.get('jobs',[]) if j.get('name')==exact]
+        if (identity.get('fetched_jobs')!=identity.get('returned_jobs') or len(candidates)!=1
+                or not _integer(expected_id,1) or candidates[0].get('id')!=expected_id):
+            return {**base,'error':'job_identity_changed'}
     try:
         files = download(client,owner,repo,run_id,identity['run_attempt'])
         if not files:
             return {**base,'error':'empty_archive','complete':True}
         filtered = {n:t for n,t in files.items() if file_filter.casefold() in n.casefold()} if file_filter else files
-        selected = segments(filtered,job_name,step_name,identity)
+        selected = segments(filtered,job_name,step_name,identity,exact)
         if not selected:
             return {**base,'error':('step_not_found' if step_name and any('/' not in n for n in filtered) else 'no_matching_log_files'),'complete':True,
                     'available_files':[_safe_text(n) for n in sorted(files)[:20]],

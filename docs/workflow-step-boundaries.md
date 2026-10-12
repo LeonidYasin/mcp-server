@@ -67,7 +67,7 @@ signed URLs and are not presented as full real-log captures.
 
 Live deployed segmentation checks remain required before declaring #83 complete:
 verify exact step windows, exclude neighboring stages, compare against an
-independent timeline/marker read, then CI and approved merge. Legacy diagnostic
-wrappers/artifact attribution remain work under #69; production rollout, final
+independent timeline/marker read, then CI and approved merge. Diagnostic wrappers now have an [adapter migration](workflow-diagnostic-adapters.md);
+artifact attribution and compiler-root-cause improvements remain under #69/#58; production rollout, final
 mindmap/Pages/docs are separate. ZIP transport/redaction/regex guarantees from
 [attempt logs](workflow-attempt-logs.md) remain unchanged.
