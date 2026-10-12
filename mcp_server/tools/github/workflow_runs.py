@@ -220,58 +220,15 @@ def get_run_logs_by_step(client: GitHubClient, **kwargs):
     """Attempt-aware reader; source errors are not successful empty searches."""
     return query_logs(client, "step", **kwargs)
 
-@mcp_tool(
-    name="get_step_logs_via_checks",
-    description="Получает логи шага через GitHub Checks API.",
-    parameters={
-        "owner": {"type": "string", "description": "Владелец репозитория"},
-        "repo": {"type": "string", "description": "Имя репозитория"},
-        "run_id": {"type": "integer", "description": "ID запуска workflow"},
-        "step_name": {"type": "string", "description": "Название шага (часть имени, регистр не важен)"},
-    },
-    required=["owner", "repo", "run_id", "step_name"],
-)
-def get_step_logs_via_checks(client: GitHubClient, owner: str, repo: str, run_id: int, step_name: str):
-    """Получает логи шага через GitHub Checks API."""
-    try:
-        run = client.get_workflow_run(owner, repo, run_id)
-        commit_sha = run.get("head_sha")
-        if not commit_sha:
-            return {"error": "No commit SHA found"}
-
-        check_runs = client.get_check_runs(owner, repo, commit_sha)
-
-        found_check = None
-        for check in check_runs:
-            check_name = check.get("name", "").lower()
-            if step_name.lower() in check_name:
-                found_check = check
-                break
-
-        if not found_check:
-            return {
-                "error": f"No check-run found for step: {step_name}",
-                "available_checks": [c.get("name") for c in check_runs[:10]]
-            }
-
-        return {
-            "run_id": run_id,
-            "step_name": step_name,
-            "commit_sha": commit_sha,
-            "check_run": {
-                "name": found_check.get("name"),
-                "status": found_check.get("status"),
-                "conclusion": found_check.get("conclusion"),
-                "started_at": found_check.get("started_at"),
-                "completed_at": found_check.get("completed_at"),
-                "output": {
-                    "title": found_check.get("output", {}).get("title"),
-                    "summary": found_check.get("output", {}).get("summary"),
-                    "text": found_check.get("output", {}).get("text"),
-                    "annotations_count": len(found_check.get("output", {}).get("annotations", []))
-                }
-            },
-            "note": "Checks API returns truncated output (up to 65535 characters). For full logs, use get_run_logs_by_step."
-        }
-    except Exception as e:
-        return {"error": _safe_utf8(str(e))}
+@mcp_tool(name="get_step_logs_via_checks",
+    description="Deprecated checks name: bounded attempt step logs; НЕ SHA-wide Check Runs.",
+    parameters={"owner":{"type":"string"},"repo":{"type":"string"},"run_id":{"type":"integer"},
+        "step_name":{"type":"string"},"job_name":{"type":"string"},**LOG_PARAMETERS},
+    required=["owner","repo","run_id","step_name"])
+def get_step_logs_via_checks(client,owner,repo,run_id,step_name,run_attempt=None,max_pages=5,
+        max_lines=200,max_chars=16000,job_name=None):
+    result=query_logs(client,"step",owner=owner,repo=repo,run_id=run_id,step_name=step_name,
+        run_attempt=run_attempt,max_pages=max_pages,max_lines=max_lines,max_chars=max_chars,job_name=job_name)
+    result['source']='attempt_step_logs_not_checks'
+    result['deprecated_alias']=True
+    return result

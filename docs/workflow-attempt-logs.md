@@ -64,8 +64,9 @@ This can change matching compared to raw secret-bearing logs, intentionally.
 
 ## Remaining work (issue #69 stays open)
 
-Legacy diagnostics/full/preview/checks wrappers are NOT migrated in this PR and
-must not be assumed attempt-safe. Artifact attempt attribution remains separate:
+Legacy diagnostics/full/preview/watch/checks names now have a separate
+[adapter migration contract](workflow-diagnostic-adapters.md); old unbounded
+SDK transports and unsafe template-to-main autofix are disabled. Artifact attempt attribution remains separate:
 existing name lookup already rejects duplicate names, but no attempt is guessed
 from name/time. There is no workflow-log cache to update. Future caches must use
 owner/repo/run_id/run_attempt/head_sha. Final docs, mindmap/Pages and production

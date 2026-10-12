@@ -4,8 +4,7 @@
 Этот инструмент возвращает только совпавшие строки ±контекст — маленький
 ответ, который не режется.
 
-Важно: GitHub отдаёт логи run'а как ZIP. Используем
-client.get_workflow_run_logs_text(), который распаковывает архив.
+Использует bounded attempt-aware reader; legacy ZIP transport отключён.
 """
 
 import re
