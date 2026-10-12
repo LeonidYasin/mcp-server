@@ -84,3 +84,7 @@ are fixture-tested. Actual authenticated API redirect resolution and live TEST
 runtime read-back remain explicit PR gates; mocked URLs are not live evidence.
 No artifact deletion, workflow reruns, repository setting edits or production
 rollout are part of this tool.
+
+## Attempt identity
+
+Optional run_attempt + run_id now requires API-proven artifact attempt/SHA before redirect resolution; unknown or mismatch refuses capability. Duplicate names always require exact ID. See [artifact identity contract](artifact-attempt-identity.md). A run context is not proof of every artifact’s attempt.

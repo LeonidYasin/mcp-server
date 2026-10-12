@@ -118,29 +118,5 @@ def cancel_workflow(client: GitHubClient, **kwargs) -> str:
     return f"✅ Run {kwargs['run_id']} отменён"
 
 
-@mcp_tool(
-    name="list_artifacts",
-    description="Список артефактов workflow run",
-    parameters={
-        "owner": {"type": "string"},
-        "repo": {"type": "string"},
-        "run_id": {"type": "integer"},
-    },
-    required=["owner", "repo", "run_id"],
-)
-def list_artifacts(client: GitHubClient, **kwargs) -> str:
-    resp = client._request(
-        "GET", f"/repos/{kwargs['owner']}/{kwargs['repo']}/actions/runs/{kwargs['run_id']}/artifacts"
-    )
-    items = resp.json().get("artifacts", [])
-    if not items:
-        return "Артефактов нет"
-    lines = [f"Артефакты ({len(items)}):"]
-    for a in items:
-        size_kb = a.get("size_in_bytes", 0) / 1024
-        lines.append(f"  {a['name']} — {size_kb:.1f} KB (id={a['id']}, expired={a.get('expired')})")
-    return "\n".join(lines)
-
-
-# Kept re-exported here for existing imports and registry discovery.
-from mcp_server.tools.github.artifacts import download_artifact
+# Canonical artifact implementations, shared registry exports.
+from mcp_server.tools.github.artifacts import list_artifacts, download_artifact
