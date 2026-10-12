@@ -139,3 +139,7 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 ---
 
 _Ревизия 5 · 2026-09-28 · всего 117 инструментов. При добавлении/удалении инструмента — обновить этот файл, счётчик и инкрементировать ревизию._
+
+### Artifact identity / reruns
+
+`list_artifacts`: bounded source pagination and global output cap, ID/SHA/times/attempt-or-unknown, duplicate-name candidate IDs. Explicit run_attempt exposes only proven matches, unknown candidates separately. `download_artifact` strict run_attempt requires run_id and refuses unknown/mismatch; exact ID without attempt keeps legacy supported resolution but makes no ownership claim. [Contract](docs/artifact-attempt-identity.md).
