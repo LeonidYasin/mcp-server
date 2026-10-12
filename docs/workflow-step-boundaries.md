@@ -11,7 +11,7 @@ the **exact attempt's jobs/steps timeline**, never a guess from `Run ...` text.
 2. The snapshot is complete and its jobs/steps output is not truncated. Log queries
    with step_name request up to 100 jobs / 500 total metadata steps. The selected
    job and relevant execution timeline are completed, non-overlapping and valid.
-3. Logs have UTC timestamp prefixes (optional BOM and 1–9 fractional digits).
+3. Runner boundaries and selected-window lines have UTC timestamp prefixes (optional BOM and 1–9 fractional digits). Ordinary multiline-input continuation lines outside the target window are allowed and never interpreted as markers; unprefixed control markers or untimestamped selected lines remain unproven.
    Group nesting is balanced with maximum depth 64. A nested `Run ...` group is
    NOT a step boundary.
 4. Exactly one top-level `##[group]Run ...` appears in the selected step's API
@@ -27,8 +27,10 @@ the **exact attempt's jobs/steps timeline**, never a guess from `Run ...` text.
 This validates the supported runner format against GitHub API provenance; it is
 not cryptographic authenticity of user-controlled log text. Malicious or unusual
 markers can cause an ambiguous refusal, not be trusted as display step names.
-The parser currently checks balanced/timestamped format for the entire combined
-file; unusual content outside the target can conservatively cause refusal too.
+The parser checks group balance across the combined file. Timestamp validation
+applies to runner markers and selected lines; ordinary continuation lines outside
+the selected window are not grounds to reject a proven window. Unusual control
+markers outside the target can still conservatively cause refusal.
 
 ## Output and query behavior
 

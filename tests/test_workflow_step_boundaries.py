@@ -180,3 +180,22 @@ def test_mixed_archive_incomplete_step_copies_not_silently_dropped(monkeypatch):
     c=mock_query(monkeypatch,files={FILE:TEXT,'build/1_Android smoke (4KB).txt':'error FOUR'})
     out=grep_run_logs(c,owner='o',repo='r',run_id=99,step_name='Android smoke',pattern='error')
     assert out['error']=='step_boundaries_ambiguous' and not out['complete']
+
+
+
+def test_real_multiline_input_continuations_outside_target_do_not_reject_it():
+    # Observed in attempt2: ~/.gradle/wrapper before selected step, upload paths
+    # after selected step. These are input continuations, not runner boundaries.
+    text=TEXT.replace('2026-10-11T02:31:07.2000000Z ##[endgroup]',
+        '~/.gradle/wrapper\n2026-10-11T02:31:07.2000000Z ##[endgroup]')
+    text=text.replace('2026-10-11T02:40:21.7520897Z ##[endgroup]',
+        'app/build/reports/androidTests/\n2026-10-11T02:40:21.7520897Z ##[endgroup]')
+    item=get(text=text)[0]
+    assert item['source_start_line']==5 and item['source_end_line']==12
+    assert 'SIXTEEN_KB_ONLY' in str(item)
+    assert '~/.gradle/wrapper' not in str(item) and 'app/build/reports/' not in str(item)
+
+
+def test_untimestamped_control_marker_is_not_silently_ignored():
+    with pytest.raises(LogError,match='step_filter_unsupported'):
+        get(text=TEXT+'\n##[group]Run unproven')

@@ -28,7 +28,13 @@ def _parse(lines):
     for index, line in enumerate(lines):
         match = _PREFIX.fullmatch(line)
         if not match:
-            raise LogError('step_filter_unsupported')
+            # GitHub multiline inputs contain plain continuation lines, e.g.
+            # artifact paths. Outside the selected window they don't invalidate
+            # timestamped runner boundaries; never interpret them as markers.
+            if line.startswith(('##[group]', '##[endgroup]')):
+                raise LogError('step_filter_unsupported')
+            parsed.append((None,depth))
+            continue
         sec = _time(match[1]+'Z')
         stamp = sec*10**9 + int((match[2] or '').ljust(9,'0'))
         body = match[3]
@@ -110,6 +116,8 @@ def select(filename, text, job_name, needle, identity):
         if any(left<c[0]<right for c in candidates):
             raise LogError('step_boundaries_ambiguous')
         stamps=[t for t,d in parsed[left:right]]
+        if any(t is None for t in stamps):
+            raise LogError('step_filter_unsupported')
         if (any(t<left_stamp or t>=right_stamp for t in stamps)
                 or any(a>b for a,b in zip(stamps,stamps[1:]))):
             raise LogError('step_boundaries_ambiguous')
