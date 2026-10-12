@@ -52,7 +52,7 @@ caching must include this identity, not just run ID or artifact name.
 ## Deliberately deferred to part 2
 
 Four primary readers now have a separate [attempt logs contract](workflow-attempt-logs.md)
-with bounded downloads and explicit combined-step unsupported fallback. Legacy
+with bounded downloads and [supported combined-step segmentation](workflow-step-boundaries.md); residual ambiguous formats fail closed. Legacy
 diagnostics/full/preview/checks wrappers and artifact attempt attribution remain
 unmigrated. Do not treat a pinned snapshot as proof those legacy results or a
 same-named artifact belong to its attempt.

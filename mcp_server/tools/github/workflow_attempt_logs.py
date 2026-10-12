@@ -8,6 +8,7 @@ from pathlib import Path
 from .commits import _SECRET, _safe_text
 from .workflow_attempts import _integer, snapshot
 from .workflow_log_archive import LogError, download
+from .workflow_step_boundaries import select as select_combined_step
 
 PARAMETERS = {
     'run_attempt': {'type':'integer','description':'Попытка >=1; default latest фиксируется до загрузки'},
@@ -27,9 +28,9 @@ def _scrub(value, token='', limit=None):
     return value if limit is None else value[:limit]
 
 
-def segments(files, job_name=None, step_name=None):
+def segments(files, job_name=None, step_name=None, identity=None):
     """Filter step portion only, not job folder; keep context per source file."""
-    result, combined = [], []
+    result = []
     for filename, text in sorted(files.items()):
         name = filename.rsplit('/', 1)[-1]
         if '/' in filename:
@@ -44,15 +45,33 @@ def segments(files, job_name=None, step_name=None):
             continue
         if step_name:
             if mode == 'combined_job':
-                combined.append(filename)
+                result.extend(select_combined_step(filename,text,job,step_name,identity))
                 continue
             if step is None or step_name.casefold() not in step.casefold():
                 continue
-        result.append({'file':filename,'job':job,'step':step,'filter_mode':mode,'lines':text.splitlines()})
-    # Cannot prove the combined file's group commands equal display step names.
-    # Even with another per-step match, don't silently drop a combined job.
-    if step_name and combined:
-        raise LogError('step_filter_unsupported')
+        result.append({'file':filename,'job':job,'step':step,'filter_mode':mode,
+                       **({'step_number':int(match.group(0).split('_',1)[0])} if mode=='per_step' else {}),
+                       'lines':text.splitlines()})
+    # A ZIP can contain both a combined copy and original per-step files.
+    # Prefer per-step only when it covers every proven matching combined step;
+    # never double-count the same job/step or silently drop a missing one.
+    for job in {s['job'] for s in result if s['filter_mode']=='combined_step'}:
+        combined = [s for s in result if s['job']==job and s['filter_mode']=='combined_step']
+        original = [s for s in result if s['job']==job and s['filter_mode']=='per_step']
+        if not original:
+            continue
+        by_number = {s['step_number']:s for s in original}
+        if len(by_number)!=len(original):
+            raise LogError('step_boundaries_ambiguous')
+        if not all(s['step_number'] in by_number and
+                   s['step'].casefold()==by_number[s['step_number']]['step'].casefold() for s in combined):
+            raise LogError('step_boundaries_ambiguous')
+        for s in combined:
+            item = by_number[s['step_number']]
+            item.update(job_id=s['job_id'],started_at=s['started_at'],completed_at=s['completed_at'],
+                        boundary_source='per_step_archive_filename',boundary_complete=True,
+                        line_offset=0,source_start_line=1,source_end_line=len(item['lines']))
+        result = [s for s in result if not (s['job']==job and s['filter_mode']=='combined_step')]
     return result
 
 
@@ -100,7 +119,7 @@ def query(client, mode, **args):
             re.compile(pattern)
         except re.error:
             return {**base,'error':'invalid_pattern'}
-    identity = snapshot(client,owner,repo,run_id,args.get('run_attempt'),args.get('max_pages',5),100,0)
+    identity = snapshot(client,owner,repo,run_id,args.get('run_attempt'),args.get('max_pages',5),100,500 if step_name else 0)
     base.update({k:identity.get(k) for k in ('run_attempt','selection','head_sha','created_at',
         'updated_at','run_started_at','completed_at','status','conclusion')})
     if not identity.get('complete'):
@@ -110,9 +129,9 @@ def query(client, mode, **args):
         if not files:
             return {**base,'error':'empty_archive','complete':True}
         filtered = {n:t for n,t in files.items() if file_filter.casefold() in n.casefold()} if file_filter else files
-        selected = segments(filtered,job_name,step_name)
+        selected = segments(filtered,job_name,step_name,identity)
         if not selected:
-            return {**base,'error':'no_matching_log_files','complete':True,
+            return {**base,'error':('step_not_found' if step_name and any('/' not in n for n in filtered) else 'no_matching_log_files'),'complete':True,
                     'available_files':[_safe_text(n) for n in sorted(files)[:20]],
                     'available_files_truncated':len(files)>20}
         auth = client._headers.get('Authorization','')
@@ -125,7 +144,7 @@ def query(client, mode, **args):
                 segment[k] = _scrub(segment[k],token,512)
             segment['run_attempt'] = identity['run_attempt']
             segment['lines'] = [_scrub(line,token) for line in segment['lines']]
-        base.update(complete=True,filter_mode='per_step' if step_name else 'job_or_archive',
+        base.update(complete=True,filter_mode='step_scoped' if step_name else 'job_or_archive',
                     matched_files=[s['file'] for s in selected[:20]], matched_file_count=len(selected),
                     matched_files_truncated=len(selected)>20,total_lines=count)
         if mode=='grep':
@@ -136,7 +155,7 @@ def query(client, mode, **args):
                 base['error'] = 'no_matching_text'
             return base
         # Line windows are scoped per file in output, with a global offset/budget.
-        flat = [(i,n,line) for i,s in enumerate(selected) for n,line in enumerate(s['lines'],1)]
+        flat = [(i,n,line) for i,s in enumerate(selected) for n,line in enumerate(s['lines'],1+s.get('line_offset',0))]
         if start_time:
             first = next((i for i,(_,_,line) in enumerate(flat) if start_time in line),None)
             if first is None:
@@ -145,6 +164,7 @@ def query(client, mode, **args):
         eligible = flat[offset:] if mode=='offset' else flat
         chosen = eligible[-max_lines:] if direction=='tail' else eligible[:max_lines]
         rendered, chars, truncated = [], 0, len(chosen)<len(eligible)
+        previous_segment = None
         for i,n,line in chosen:
             if chars >= max_chars:
                 truncated = True
@@ -152,8 +172,9 @@ def query(client, mode, **args):
             text = line[:max_chars-chars]
             truncated |= len(text)!=len(line)
             chars += len(text)
-            if not rendered or rendered[-1]['file'] != selected[i]['file']:
+            if previous_segment != i:
                 rendered.append({k:v for k,v in selected[i].items() if k!='lines'} | {'lines':[]})
+            previous_segment = i
             rendered[-1]['lines'].append({'line':n,'text':text})
         base.update(segments=rendered,returned_lines=sum(len(s['lines']) for s in rendered),
                     output_truncated=bool(truncated),direction=direction,offset=offset)
@@ -165,6 +186,6 @@ def query(client, mode, **args):
         return {**base,'complete':False,'error':exc.code,'http_status':exc.status,
                 'fallback':({'tool':'grep_run_logs','omit':'step_name','job_name':_safe_text(job_name),
                              'run_attempt':identity['run_attempt'],'note':'bounded job search; NOT step-scoped'}
-                            if exc.code=='step_filter_unsupported' else None)}
+                            if exc.code in ('step_filter_unsupported','step_boundaries_ambiguous','step_timeline_incomplete') else None)}
     except Exception:
         return {**base,'complete':False,'error':'logs_unavailable_or_invalid'}
