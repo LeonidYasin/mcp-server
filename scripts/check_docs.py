@@ -35,7 +35,7 @@ def inventory() -> dict:
     profiles = {}
     for name, enabled in (("default", "0"), ("all_enabled", "1")):
         env = dict(os.environ)
-        for flag in ("ENABLE_LOCAL_TOOLS", "ENABLE_LOCAL_SHELL", "ENABLE_SYNAPSE"):
+        for flag in ("ENABLE_LOCAL_TOOLS", "ENABLE_LOCAL_SHELL", "ENABLE_SYNAPSE", "ENABLE_FILE_UPLOADS"):
             env[flag] = enabled
         # Discovery only; providers must not be activated by the calling shell.
         env.pop("SYNAPSE_EMBEDDING_PROVIDER", None)

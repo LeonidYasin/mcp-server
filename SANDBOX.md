@@ -1,6 +1,6 @@
 # SANDBOX.md — изолированный запуск MCP с доступом к локальным файлам
 
-Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 8 · 2026-10-15.
+Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 9 · 2026-10-15.
 
 Цель — минимизировать права и явно задать OS-изоляцию. **Сам пакет не гарантирует, что агент видит только одну папку.** Cwd/path guards не заменяют sandbox, защиту секретов, сетевую policy и ограничения ресурсов.
 
@@ -10,7 +10,7 @@
 
 `LOCAL_TOOLS_ROOT` ограничивает рабочую директорию локальных tools на MCP-сервере; это **не общий диск с клиентом**. Например, Notion `/data/input.zip` недоступен VPS по тому же имени. `run_command`/server-local `path` не передают bytes; cwd-ограничение само по себе не является полной OS-изоляцией shell. Защита чтения/записи вне workspace зависит также от пользователя, sandbox/container и service policy.
 
-Новый канал [#88 → #89](docs/binary-transfer-plan.md) пока запланирован: доказанный client transport → отдельный bounded staging → scoped opaque `file_id` → Release assets. Нельзя считать произвольный path или незавершённый upload валидным file_id. Нужны authentication/owner isolation, проверка bytes/size/SHA-256, квоты/TTL/cleanup, no traversal/symlink/SSRF и redaction tickets/секретов. Сам сервер не получает доступ к клиентскому sandbox.
+Новый канал [#88 → #89](docs/binary-transfer-plan.md) имеет opt-in кандидат первого этапа [chunk/staging API](docs/file-uploads.md), default OFF и deployed acceptance pending: доказанный client transport → отдельный bounded staging → scoped opaque `file_id` → Release assets. Нельзя считать произвольный path или незавершённый upload валидным file_id. Нужны authentication/owner isolation, проверка bytes/size/SHA-256, квоты/TTL/cleanup, no traversal/symlink/SSRF и redaction tickets/секретов. Сам сервер не получает доступ к клиентскому sandbox.
 
 Не ослаблять изоляцию TEST/production и не включать shell для решения передачи файла. Тот же GitHub PAT сохраняет права в обоих окружениях; отдельный Unix-пользователь не ограничивает GitHub-доступ. [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
 

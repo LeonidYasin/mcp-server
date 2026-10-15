@@ -1,10 +1,10 @@
 # План бинарного маршрута: #88 → #89
 
-Ревизия документации 8 · 2026-10-15. **Статус: требования и дизайн-гейты, не реализованный API.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). Оба issue open; после triage добавлены [feasibility #88](https://github.com/LeonidYasin/mcp-server/issues/88#issuecomment-6200183545) и [зависимости #89](https://github.com/LeonidYasin/mcp-server/issues/89#issuecomment-6200184998). [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
+Ревизия документации 9 · 2026-10-15. **Статус: opt-in кандидат #88; приёмка deployed API pending, #89 не реализован.** [Реальный контракт кандидата](file-uploads.md). Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). Оба issue open; после triage добавлены [feasibility #88](https://github.com/LeonidYasin/mcp-server/issues/88#issuecomment-6200183545) и [зависимости #89](https://github.com/LeonidYasin/mcp-server/issues/89#issuecomment-6200184998). [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
 
 ## Что есть и чего пока нет
 
-Кодовая база закреплена production rollout на `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6` (документационный merge #70, без изменения runtime относительно предшествующего аудита). [Окружения](deployment-status.md):
+Production исторически закреплён на `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6` (документационный merge #70, без изменения runtime относительно предшествующего аудита). [Окружения](deployment-status.md):
 
 | Компонент | Факт | Не означает |
 | --- | --- | --- |
@@ -17,12 +17,12 @@
 
 ## Этап 1 — #88: доказать переход клиент → сервер
 
-До выбора конкретного API проверить возможности реального клиента. Выбрать **один основной транспорт**:
+После малого feasibility выбран **один основной транспорт: bounded MCP chunks**. Альтернативы исходного дизайн-гейта ниже сохранены для контекста:
 
 - authenticated streaming HTTP upload с короткоживущим upload ticket; **либо**
 - bounded MCP chunks, например `begin_file_upload` → `append_file_chunk` → `finish_file_upload`.
 
-Имена — предложения, инструменты ещё не зарегистрированы. Не обещать, что Notion автоматически отправляет локальное вложение: MCP-сервер сам не получает доступ к клиентскому sandbox. Если доступного механизма нет, это явный blocker, а не повод считать server-side path решением. Не печатать весь base64 большого файла в сообщениях/контексте модели.
+`begin_file_upload`, `append_file_chunk`, `finish_file_upload` и три lifecycle tools зарегистрированы **только при `ENABLE_FILE_UPLOADS=1`**; [контракт/allowlist/root/limits](file-uploads.md). HTTP ticket transport не реализуется этим кандидатом. Не обещать, что Notion автоматически отправляет локальное вложение: MCP-сервер сам не получает доступ к клиентскому sandbox. Если доступного механизма нет, это явный blocker, а не повод считать server-side path решением. Не печатать весь base64 большого файла в сообщениях/контексте модели.
 
 ### Предварительная feasibility — 2026-10-15
 
@@ -35,7 +35,7 @@
 
 ZIP прочитан через BytesIO без extract; вложенный synthetic.bin (32768 bytes) имеет тот же hash, что первый образец. Файл аргументов — 45171 bytes. Это доказывает только малый переход в текущей агентной среде, **не готовый upload API**, не streaming и не доступность такого механизма во всех клиентах. Использованный shell-capable TEST tool — лишь probe; целевой API не должен требовать shell или его включения в production.
 
-Не проверены: хранение payload в истории/логах MCP host, большие объёмы и token/memory budgets, XLSX, owner isolation, quotas/TTL/cleanup и staging API. Private inputs, ~41 МБ, Release upload и Actions dispatch не выполнялись. Все acceptance checkboxes ниже относятся к будущему API и остаются открытыми.
+Не проверены: хранение payload в истории/логах MCP host, большие объёмы и token/memory budgets, XLSX, owner isolation, quotas/TTL/cleanup и staging API. Private inputs, ~41 МБ, Release upload и Actions dispatch не выполнялись. Эти ограничения исторического probe сохраняются. Новый opt-in кандидат отдельно покрывает synthetic XLSX, scoped staging/quotas/TTL и integrity автоматическими тестами; deployed real-client acceptance, host retention и большой прогон остаются pending. Checkbox ниже — полная приёмка, не только unit tests.
 
 ### Обязательные свойства staging
 

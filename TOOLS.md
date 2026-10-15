@@ -2,17 +2,17 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 8 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
+> **Ревизия:** 9 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
 ---
 
-[Снимок окружений на 2026-10-15](docs/deployment-status.md): production 113 tools на `b78b209…`; TEST 119 на кандидате #87, shell/process только TEST. Это не меняет inventory профилей ниже; #88/#89 proposed API не зарегистрированы.
+[Снимок окружений на 2026-10-15](docs/deployment-status.md): production 113 tools на `b78b209…`; TEST 119 на кандидате #87, shell/process только TEST. Это не меняет inventory профилей ниже; #88 chunk/staging API теперь зарегистрирован только с `ENABLE_FILE_UPLOADS=1`; #89 proposed API не зарегистрирован. Наличие кода не меняет закреплённые deployment snapshots.
 
 ## Проверяемый профиль реестра
 
-Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **149 при всех четырёх feature flags** (старый all-enabled без uploads: 143; uploads-only при остальных flags=0: 119). Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
@@ -22,14 +22,17 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 | localfs / localgit | 0 / 0 | 4 / 6 |
 | shell / process | 0 / 0 | 2 / 4 |
 | synapse | 0 | 14 |
+| uploads | 0 | 6 |
 
 Списки ниже — **логические группы**; некоторые Actions/build names повторяются, поэтому их подзаголовки нельзя складывать для получения общего числа. Handler category в snapshot отражает реальное место зарегистрированной функции, не старый план батчей. Process names обнаруживаются при флаге, но управление требует Linux `/proc`. [Token gate](docs/http-transport.md) имеет отдельные ограничения, а `auto_fix_build` зарегистрирован, но отключён.
 
 ---
 
-## Планируемые файловые API — не зарегистрированы
+## Бинарный staging API — opt-in кандидат #88
 
-[#88](https://github.com/LeonidYasin/mcp-server/issues/88) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89): client upload → scoped staging `file_id` → Release asset → Actions → verified bytes. `begin_file_upload` / `append_file_chunk` / `finish_file_upload` — лишь один из вариантов дизайна, как и будущие `list_release_assets`, `upload_release_asset`, `download_release_asset`; не вызывать их как готовые tools. Основной транспорт выбирается после проверки реального клиента. [План](docs/binary-transfer-plan.md) · [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
+`begin_file_upload`, `append_file_chunk`, `finish_file_upload`, `get_file_upload_status`, `cancel_file_upload`, `cleanup_file_uploads`: доступны только с `ENABLE_FILE_UPLOADS=1`, private `FILE_UPLOAD_ROOT` и явной `FILE_UPLOAD_ALLOWED_USERS`. Основной транспорт — bounded MCP chunks, ≤48 KiB bytes/chunk. На каждом вызове GitHub `/user` verification без redirect; owner — проверенный numeric GitHub user ID, не caller-supplied ID. SQLite staging выдаёт `file_id` только после bytes/size/SHA-256 verification. Shell не требуется. Default OFF, deployed live acceptance pending. [Полный контракт, схемы, ошибки и helper](docs/file-uploads.md).
+
+#89 (`list_release_assets`, `upload_release_asset`, `download_release_asset`) всё ещё proposed, не зарегистрирован. Release/Actions E2E зависит от завершённой приёмки #88. [План](docs/binary-transfer-plan.md) · [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
 
 ---
 
@@ -167,4 +170,4 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 
 ---
 
-_Ревизия 8 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+_Ревизия 9 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
