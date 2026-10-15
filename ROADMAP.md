@@ -24,7 +24,7 @@
 | #58 / #86 | Android/Kotlin диагностика и безопасный repo-specific auto-fix остаются open. Опасный template-to-main autofix отключён в main; замена не реализована. |
 | #53 / #59 | Диагностика доступа и неопределённый post-effect persistence остаются open; не повторять потенциально успешную мутацию вслепую. |
 | #64 | Lifecycle tags/releases остаётся open. Получение release IDs и asset API согласовать с #89, не делать два конкурирующих контракта. |
-| **#88 → #89 — открыты** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Малый synthetic client→TEST probe прошёл; Добавлен opt-in кандидат chunk/staging API с verified owner/allowlist, quotas/TTL и integrity; малый authenticated deployed smoke upload API прошёл (50 bytes / два чанка, size/hash, exact retry, incomplete refusal, stable file_id, cancel). Полная приёмка #88 и #89 E2E ещё pending: новый file-backed client-sandbox перенос, binary/XLSX, live owner isolation/limits и отдельно разрешённый большой прогон не доказаны. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526). [Контракт](docs/file-uploads.md). #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
+| **#88 → #89 — открыты** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Малый synthetic client→TEST probe прошёл; Добавлен opt-in кандидат chunk/staging API с verified owner/allowlist, quotas/TTL и integrity; малый authenticated deployed smoke upload API прошёл (50 bytes / два чанка, size/hash, exact retry, incomplete refusal, stable file_id, cancel). Полная приёмка #88 и #89 E2E ещё pending: file-backed ZIP client→staging gate уже прошёл (110 124 bytes / 3 чанка, size/hash и cancel; [evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)); XLSX, live owner isolation/limits/expiry, retention и отдельно разрешённый большой прогон не доказаны. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526). [Контракт](docs/file-uploads.md). #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
 | #66 / #68 | Actions secrets и verified repo/Pages configuration остаются open. Никаких настоящих secrets или изменения Pages в этом docs PR. |
 | #77 | Сквозной аудит всех методов: schemas + args + results + turns; отдельно измерить большой бинарный маршрут без base64 в контексте модели. |
 | Production / TEST | Production `b78b209…`, 113 tools; TEST отдельно `ef7993b…`, 119 tools (shell/process только TEST). Зависимости, TEST и Caddy при rollout не менялись. [Подробности](docs/deployment-status.md). |
@@ -101,7 +101,7 @@ PR #70 слит: добавлены карта проекта и файловы�
 
 - Выбран bounded MCP chunk transport; шесть opt-in tools, default OFF, отдельный private root и explicit GitHub-user allowlist. Никакого shell, произвольного server path или URL-fetch.
 - Auth на каждом вызове через `/user`, SQLite transactional chunks/progress, idempotent begin/chunk/finish, verified opaque file_id, quotas/TTL/cleanup; [полный контракт](docs/file-uploads.md).
-- Unit/in-process Flask tests включают synthetic ZIP/XLSX/non-UTF-8; это не live deployed acceptance. #88 остаётся open до точного TEST/client gate и отдельно разрешённого ~41 МБ прогона. #89 implementation/E2E отдельно.
+- Unit/in-process Flask tests включают synthetic ZIP/XLSX/non-UTF-8; это не live deployed acceptance. #88 остаётся open: file-backed ZIP TEST/client gate пройден, но полная приёмка и отдельно разрешённый ~41 МБ прогон pending. #89 implementation/E2E отдельно.
 
 ### Завершено после документационного аудита — 2026-10-15
 
@@ -109,7 +109,7 @@ PR #70 слит: добавлены карта проекта и файловы�
 - [x] Production rollout этого SHA с guarded preflight и механизмом rollback (откат не потребовался); localhost и внешний MCP smoke passed. TEST, Caddy, зависимости и reboot не затронуты. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6202583914).
 - [x] Существующий Pages workflow автоматически отработал после merge #70; root/roadmap/map/plan/HTTP/validation HTTP 200. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6200111705).
 - [x] #88: малый synthetic non-UTF-8/ZIP client→TEST probe, size/SHA-256 совпали. [Evidence и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
-- [ ] #88: принять opt-in chunk/staging кандидат (synthetic XLSX теперь покрыт unit/HTTP tests), выполнить deployed real-client и отдельно разрешённый ~41 МБ gate; затем #89 private-release/Actions E2E.
+- [ ] #88: принять opt-in chunk/staging кандидат (synthetic XLSX теперь покрыт unit/HTTP tests), file-backed ZIP deployed client gate пройден; завершить XLSX/live owner/limits/expiry/retention и отдельно разрешённый ~41 МБ gate; затем #89 private-release/Actions E2E.
 - [ ] PR #87 authenticated deployed artifact gate; визуальная проверка Mermaid на опубликованном Pages.
 
 ### Статус выполнения — исторический журнал

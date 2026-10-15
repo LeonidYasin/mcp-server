@@ -23,7 +23,7 @@ flowchart TD
     Registry --> Github --> API
     Registry --> Local --> Workspace
     Registry --> Other
-    Client -. "КАНДИДАТ: 50-byte auth smoke PASS; full gate pending" .-> Stage
+    Client -. "КАНДИДАТ: file-backed ZIP 110124 B PASS; full gate pending" .-> Stage
     Stage -. "зависимость #88 → #89" .-> Assets
     Assets -. "ПЛАН: authorised input, verify size/hash" .-> Actions
     Actions --> Output
@@ -49,7 +49,7 @@ flowchart TD
 | Actions snapshots/logs | Attempt-pinned status/steps/readers, combined-step boundaries, adapters в main через #81/#82/#84/#85 | #69/#83 ещё open: сверить полные критерии; не заявлять универсальную сегментацию неоднозначных архивов |
 | Artifact ownership | PR #87 Draft; HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI success, TEST checkout совпадает | Authenticated deployed artifact acceptance pending. Не выводить attempt по имени, времени или общему SHA |
 | Diagnostics / fix | #85 убрал ложный success по пустым логам, unsafe auto-fix отключён | #58 compiler-specific диагностика; #86 repo-specific reviewed branch/PR workflow |
-| Binary ingress | Исторический synthetic probe и новый authenticated deployed smoke upload API прошли; последний: 50 bytes, два чанка, size/hash, retries, incomplete refusal, stable file_id и cancel. Полная приёмка #88 pending; legacy binary-file API требует UTF-8. [Evidence и ограничения](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526) | **#88**, [chunk API](file-uploads.md): verified owner/allowlist, bytes/hash/quota/TTL реализованы; выполнить реальный TEST client gate; [ограничения probe](binary-transfer-plan.md#предварительная-feasibility--2026-10-15) |
+| Binary ingress | Исторический synthetic probe и новый authenticated deployed smoke upload API прошли; последний: 50 bytes, два чанка, size/hash, retries, incomplete refusal, stable file_id и cancel. Дополнительно прошёл file-backed ZIP gate: 110 124 bytes / 3 чанка, size/hash/cancel ([evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)). Полная приёмка #88 pending; legacy binary-file API требует UTF-8. [Evidence и ограничения](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526) | **#88**, [chunk API](file-uploads.md): verified owner/allowlist, bytes/hash/quota/TTL реализованы; file-backed ZIP TEST client gate пройден; завершить XLSX/live owner/limits/expiry/retention gates; [ограничения probe](binary-transfer-plan.md#предварительная-feasibility--2026-10-15) |
 | Release lifecycle / assets | list/create/latest release и отдельные tag tools есть; полного assets цикла нет | #64 lifecycle; **#89 зависит от #88**, общий release lookup/IDs, без дублирующих API |
 | Надёжность / стоимость | Текущие safety contracts сохраняются | #53 access diagnostics; #59 post-effect reconciliation; #77 end-to-end token audit |
 | Admin / secrets / сайт | Существующие repo admin tools не равны полному lifecycle Pages | #66 secure secrets boundary; #68 verified features/Pages, configured ≠ deployed ≠ HTTP verified |
@@ -57,7 +57,7 @@ flowchart TD
 
 ## Порядок для нового файлового сценария
 
-1. **#88 / transport:** малый synthetic probe уже выполнен через file-backed MCP arguments в текущем клиенте. Выбран bounded MCP chunk API без shell; [кандидат](file-uploads.md) ещё требует deployed acceptance и не доказывает поддержку другими клиентами.
+1. **#88 / transport:** малый synthetic probe уже выполнен через file-backed MCP arguments в текущем клиенте. Выбран bounded MCP chunk API без shell; [кандидат](file-uploads.md) прошёл отдельный file-backed ZIP deployed gate (110 124 bytes / 3 чанка; [evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)), но ещё требует полной приёмки и не доказывает поддержку другими клиентами.
 2. **#88 / staging:** scoped file_id только после size/hash validation; resumable/idempotent chunks если выбран chunk transport; quotas, TTL, cleanup, isolation.
 3. **#89 / release contracts:** согласовать с #64 release lookup и IDs, bounded list/upload/download; unknown POST → reconcile; явный name conflict.
 4. **#89 / E2E:** отдельно разрешённый synthetic ZIP через private Release → Actions → output artifact; проверить содержимое, bytes/size/SHA-256 в обе стороны. Большой synthetic ~41 МБ — отдельный разрешённый прогон #88.
