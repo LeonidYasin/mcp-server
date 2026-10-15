@@ -2,7 +2,7 @@
 
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
-> **Source of truth:** версия — `pyproject.toml`; список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
+> **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
 > **Ревизия документации: 6 · 2026-10-15** (см. README → Source of truth).
 
 Легенда приоритетов:
@@ -96,7 +96,9 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 
 Дополнительный запрос пользователя: [#77](https://github.com/LeonidYasin/mcp-server/issues/77) — аудит всех методов на экономию токенов. Аудит можно вести параллельно reliability fixes; экономию внедрять по измерениям, учитывать в финальных schemas/TOOLS/README/экономичных recipes/mindmap/Pages, не ценой защит и фактов.
 
-### Статус выполнения
+### Статус выполнения — исторический журнал
+
+Записи ниже фиксируют проверки и ограничения **на момент каждого PR**. Старые формулировки pending/unsupported не переопределяют актуальный срез выше: wrappers уже мигрированы #85, artifact candidate #87 ещё не принят.
 
 - [x] Выполнен triage открытых issues и учтены #56/#57.
 - [x] PR #57 слит: `5b7c2dd74715bdef32834102d423726bc2eac8a9`; 50 pytest + 28 live HTTP negative checks на тестовом VPS, CI Python 3.10–3.13 success. Production не обновлён.
@@ -110,12 +112,13 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 - [x] #79: [PR #80](https://github.com/LeonidYasin/mcp-server/pull/80) слит guarded TEST tool: `655df5a253cc6f0eb21f3795ce2e97fd07727b3c`; issue #79 закрыт. 13 deterministic regressions, 403 pytest дважды на VPS, 10 последовательных повторов двух native TERM/KILL cases (20 checks), builds/CI Python 3.10–3.13 success. Identity/signals/limits не ослаблены. #78 обновлён до `4bcbc37a61650c2947b2987a3fb972a920d86bda`, tree `f2601c8083318fc5198ff47676beafedc72170a3` совпадает с ранее проверенной локальной интеграцией; exact remote HEAD и deployed artifact gate проверяются отдельно. Production не обновлён.
 - [x] Шаг 7a (snapshot part only) / #69: [PR #81](https://github.com/LeonidYasin/mcp-server/pull/81), separate branch `fix/workflow-attempt-snapshots-69`, exact HEAD `196d3209c80f5d602bef484b519563c1ca3ec2cb`. Attempt-pinned status/steps snapshots, identity validation, bounded pagination/output; list/latest expose attempt/time. 510 pytest locally и на VPS under mcp-test (11.62s); CI Python 3.10–3.13 success. Live read-only public TunXBox run 38102759021: attempts 1/2, latest pinned to 2, SHA identity и 40 steps per attempt passed. Слит после разрешения пользователя guarded TEST tool, merge commit `bd086bcb43ee8f9391f3a42319661af2f2871fc4`: deployed TEST schemas + authenticated MCP attempts 1/2 (distinct job IDs/timestamps), latest=2, capped failure-first output, zero caps, invalid bounds and nonexistent attempt refusal passed; pytest directly in deployed repo under mcp-test 510 passed (11.67s); issue #69 не закрывается, logs/combined-step/artifact attribution отдельно в part 2. Кэша workflow logs сейчас нет; future cache identity документирован, не реализован. Production не обновлён.
 - [x] Шаг 7b / #69 primary log readers (intermediate part only): [PR #82](https://github.com/LeonidYasin/mcp-server/pull/82), new branch `fix/workflow-attempt-logs-69`, слит после явного разрешения guarded TEST tool: merge commit `17005838a7b827e99dd9193722aad86e12e064bc`, exact reviewed HEAD `257776b4ff0ce381e5fc1807d655e092ea1323a1`. Four primary readers pin run_attempt and exact logs endpoint, bounded ZIP/no CDN auth/no redirects; combined step filter explicitly unsupported with same-attempt bounded job-search suggestion (not guessed boundaries). Structured response migration documented. Local 572 pytest, VPS candidate under mcp-test 572 in 22.80s; Deployed TEST 572 pytest in 23.92s; CI Python 3.10–3.13 success. Real authenticated ZIPs TunXBox run 38102759021 attempts 1/2: 5917 vs 2768 selected lines and own timestamps; both current archives combined, step filter explicitly unsupported, bounded job grep labels step=null (not step-specific). Latest=2 offset cap, no-text/no-files distinction and invalid/nonexistent attempts passed; runtime schemas checked. Per-step behavior fixture-covered, not claimed live on this run. Legacy diagnostics/full/preview/checks and artifact attempt attribution remain pending, issue #69 open, production unchanged.
-- [ ] Обязательное продолжение #69 / [#83](https://github.com/LeonidYasin/mcp-server/issues/83): убрать временный `step_filter_unsupported` для поддерживаемых completed combined ZIP. Проверяемая сегментация markers/timeline + attempt/SHA/job_id/step identity, no cross-step context; fixture/live TEST 4KB vs 16KB attempts1/2, same-name jobs, nested/repeated groups и ambiguous timestamps. Unsupported/unknown допустим только для конкретных недоказуемых случаев, не вечная реализация. Реализация [PR #84](https://github.com/LeonidYasin/mcp-server/pull/84), отдельная ветка `fix/combined-step-boundaries-83`, слит guarded TEST tool после разрешения: merge `73fe03fb3bb163df2a0a0b902b14326a2eb5132a`, reviewed HEAD `3ac49de7e404d1e36cb8d62f6b22e13eeb8ccc51` (initial `f510e7a...` live gate failed: both attempts unsupported from ordinary multiline input continuations outside target; failure recorded in #84). Fix allows those outside proven windows, still refuses untimestamped target content/control markers; +2 regressions, local605/VPS candidate605 (23.79s) passed; corrected deployed live re-test PASSED: exact repo605pytest/26.02s, CI3.10–3.13 success; real TunXBox step22 attempts1/2 combined_step lines4974–5768 (795)/1688–2621 (934) match independent broad markers+API times. Neighbor regex0 selected hits vs359/363 broad controls; head/tail/offset/context20/alias/latest2/source-lines/caps passed; production unchanged: проверенный non-overlap completed timeline + unique top-level runner Run markers, исходные номера строк, контекст внутри шага, отдельные identities same-file steps, mixed-copy deduplication. Local603/VPS candidate603 (25.68s) прошли; Первый live gate603 failed и сохранён в истории; после fix605 corrected deployed gate passed. Issue #83/69 не закрываются автоматически: legacy wrappers/artifact attribution остаются pending; primary segmentation PR #84 merged; production unchanged. До этого #69/финальные docs/mindmap/Pages не объявляются завершёнными; legacy wrappers/artifact attribution также pending.
+- [x] Primary combined-step continuation #69 / [#83](https://github.com/LeonidYasin/mcp-server/issues/83): убрать временный `step_filter_unsupported` для поддерживаемых completed combined ZIP. Проверяемая сегментация markers/timeline + attempt/SHA/job_id/step identity, no cross-step context; fixture/live TEST 4KB vs 16KB attempts1/2, same-name jobs, nested/repeated groups и ambiguous timestamps. Unsupported/unknown допустим только для конкретных недоказуемых случаев, не вечная реализация. Реализация [PR #84](https://github.com/LeonidYasin/mcp-server/pull/84), отдельная ветка `fix/combined-step-boundaries-83`, слит guarded TEST tool после разрешения: merge `73fe03fb3bb163df2a0a0b902b14326a2eb5132a`, reviewed HEAD `3ac49de7e404d1e36cb8d62f6b22e13eeb8ccc51` (initial `f510e7a...` live gate failed: both attempts unsupported from ordinary multiline input continuations outside target; failure recorded in #84). Fix allows those outside proven windows, still refuses untimestamped target content/control markers; +2 regressions, local605/VPS candidate605 (23.79s) passed; corrected deployed live re-test PASSED: exact repo605pytest/26.02s, CI3.10–3.13 success; real TunXBox step22 attempts1/2 combined_step lines4974–5768 (795)/1688–2621 (934) match independent broad markers+API times. Neighbor regex0 selected hits vs359/363 broad controls; head/tail/offset/context20/alias/latest2/source-lines/caps passed; production unchanged: проверенный non-overlap completed timeline + unique top-level runner Run markers, исходные номера строк, контекст внутри шага, отдельные identities same-file steps, mixed-copy deduplication. Local603/VPS candidate603 (25.68s) прошли; Первый live gate603 failed и сохранён в истории; после fix605 corrected deployed gate passed. Issue #83/69 не закрываются автоматически: legacy wrappers/artifact attribution остаются pending; primary segmentation PR #84 merged; production unchanged. До этого #69/финальные docs/mindmap/Pages не объявляются завершёнными; legacy wrappers/artifact attribution также pending.
 - [x] Diagnostic wrappers continuation / #69/#83: [PR #85](https://github.com/LeonidYasin/mcp-server/pull/85), branch `fix/workflow-diagnostic-attempts-69`, слит guarded TEST tool после разрешения: merge `b9787e4f40fe8b62f62dbafa632b60722e44f439`, reviewed HEAD `c52e7f11c640904de20a692828bc865b8163252c`. Latest/watch/run/full/preview/checks names and canonical Android/iOS diagnostics use bounded attempt readers; unique exact-job identity recheck, no empty/no-match-as-success. Old SDK transports fail closed. Unsafe hardcoded autofix-to-main disabled in candidate (not deployed production); mandatory safe replacement [#86](https://github.com/LeonidYasin/mcp-server/issues/86) separately tracked. Local634 / VPS candidate634 (27.17s), CI3.10–3.13 success; Deployed gate passed: exact repo634pytest/28.86s; runtime all9 definitions; authenticated full/preview/Android old/new step windows/caps, no-match run failure, watch snapshot, checks deprecated attempt-log source, iOS missing job, latest CI metadata and verified disabled autofix writes=false. No real iOS build/root-cause diagnosis claimed. Registered code no longer uses old SDK transports; production still unchanged, #86 replacement/artifact attribution/#58 pending. No unsafe autofix executed, production untouched.
 - [ ] Artifact attempt identity / #69: [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87), branch `fix/artifact-attempt-identity-69`, draft HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`. Run-context separately from artifact attempt-or-unknown; bounded IDs/SHA/time/digest/duplicates listing; explicit attempt unknown candidates separate, strict download refuses before redirect, ID-only legacy resolution preserves unknown. No timestamp/name/latest/SHA inference or invented attempt-artifacts endpoint. Local666 / VPS candidate666 (27.99s), CI3.10–3.13 success. Real public TunXBox attempt1/2 source gate:6 rows/3 duplicate names,6 unknown, strict ID11690225979 refuses and0 redirect calls; positive API-attempt metadata fixture-covered only. TEST checkout при подключении проверен на exact HEAD, CI 4/4 success; это только read-only connectivity/identity check. Deployed authenticated artifact acceptance gate pending. Producer attribution protocol would require separate review, no TunXBox workflow/production changes.
 - [ ] Новые #88/#89: полные требования и зависимости внесены в roadmap/карту/README/TOOLS/SANDBOX; реализация и сквозные проверки не выполнены.
 - [ ] Остальная часть шага 7b / #58 и шаги 8–14: запланированы, не реализованы этим обновлением.
-- [ ] Финальная синхронизация документации, майндмэпа и GitHub Pages: запланирована; опубликованный сайт ещё не проверен.
+- [x] Промежуточный docs audit #70: README/TOOLS/SANDBOX и карта сверены с кодом; пропуски каталога, bind/session claims и isolation overclaims исправлены. Добавлены offline registry/link/HTTP checks, versioned inventory и source-distribution inputs. Это не реализация открытых issues.
+- [ ] Финальная синхронизация после будущих code PR, live examples и GitHub Pages: опубликованный сайт ещё не проверен.
 
 ---
 
@@ -160,15 +163,15 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 - один `LOCAL_TOOLS_ROOT` (= `/workspace`) — общий whitelist;
 - раздельные флаги `ENABLE_LOCAL_TOOLS` (fs + git) и `ENABLE_LOCAL_SHELL` (shell);
 - всё выполняется под одним `mcp-sandbox` (Linux) / внутри WSL2 без automount;
-- shell-команды и git-операции — только внутри `LOCAL_TOOLS_ROOT`.
+- cwd shell и расположение local-git repo ограничены `LOCAL_TOOLS_ROOT`; исполняемый shell/Python имеет все OS-права пользователя и не заперт этим cwd. Для OS-изоляции нужна отдельная policy.
 
-Дальнейшее усиление — bwrap/Docker (уровни 3–4 в `SANDBOX.md`).
+Дальнейшее усиление — bwrap/Docker (уровни 2–3 в `SANDBOX.md`).
 
 ---
 
-## Батч 7b — Эмбеддинг-матчинг в Synapse (в работе)
+## Батч 7b — Synapse item/matching (код в main, provider gate отдельно)
 
-> Статус: **в работе** — в репозитории уже есть `synapse/embeddings.py`, `vector_store.py`, `matching.py`, `items.py`. Рантайм-регистрация инструментов батча 7b проверяется через `list_my_tools`.
+> Статус: 8 item/matching tools уже регистрируются вместе с 6 базовыми при `ENABLE_SYNAPSE=1` (14 всего). Это проверено локальным discovery и [inventory](docs/tool-inventory.json), без вызова provider/реального matching. Embeddings/provider availability и качество — отдельные gates; без provider используется keyword fallback.
 
 ### Ключевой архитектурный урок (из agora-mcp)
 
@@ -193,7 +196,7 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 ### Конфигурация (env)
 
 ```bash
-SYNAPSE_EMBEDDING_PROVIDER=openai | local | ollama   # по умолчанию выключено (keyword-MVP)
+export SYNAPSE_EMBEDDING_PROVIDER=ollama   # выбрать ОДИН: openai, local или ollama; без значения keyword fallback
 
 # A
 OPENAI_API_KEY=...
@@ -205,7 +208,7 @@ SYNAPSE_EMBEDDING_MODEL=nomic-embed-text
 OLLAMA_BASE_URL=http://localhost:11434
 ```
 
-### Что войдёт в батч 7b
+### Код батча 7b (наличие не означает acceptance качества)
 
 - Векторное хранилище: SQLite + numpy.
 - Item-модель: `submit_offer`, `submit_want`, `list_my_items`, `deactivate_item`.
@@ -221,7 +224,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 **Зачем:** ИИ-агенту легче работать, когда «дешёвые» по токенам вызовы отдают короткий ответ. Сейчас часть инструментов возвращает «простыни» (полные файлы, полные логи, длинные списки) — это дорого по контексту.
 
-> **Принцип: не дублировать инструменты.** 110 + 110 `*_slim` = 220 раздует `tools/list` и запутает выбор. Вместо дублей — **параметр формата** в существующих методах (обратная совместимость: дефолт `full`).
+> **Принцип: не дублировать весь каталог.** Массовые `*_slim` раздуют `tools/list` и запутают выбор. Предпочитать измеренные format/fields/snapshot контракты; отдельные экономичные аналоги — только при подтверждённой выгоде (#77). Дефолты и миграцию определять для каждого существующего контракта, не обещать несуществующий общий `full`.
 
 ### Что сделать
 
@@ -249,8 +252,10 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 ⚠️ **Критично до любого публичного развёртывания.** В текущем `main` сервер по умолчанию слушает `127.0.0.1:3001` (можно явно переопределить `MCP_HOST`), не проверяет отдельный собственный токен, CORS открыт. Loopback не заменяет аутентификацию при публикации через reverse proxy.
 
-1. **`MCP_AUTH_TOKEN`** — требовать `Authorization: Bearer <MCP_AUTH_TOKEN>` на каждый запрос к `/mcp`.
-2. **Разделить заголовки:** `X-MCP-Auth` (доступ к серверу) vs `Authorization: Bearer <github_token>` (GitHub API).
+Это **предложения**, не реализованные environment flags. Не подменять GitHub PAT другим Bearer в текущем сервере. Сейчас доступ защищает reverse proxy (`X-API-Key` в примере README).
+
+1. **Отдельная MCP authentication policy** — выбрать и реализовать отдельно от GitHub token gate, с миграцией клиентов.
+2. **Разделить credentials:** отдельный MCP access credential, а `Authorization: Bearer <github_token>` сохранить для GitHub до явно согласованного изменения протокола.
 3. **CORS white-list** — вместо `CORS(app)`.
 4. **Rate limit** — счётчик на IP + окно.
 5. **TLS** — reverse-proxy (nginx / caddy) или Cloudflare Tunnel.

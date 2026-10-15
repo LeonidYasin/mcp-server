@@ -1,10 +1,8 @@
 # SANDBOX.md — изолированный запуск MCP с доступом к локальным файлам
 
-Эти инструкции нужны, если вы включаете инструменты `read_local_file`,
-`write_local_file`, `list_local_dir`, `search_in_files` (флаг `ENABLE_LOCAL_TOOLS=1`).
+Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 6 · 2026-10-15.
 
-Цель: агент видит **только** одну папку и не может навредить системе,
-другим пользователям или вашему Windows-диску.
+Цель — минимизировать права и явно задать OS-изоляцию. **Сам пакет не гарантирует, что агент видит только одну папку.** Cwd/path guards не заменяют sandbox, защиту секретов, сетевую policy и ограничения ресурсов.
 
 ---
 
@@ -20,9 +18,9 @@
 
 | Уровень | Что даёт | Когда использовать |
 |---|---|---|
-| **1. Обычный Linux-пользователь** | Не может писать в систему, чужие home, убивать чужие процессы | Базовый минимум (по умолчанию) |
-| **2. `bubblewrap`** | + нет сети, нет чужих процессов, только `/workspace` | Если нужна сильная изоляция |
-| **3. Docker/Podman** | + лимиты CPU/RAM/PID, read-only rootfs | Продакшн |
+| **1. Отдельный non-root пользователь** | Ограничения DAC/UID; только если ему не выданы sudo, общие writable пути или опасные группы/IPC | Минимум привилегий, не полноценный sandbox |
+| **2. `bubblewrap`** | Mount/PID/network namespaces согласно явно выбранным bind/unshare options | Policy надо адаптировать и проверить; имя программы само по себе не изолирует |
+| **3. Docker/Podman** | Namespaces и настраиваемые CPU/RAM/PID/filesystem/network ограничения | Лимиты, read-only rootfs, non-root и volumes задаются явно; docker socket не монтировать |
 
 Уровни 2 и 3 — опционально, см. ROADMAP.md.
 
@@ -40,10 +38,13 @@ sudo chown -R mcp-sandbox:mcp-sandbox /home/mcp-sandbox/workspace
 
 ### 2. Установить сервер (от mcp-sandbox)
 
+Нужны системные `git`, `python3` и пакет поддержки venv (например `python3-venv` на Ubuntu); устанавливает администратор. Использовать venv, не системный pip/`--user` под PEP 668. Ниже обычная установка пакета из checkout; для разработки editable install выбирается отдельно.
+
 ```bash
 sudo -u mcp-sandbox -H bash -lc '
   cd ~ && git clone https://github.com/LeonidYasin/mcp-server.git
-  cd mcp-server && pip install --user -e .
+  python3 -m venv ~/venv
+  ~/venv/bin/python -m pip install ~/mcp-server
 '
 ```
 
@@ -54,23 +55,24 @@ sudo -u mcp-sandbox -H bash -lc '
   cd ~/mcp-server
   ENABLE_LOCAL_TOOLS=1 \
   LOCAL_TOOLS_ROOT=/home/mcp-sandbox/workspace \
-  python -m mcp_server.server
+  ~/venv/bin/python -m mcp_server.server
 '
 ```
 
-### 4. (Опционально) Уровень 2 — bubblewrap
+### 4. (Опционально) Уровень 2 — bubblewrap policy
 
-```bash
-sudo -u mcp-sandbox bwrap \
-  --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /lib64 /lib64 \
-  --ro-bind /etc /etc \
-  --ro-bind /home/mcp-sandbox/mcp-server /app \
-  --bind /home/mcp-sandbox/workspace /workspace \
-  --tmpfs /tmp --proc /proc --dev /dev \
-  --unshare-all --die-with-parent \
-  env ENABLE_LOCAL_TOOLS=1 LOCAL_TOOLS_ROOT=/workspace \
-  python -m mcp_server.server
-```
+Это **не готовый production recipe**: прежний минимальный пример не монтировал Python environment и не настраивал cwd/import path. Не копировать непроверенную команду как доказательство изоляции.
+
+Для конкретного дистрибутива и установленного venv явно выбрать и проверить:
+
+- read-only Python runtime, необходимые loader/libs и установленный пакет; не открывать весь home или `/etc` ради удобства;
+- единственный необходимый writable workspace, отдельный `/tmp`, private PID namespace и `/proc`;
+- `cwd`/`HOME`/`LOCAL_TOOLS_ROOT` внутри workspace; отсутствие SSH/docker/agent sockets, токенов и лишних environment values;
+- network namespace: полный запрет сети делает GitHub/web tools неработоспособными и не предоставляет HTTP-доступ к сервису с host. Доступ клиента и разрешённые outbound destinations требуют отдельного дизайна;
+- cgroup/resource/disk/log quotas отдельно: `bubblewrap` сам не выставляет CPU/RAM/PID/disk limits;
+- negative tests изоляции и shutdown/descendant cleanup. Не ослаблять policy, чтобы обойти failing smoke.
+
+WSL/bubblewrap/container deployment не запускался в текущем docs PR. Проверки конкретной OS policy и рабочего HTTP-доступа — отдельный acceptance gate.
 
 ---
 
@@ -94,6 +96,7 @@ sudo tee /etc/wsl.conf >/dev/null <<'EOF'
 enabled = false
 
 [interop]
+enabled = false
 appendWindowsPath = false
 EOF
 ```
@@ -104,7 +107,7 @@ EOF
 wsl --shutdown
 ```
 
-После перезапуска `/mnt/c`, `/mnt/d` будут недоступны — изоляция от Windows-диска.
+Это отключает автоматическое монтирование Windows-дисков и Win32 interop в данной WSL-конфигурации. Проверить результат после перезапуска; уже смонтированные/manual mounts, дополнительные shares, sockets и права администратора — отдельные риски. WSL сам по себе не превращает обычного пользователя в полностью изолированный sandbox.
 
 ### 3. Создать пользователя внутри WSL
 
@@ -119,14 +122,15 @@ sudo chown -R mcp-sandbox:mcp-sandbox /home/mcp-sandbox/workspace
 ```bash
 sudo -u mcp-sandbox -H bash -lc '
   cd ~ && git clone https://github.com/LeonidYasin/mcp-server.git
-  cd mcp-server && pip install --user -e .
+  python3 -m venv ~/venv
+  ~/venv/bin/python -m pip install ~/mcp-server
 '
 
 sudo -u mcp-sandbox -H bash -lc '
   cd ~/mcp-server
   ENABLE_LOCAL_TOOLS=1 \
   LOCAL_TOOLS_ROOT=/home/mcp-sandbox/workspace \
-  python -m mcp_server.server
+  ~/venv/bin/python -m mcp_server.server
 '
 ```
 
@@ -147,13 +151,15 @@ curl http://127.0.0.1:3001/health
 
 | Переменная | По умолчанию | Что делает |
 |---|---|---|
-| `ENABLE_LOCAL_TOOLS` | (пусто) | `1` — включает localfs-инструменты. Всё остальное — выключено. |
-| `LOCAL_TOOLS_ROOT` | `~/workspace` | Whitelist-корень. Всё вне — отказ. |
+| `ENABLE_LOCAL_TOOLS` | (пусто) | `1`, `true`, `yes`, `on` (без учёта регистра/краевых пробелов) — localfs + localgit; прочие значения выключают. |
+| `LOCAL_TOOLS_ROOT` | `~/workspace` | Корень path/cwd guards. Не запрещает произвольному shell/Python читать другие доступные OS файлы. |
 | `LOCAL_TOOLS_MAX_READ_BYTES` | `1000000` | Лимит на чтение файла. |
 | `LOCAL_TOOLS_MAX_WRITE_BYTES` | `1000000` | Лимит на запись файла. |
 | `LOCAL_TOOLS_MAX_LIST_ENTRIES` | `1000` | Лимит элементов в листинге. |
 | `LOCAL_TOOLS_MAX_GREP_MATCHES` | `200` | Лимит совпадений в поиске. |
-| `ENABLE_LOCAL_SHELL` | (пусто) | `1` — включает `run_command`/`run_python`, а также `start_background`/`stop_process`/`process_status`/`tail_log` (см. ниже). |
+| `ENABLE_LOCAL_SHELL` | (пусто) | `1`/`true`/`yes`/`on` — включает `run_command`/`run_python`, а также `start_background`/`stop_process`/`process_status`/`tail_log` (см. ниже). |
+| `LOCAL_TOOLS_SHELL_TIMEOUT` | `60` | Таймаут `run_command`/`run_python`; не обещает остановку всех отделившихся потомков. |
+| `LOCAL_TOOLS_MAX_OUTPUT_BYTES` | `200000` | Process: UTF-8 byte cap (clamped 1–1000000); shell legacy truncates characters after capturing output, не hard memory limit. |
 | `LOCAL_TOOLS_STOP_TIMEOUT` | `10` | Сколько секунд `stop_process` ждёт после SIGTERM; допустимо 0–30, без автоматического SIGKILL. |
 
 ---
@@ -162,8 +168,8 @@ curl http://127.0.0.1:3001/health
 
 Отдельная опасность внутри `ENABLE_LOCAL_SHELL`, а не новая категория: те же
 права, что и у `run_command`, но результат — **живой процесс, который остаётся
-после ответа инструмента**. `run_command` сам себя убивает по таймауту;
-`start_background` — нет, это его смысл (например, поднять `node dist/index.js`
+после ответа инструмента**. `run_command` ждёт direct child с timeout через `subprocess.run`; это не гарантия зачистки всех потомков/групп.
+`start_background` не получает lifetime timeout, это его смысл (например, поднять `node dist/index.js`
 и не уронить его через 30 секунд).
 
 Что важно знать:
@@ -191,11 +197,11 @@ curl http://127.0.0.1:3001/health
 
 ## Что НЕ закрывает обычный пользователь
 
-Эти векторы закрываются только bwrap/Docker (уровни 2–3):
+Ниже — риски, для которых нужна проверенная OS/container/network/resource policy. Простое наличие bwrap/Docker не доказывает, что они закрыты:
 
 1. Чтение world-readable файлов (`/etc/passwd`, логи, конфиги с `o+r`).
 2. Полный доступ в сеть (если хендлер скомпрометируют).
 3. DoS: fork-бомба, забивание диска/RAM.
 4. Доступ к `ssh-agent`, docker-сокету и другим IPC.
 
-Для локального использования на своей машине уровень 1 — разумный минимум.
+Для arbitrary shell/process отдельный non-root user — лишь минимум. Не включать на личной машине с ценными данными или в production без проверенной policy, независимо от path guard. Установка/перезапуск сервисов и реальная проверка изоляции в этом docs PR не выполняются.

@@ -69,6 +69,7 @@ flowchart TD
 - **ROADMAP**: triage всех open issues, зависимости, pending gates и историческая evidence.
 - **TOOLS**: доступные инструменты отдельно от proposed names; сверка runtime на выбранной сборке.
 - **SANDBOX**: клиент/сервер, filesystem/OS/PAT boundaries, не ослаблять изоляцию ради upload.
+- **http-transport / validation / tool-inventory**: фактический stateless-контракт, воспроизводимые checks и drift protection каталога.
 - **binary-transfer-plan**: единый контракт требований #88/#89, acceptance и non-goals.
 - **artifact-download**: Actions resolver не подменяет Release asset API или verified bytes transport.
 

@@ -1,0 +1,3 @@
+include README.md ROADMAP.md TOOLS.md SANDBOX.md
+include scripts/check_docs.py
+recursive-include docs *.md *.json
