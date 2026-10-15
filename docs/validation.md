@@ -1,6 +1,8 @@
 # Воспроизводимая проверка документации
 
-Ревизия 7 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
+Ревизия 8 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
+
+[Deployment evidence](deployment-status.md) фиксирует отдельные VPS/external/Pages проверки. Локальный pytest не доказывает production deployment, готовность #88/#89 или Mermaid rendering на опубликованном сайте.
 
 ## Локальный gate
 

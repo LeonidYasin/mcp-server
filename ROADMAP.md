@@ -3,7 +3,7 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 7 · 2026-10-15** (см. README → Source of truth).
+> **Ревизия документации: 8 · 2026-10-15** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
@@ -14,27 +14,28 @@
 
 ## Актуальный срез — 2026-10-15
 
-Проверены все 19 issues (12 open / 7 closed), открытые PR #70/#87, `main` на `b9787e4f40fe8b62f62dbafa632b60722e44f439`, полные тексты и комментарии новых #88/#89. Предложения API ниже — **backlog**, не новые зарегистрированные инструменты. [Карта проекта](docs/project-map.md) и [подробный файловый план](docs/binary-transfer-plan.md) синхронизированы с этим срезом.
+Исходный triage: 19 issues (12 open / 7 closed). После него PR #70 слит в `main` как `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6`; этот SHA отдельно развёрнут в production. Из предыдущих PR открыт Draft #87. Учтены новые комментарии #88/#89; оба issue остаются open. Предложения API ниже — **backlog**, не новые зарегистрированные инструменты. [Карта проекта](docs/project-map.md) и [подробный файловый план](docs/binary-transfer-plan.md) синхронизированы с этим срезом.
 
 | Область | Текущий статус / следующий gate |
 | --- | --- |
-| #60, #61, #62, #63, #65, #67, #79 | Закрыты; соответствующие fixes в main, подробная история проверок ниже. Это не доказательство rollout production. |
+| #60, #61, #62, #63, #65, #67, #79 | Закрыты; соответствующие fixes в main, подробная история проверок ниже. Rollout закреплённого SHA подтверждён отдельно в [снимке окружений](docs/deployment-status.md); это не закрывает остальные acceptance gates. |
 | #69 / #83 | Attempts, bounded logs, combined-step segmentation и diagnostic adapters в main через #81/#82/#84/#85. Оба issue ещё open; не закрывать по одному наличию кода. |
 | PR #87 / #69 | Draft HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI 4/4 success. TEST checkout совпадает с HEAD; специализированный authenticated deployed gate artifact identity ещё pending. Нельзя выводить attempt по имени/времени/общему SHA. |
 | #58 / #86 | Android/Kotlin диагностика и безопасный repo-specific auto-fix остаются open. Опасный template-to-main autofix отключён в main; замена не реализована. |
 | #53 / #59 | Диагностика доступа и неопределённый post-effect persistence остаются open; не повторять потенциально успешную мутацию вслепую. |
 | #64 | Lifecycle tags/releases остаётся open. Получение release IDs и asset API согласовать с #89, не делать два конкурирующих контракта. |
-| **#88 → #89 — новые** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Оба open; #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
+| **#88 → #89 — открыты** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Малый synthetic client→TEST probe прошёл; staging/upload API и E2E ещё отсутствуют. #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
 | #66 / #68 | Actions secrets и verified repo/Pages configuration остаются open. Никаких настоящих secrets или изменения Pages в этом docs PR. |
 | #77 | Сквозной аудит всех методов: schemas + args + results + turns; отдельно измерить большой бинарный маршрут без base64 в контексте модели. |
-| Документация / сайт | PR #70 обновляет README/ROADMAP/TOOLS/SANDBOX, добавляет карту и план. Финальная сверка после кодовых PR, реальные examples и проверка опубликованного Pages ещё не завершены. |
+| Production / TEST | Production `b78b209…`, 113 tools; TEST отдельно `ef7993b…`, 119 tools (shell/process только TEST). Зависимости, TEST и Caddy при rollout не менялись. [Подробности](docs/deployment-status.md). |
+| Документация / сайт | PR #70 merged; Pages deployment success и HTTP 200 подтверждены. Mermaid в опубликованной странице визуально не принят. Ревизия 8 фиксирует rollout и feasibility, а не реализацию #88/#89. |
 
 ### Ближайшие зависимости
 
 1. Завершить отдельный live gate PR #87; merge только после review и явного согласования. #69/#83 закрываются только по полным критериям.
-2. Для нового файлового сценария сначала feasibility реального клиента и дизайн #88, затем реализация staging; только после этого #89. Объекты для mutating smoke tests и прогон ~41 МБ требуют отдельного разрешения.
+2. Для нового файлового сценария малый feasibility probe выполнен; далее выбрать и документировать основной клиентский transport #88 и реализовать staging; только после этого #89. Объекты для mutating smoke tests и прогон ~41 МБ требуют отдельного разрешения.
 3. #89 согласовать с #64 (release lookup/IDs/assets), #59 (неопределённый POST), #53 (доступ), #77 (token/memory budgets). Actions artifact, Release asset и staging `file_id` — разные сущности.
-4. #58/#86, доступ, lifecycle, secrets и Pages сохраняются отдельными PR; финальный docs/site gate и production rollout не подменяются этой актуализацией.
+4. #58/#86, доступ, lifecycle, secrets и Pages сохраняются отдельными PR; будущие docs/site gates и deployments требуют отдельной проверки и разрешения. Уже выполненный rollout не означает принятия #87/#88/#89.
 
 ## План надёжности GitHub — 2026-10-11
 
@@ -80,7 +81,7 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 
 ### Финальная синхронизация документации и сайта
 
-Текущая актуализация #70 добавляет `docs/project-map.md` и `docs/binary-transfer-plan.md`, связывает README/TOOLS/SANDBOX и #88/#89. Это промежуточная синхронизация планов, не приёмка будущего кода и не подтверждение публикации сайта.
+PR #70 слит: добавлены карта проекта и файловый план, проверены 640 pytest, inventory 113/143 и сборка. После merge отдельно подтверждены Pages deployment/HTTP и production rollout. Ревизия 8 фиксирует эти результаты в [снимке окружений](docs/deployment-status.md). Это не приёмка будущего файлового API; Mermaid на Pages и реальные examples после реализации остаются отдельными gates.
 
 После согласованного этапа кодовых исправлений — отдельный documentation/site PR:
 
@@ -95,6 +96,15 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 Это финальный gate выбранного этапа, а не обещание закрыть весь backlog одним PR.
 
 Дополнительный запрос пользователя: [#77](https://github.com/LeonidYasin/mcp-server/issues/77) — аудит всех методов на экономию токенов. Аудит можно вести параллельно reliability fixes; экономию внедрять по измерениям, учитывать в финальных schemas/TOOLS/README/экономичных recipes/mindmap/Pages, не ценой защит и фактов.
+
+### Завершено после документационного аудита — 2026-10-15
+
+- [x] PR #70: reviewed HEAD `602b6e9ffa8eb1f31d54db5610c56f9cc436e2ad`; VPS под `mcp-test`: 640 pytest, smoke import, wheel/sdist. Squash merge в `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6`; CI success.
+- [x] Production rollout этого SHA с guarded preflight и механизмом rollback (откат не потребовался); localhost и внешний MCP smoke passed. TEST, Caddy, зависимости и reboot не затронуты. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6202583914).
+- [x] Существующий Pages workflow автоматически отработал после merge #70; root/roadmap/map/plan/HTTP/validation HTTP 200. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6200111705).
+- [x] #88: малый synthetic non-UTF-8/ZIP client→TEST probe, size/SHA-256 совпали. [Evidence и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
+- [ ] #88 upload/staging API, XLSX и отдельно разрешённый ~41 МБ gate; затем #89 private-release/Actions E2E.
+- [ ] PR #87 authenticated deployed artifact gate; визуальная проверка Mermaid на опубликованном Pages.
 
 ### Статус выполнения — исторический журнал
 

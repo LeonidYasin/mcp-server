@@ -1,6 +1,6 @@
 # SANDBOX.md — изолированный запуск MCP с доступом к локальным файлам
 
-Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 7 · 2026-10-15.
+Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 8 · 2026-10-15.
 
 Цель — минимизировать права и явно задать OS-изоляцию. **Сам пакет не гарантирует, что агент видит только одну папку.** Cwd/path guards не заменяют sandbox, защиту секретов, сетевую policy и ограничения ресурсов.
 
@@ -13,6 +13,8 @@
 Новый канал [#88 → #89](docs/binary-transfer-plan.md) пока запланирован: доказанный client transport → отдельный bounded staging → scoped opaque `file_id` → Release assets. Нельзя считать произвольный path или незавершённый upload валидным file_id. Нужны authentication/owner isolation, проверка bytes/size/SHA-256, квоты/TTL/cleanup, no traversal/symlink/SSRF и redaction tickets/секретов. Сам сервер не получает доступ к клиентскому sandbox.
 
 Не ослаблять изоляцию TEST/production и не включать shell для решения передачи файла. Тот же GitHub PAT сохраняет права в обоих окружениях; отдельный Unix-пользователь не ограничивает GitHub-доступ. [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
+
+Малый synthetic client→TEST probe #88 выполнен через file-backed arguments и проверку в памяти; это не upload API и не основание включать shell в production. [Ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15). Production обновлён отдельно на `b78b209…` без ослабления flags; [снимок окружений](docs/deployment-status.md).
 
 ## Уровни изоляции
 
