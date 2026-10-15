@@ -1,5 +1,7 @@
 # Карта проекта mcp-server
 
+> **Обновление приёмки #88:** file-backed ZIP и XLSX, live count quota 8/9 и освобождение ёмкости после cancel — PASS. Полная приёмка ещё открыта. [Матрица доказательств и оставшиеся gates](upload-acceptance.md) · [XLSX/quota evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204702804).
+
 Ревизия документации 9 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
@@ -23,7 +25,7 @@ flowchart TD
     Registry --> Github --> API
     Registry --> Local --> Workspace
     Registry --> Other
-    Client -. "КАНДИДАТ: file-backed ZIP 110124 B PASS; full gate pending" .-> Stage
+    Client -. "КАНДИДАТ: ZIP/XLSX + count quota PASS; full gate pending" .-> Stage
     Stage -. "зависимость #88 → #89" .-> Assets
     Assets -. "ПЛАН: authorised input, verify size/hash" .-> Actions
     Actions --> Output
@@ -49,7 +51,7 @@ flowchart TD
 | Actions snapshots/logs | Attempt-pinned status/steps/readers, combined-step boundaries, adapters в main через #81/#82/#84/#85 | #69/#83 ещё open: сверить полные критерии; не заявлять универсальную сегментацию неоднозначных архивов |
 | Artifact ownership | PR #87 Draft; HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI success, TEST checkout совпадает | Authenticated deployed artifact acceptance pending. Не выводить attempt по имени, времени или общему SHA |
 | Diagnostics / fix | #85 убрал ложный success по пустым логам, unsafe auto-fix отключён | #58 compiler-specific диагностика; #86 repo-specific reviewed branch/PR workflow |
-| Binary ingress | Исторический synthetic probe и новый authenticated deployed smoke upload API прошли; последний: 50 bytes, два чанка, size/hash, retries, incomplete refusal, stable file_id и cancel. Дополнительно прошёл file-backed ZIP gate: 110 124 bytes / 3 чанка, size/hash/cancel ([evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)). Полная приёмка #88 pending; legacy binary-file API требует UTF-8. [Evidence и ограничения](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526) | **#88**, [chunk API](file-uploads.md): verified owner/allowlist, bytes/hash/quota/TTL реализованы; file-backed ZIP TEST client gate пройден; завершить XLSX/live owner/limits/expiry/retention gates; [ограничения probe](binary-transfer-plan.md#предварительная-feasibility--2026-10-15) |
+| Binary ingress | Исторический synthetic probe и новый authenticated deployed smoke upload API прошли; последний: 50 bytes, два чанка, size/hash, retries, incomplete refusal, stable file_id и cancel. Дополнительно прошёл file-backed ZIP gate: 110 124 bytes / 3 чанка, size/hash/cancel ([evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)). Полная приёмка #88 pending; legacy binary-file API требует UTF-8. [Evidence и ограничения](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526) | **#88**, [chunk API](file-uploads.md): verified owner/allowlist, bytes/hash/quota/TTL реализованы; file-backed ZIP TEST client gate пройден; XLSX и count quota 8/9 PASS; завершить live owner/byte-global-limits/expiry/retention gates; [ограничения probe](binary-transfer-plan.md#предварительная-feasibility--2026-10-15) |
 | Release lifecycle / assets | list/create/latest release и отдельные tag tools есть; полного assets цикла нет | #64 lifecycle; **#89 зависит от #88**, общий release lookup/IDs, без дублирующих API |
 | Надёжность / стоимость | Текущие safety contracts сохраняются | #53 access diagnostics; #59 post-effect reconciliation; #77 end-to-end token audit |
 | Admin / secrets / сайт | Существующие repo admin tools не равны полному lifecycle Pages | #66 secure secrets boundary; #68 verified features/Pages, configured ≠ deployed ≠ HTTP verified |

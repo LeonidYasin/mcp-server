@@ -1,5 +1,7 @@
 # TOOLS — полный каталог инструментов mcp-server
 
+> **Обновление приёмки #88:** file-backed ZIP и XLSX, live count quota 8/9 и освобождение ёмкости после cancel — PASS. Полная приёмка ещё открыта. [Матрица доказательств и оставшиеся gates](docs/upload-acceptance.md) · [XLSX/quota evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204702804).
+
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
 > **Ревизия:** 9 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
@@ -30,7 +32,7 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 
 ## Бинарный staging API — opt-in кандидат #88
 
-`begin_file_upload`, `append_file_chunk`, `finish_file_upload`, `get_file_upload_status`, `cancel_file_upload`, `cleanup_file_uploads`: доступны только с `ENABLE_FILE_UPLOADS=1`, private `FILE_UPLOAD_ROOT` и явной `FILE_UPLOAD_ALLOWED_USERS`. Основной транспорт — bounded MCP chunks, ≤48 KiB bytes/chunk. На каждом вызове GitHub `/user` verification без redirect; owner — проверенный numeric GitHub user ID, не caller-supplied ID. SQLite staging выдаёт `file_id` только после bytes/size/SHA-256 verification. Shell не требуется. Default OFF. Малый authenticated deployed smoke новых tools прошёл: 50 bytes / два чанка, size/hash, retries, incomplete refusal, stable file_id и cancel; полная приёмка #88 pending. Позднее прошёл file-backed client-sandbox ZIP gate: 110 124 bytes / 3 чанка, size/hash и cancel ([evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)). XLSX, large-file и полная приёмка ещё pending. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526). [Полный контракт, схемы, ошибки и helper](docs/file-uploads.md).
+`begin_file_upload`, `append_file_chunk`, `finish_file_upload`, `get_file_upload_status`, `cancel_file_upload`, `cleanup_file_uploads`: доступны только с `ENABLE_FILE_UPLOADS=1`, private `FILE_UPLOAD_ROOT` и явной `FILE_UPLOAD_ALLOWED_USERS`. Основной транспорт — bounded MCP chunks, ≤48 KiB bytes/chunk. На каждом вызове GitHub `/user` verification без redirect; owner — проверенный numeric GitHub user ID, не caller-supplied ID. SQLite staging выдаёт `file_id` только после bytes/size/SHA-256 verification. Shell не требуется. Default OFF. Малый authenticated deployed smoke новых tools прошёл: 50 bytes / два чанка, size/hash, retries, incomplete refusal, stable file_id и cancel; полная приёмка #88 pending. Позднее прошёл file-backed client-sandbox ZIP gate: 110 124 bytes / 3 чанка, size/hash и cancel ([evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)). XLSX file-backed gate и live count quota 8/9 теперь PASS; large-file, owner isolation, byte/global quotas/expiry, retention и полная приёмка ещё pending. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526). [Полный контракт, схемы, ошибки и helper](docs/file-uploads.md).
 
 #89 (`list_release_assets`, `upload_release_asset`, `download_release_asset`) всё ещё proposed, не зарегистрирован. Release/Actions E2E зависит от завершённой приёмки #88. [План](docs/binary-transfer-plan.md) · [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
 

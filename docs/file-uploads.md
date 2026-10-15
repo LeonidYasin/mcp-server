@@ -1,5 +1,7 @@
 # Бинарный staging API — кандидат #88
 
+> **Обновление приёмки #88:** file-backed ZIP и XLSX, live count quota 8/9 и освобождение ёмкости после cancel — PASS. Полная приёмка ещё открыта. [Матрица доказательств и оставшиеся gates](upload-acceptance.md) · [XLSX/quota evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204702804).
+
 Ревизия документации 9 · 2026-10-15. **Реализация в отдельном PR, по умолчанию выключена; не production/live acceptance.** [План #88 → #89](binary-transfer-plan.md) · [TOOLS](../TOOLS.md) · [Sandbox](../SANDBOX.md) · [Deployment snapshot](deployment-status.md).
 
 ## Выбранный транспорт и клиентская граница
@@ -76,4 +78,4 @@ python scripts/prepare_file_upload.py chunk synthetic.zip client-upload-args/chu
 
 **Новый deployed gate PASS:** настоящий ZIP из sandbox клиента передан через file-backed MCP arguments: **110 124 bytes / 3 чанка**, итоговые size/SHA-256 совпали, получен opaque file_id; запись удалена, status после cancel — not_found_or_expired. Base64 не выводился в контекст модели. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365). Это не server-side ZIP parsing, обратный download, XLSX, большой прогон или полная приёмка #88.
 
-Pending: полная приёмка #88, включая deployed XLSX и дополнительные форматные проверки, live owner isolation/limits/expiry, проверку клиентской retention/log policy; отдельно разрешённый synthetic ~41 МБ и измерения #77. Успешный smoke не доказывает эти gates. #88 не закрывается по одним unit tests. Private inputs, Release assets/Actions E2E (#89), production deployment и reboot этим PR не разрешены.
+Pending: полная приёмка #88, включая live cross-owner isolation, byte/global quotas/expiry, проверку клиентской retention/log policy; отдельно разрешённый synthetic ~41 МБ и измерения #77. Успешный smoke не доказывает эти gates. #88 не закрывается по одним unit tests. Private inputs, Release assets/Actions E2E (#89), production deployment и reboot этим PR не разрешены.
