@@ -3,7 +3,7 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `pyproject.toml`; список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия ROADMAP: 4 · 2026-10-11** (см. README → Source of truth).
+> **Ревизия документации: 6 · 2026-10-15** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
@@ -12,9 +12,33 @@
 
 ---
 
+## Актуальный срез — 2026-10-15
+
+Проверены все 19 issues (12 open / 7 closed), открытые PR #70/#87, `main` на `b9787e4f40fe8b62f62dbafa632b60722e44f439`, полные тексты и комментарии новых #88/#89. Предложения API ниже — **backlog**, не новые зарегистрированные инструменты. [Карта проекта](docs/project-map.md) и [подробный файловый план](docs/binary-transfer-plan.md) синхронизированы с этим срезом.
+
+| Область | Текущий статус / следующий gate |
+| --- | --- |
+| #60, #61, #62, #63, #65, #67, #79 | Закрыты; соответствующие fixes в main, подробная история проверок ниже. Это не доказательство rollout production. |
+| #69 / #83 | Attempts, bounded logs, combined-step segmentation и diagnostic adapters в main через #81/#82/#84/#85. Оба issue ещё open; не закрывать по одному наличию кода. |
+| PR #87 / #69 | Draft HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI 4/4 success. TEST checkout совпадает с HEAD; специализированный authenticated deployed gate artifact identity ещё pending. Нельзя выводить attempt по имени/времени/общему SHA. |
+| #58 / #86 | Android/Kotlin диагностика и безопасный repo-specific auto-fix остаются open. Опасный template-to-main autofix отключён в main; замена не реализована. |
+| #53 / #59 | Диагностика доступа и неопределённый post-effect persistence остаются open; не повторять потенциально успешную мутацию вслепую. |
+| #64 | Lifecycle tags/releases остаётся open. Получение release IDs и asset API согласовать с #89, не делать два конкурирующих контракта. |
+| **#88 → #89 — новые** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Оба open; #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
+| #66 / #68 | Actions secrets и verified repo/Pages configuration остаются open. Никаких настоящих secrets или изменения Pages в этом docs PR. |
+| #77 | Сквозной аудит всех методов: schemas + args + results + turns; отдельно измерить большой бинарный маршрут без base64 в контексте модели. |
+| Документация / сайт | PR #70 обновляет README/ROADMAP/TOOLS/SANDBOX, добавляет карту и план. Финальная сверка после кодовых PR, реальные examples и проверка опубликованного Pages ещё не завершены. |
+
+### Ближайшие зависимости
+
+1. Завершить отдельный live gate PR #87; merge только после review и явного согласования. #69/#83 закрываются только по полным критериям.
+2. Для нового файлового сценария сначала feasibility реального клиента и дизайн #88, затем реализация staging; только после этого #89. Объекты для mutating smoke tests и прогон ~41 МБ требуют отдельного разрешения.
+3. #89 согласовать с #64 (release lookup/IDs/assets), #59 (неопределённый POST), #53 (доступ), #77 (token/memory budgets). Actions artifact, Release asset и staging `file_id` — разные сущности.
+4. #58/#86, доступ, lifecycle, secrets и Pages сохраняются отдельными PR; финальный docs/site gate и production rollout не подменяются этой актуализацией.
+
 ## План надёжности GitHub — 2026-10-11
 
-Срез: открытые issues #53, #58–#69; открытые PR #56 и #57. Это план разработки через небольшие PR, **не разрешение менять production, сливать PR, публиковать releases или менять настройки чужих репозиториев**. Предыдущие функциональные батчи ниже сохранены как долгосрочный backlog.
+Исходный triage: 2026-10-11. Актуальный срез после новых #88/#89 — в разделе выше; #56/#57 уже слиты. Это план разработки через небольшие PR, **не разрешение менять production, сливать PR, публиковать releases или менять настройки чужих репозиториев**. Предыдущие функциональные батчи ниже сохранены как долгосрочный backlog.
 
 ### Порядок реализации
 
@@ -31,14 +55,16 @@
 | 7b | P1 — Actions diagnostics | [#69](https://github.com/LeonidYasin/mcp-server/issues/69), [#58](https://github.com/LeonidYasin/mcp-server/issues/58) — logs / Android | Fixtures per-step и combined-job ZIP, границы job/step или явный unsupported fallback. Затем compiler errors Kotlin/Java/Rust выше warnings, failed run не success. |
 | 8a | P1 — диагностика доступа | [#53](https://github.com/LeonidYasin/mcp-server/issues/53) — HTTP errors | 403 может означать permissions, policy или rate limit; 404 — not found либо скрытый доступ. Подсказки без утверждения единственной причины и без раскрытия токена; никаких скрытых fallback. |
 | 8b | P1 — диагностика протокола | [#59](https://github.com/LeonidYasin/mcp-server/issues/59) — create_issue persistence | Разделить GitHub effect и сохранение истории клиента. В main уже есть _normalize_content: сначала regression tests и проверка причины; не объявлять labels виноватыми без репро и не делать автоматический повтор потенциально успешного POST. |
-| 9 | P1 — lifecycle releases | [#64](https://github.com/LeonidYasin/mcp-server/issues/64) — tags/releases | Сначала atomic update_tag + expected_old_sha и explicit force; затем отдельный PR get/update release + assets. Stable tags не перезаписывать неявно; сохранить assets, без delete/create обхода permissions. |
+| 9 | P1 — lifecycle releases | [#64](https://github.com/LeonidYasin/mcp-server/issues/64) — tags/releases | Сначала atomic update_tag + expected_old_sha и explicit force; затем get/update release и согласованный с #89 контракт assets (одна реализация, не дубликаты). Stable tags не перезаписывать неявно; сохранить assets, без delete/create обхода permissions. |
 | 10 | P2 — новые возможности | [#68](https://github.com/LeonidYasin/mcp-server/issues/68) — repo features / Pages | Сначала only-supplied has_issues/has_discussions + read-back; затем Pages GET/POST/PUT с проверкой branch/path и deployment status. Configured, deployed и HTTP verified — разные состояния. |
 | 11 | P2 — secrets boundary | [#66](https://github.com/LeonidYasin/mcp-server/issues/66) — Actions secrets | Public key + metadata listing; encrypted_value/key_id mutation. Plaintext только через реальную secure-input capability; без неё только заранее зашифрованный payload. Delete — отдельно и явно; values читать невозможно. |
 | 12 | Сквозной — performance | [#77](https://github.com/LeonidYasin/mcp-server/issues/77) — token efficiency audit | Аудит ВСЕХ registry/runtime методов и схем; end-to-end baseline (schemas+args+results+turns), компактные/fields/summary/full контракты, bounded batches и объединённые read-only snapshots. Отдельные экономичные аналоги только при измеренном выигрыше; safety/completeness не сокращать. Инвентаризация, benchmarks и небольшие PR до финальной синхронизации docs/site. |
+| 13 | P1 — binary ingress, новый план | [#88](https://github.com/LeonidYasin/mcp-server/issues/88) — клиент → staging | Сначала доказать доступный клиентский transport (stream upload ticket ИЛИ bounded chunks), не server-local path. Bytes/size/SHA-256 → scoped opaque file_id; quotas/TTL/cleanup/offset+idempotency и no traversal/symlink/SSRF. Реальный client→server ZIP/XLSX/non-UTF-8 gate, отдельно разрешённый synthetic ~41 МБ. |
+| 14 | P1 — end-to-end files, зависит от 13 | [#89](https://github.com/LeonidYasin/mcp-server/issues/89) — Release assets → Actions | Согласовать с #64: release lookup/IDs, paginated assets, streaming upload из проверенного file_id, authenticated download в staging, size/hash verification. Name conflict явный; timeout POST → reconcile, не blind retry. Разрешённый private-release smoke ZIP → Actions → output artifact → bytes/size/hash read-back. |
 
 P0 — приоритет по риску; шаг 1 выбран как маленькое изолированное исправление для запуска PR-процесса. Шаги 7a/7b и 8a/8b намеренно разделены, чтобы не объединять несколько независимых подсистем в один PR.
 
-### Уже открытые PR
+### Исторически пересекавшиеся PR (уже слиты)
 
 - [#57](https://github.com/LeonidYasin/mcp-server/pull/57): required args в update_pull_request. Нужны regression tests и актуальный CI; не заменяет #67 и #62.
 - [#56](https://github.com/LeonidYasin/mcp-server/pull/56): background process manager. Отдельный security review: PID reuse, process-group ownership, cwd/env, logs и восстановление bookkeeping. Не дублировать ветку; не считать безопасность доказанной описанием PR.
@@ -53,6 +79,8 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 6. Ревью и зелёный CI до merge; issue закрывается только после merge и выполнения критериев. Невыполненные части — явные follow-ups, не ложный «готово».
 
 ### Финальная синхронизация документации и сайта
+
+Текущая актуализация #70 добавляет `docs/project-map.md` и `docs/binary-transfer-plan.md`, связывает README/TOOLS/SANDBOX и #88/#89. Это промежуточная синхронизация планов, не приёмка будущего кода и не подтверждение публикации сайта.
 
 После согласованного этапа кодовых исправлений — отдельный documentation/site PR:
 
@@ -84,13 +112,16 @@ P0 — приоритет по риску; шаг 1 выбран как мале
 - [x] Шаг 7b / #69 primary log readers (intermediate part only): [PR #82](https://github.com/LeonidYasin/mcp-server/pull/82), new branch `fix/workflow-attempt-logs-69`, слит после явного разрешения guarded TEST tool: merge commit `17005838a7b827e99dd9193722aad86e12e064bc`, exact reviewed HEAD `257776b4ff0ce381e5fc1807d655e092ea1323a1`. Four primary readers pin run_attempt and exact logs endpoint, bounded ZIP/no CDN auth/no redirects; combined step filter explicitly unsupported with same-attempt bounded job-search suggestion (not guessed boundaries). Structured response migration documented. Local 572 pytest, VPS candidate under mcp-test 572 in 22.80s; Deployed TEST 572 pytest in 23.92s; CI Python 3.10–3.13 success. Real authenticated ZIPs TunXBox run 38102759021 attempts 1/2: 5917 vs 2768 selected lines and own timestamps; both current archives combined, step filter explicitly unsupported, bounded job grep labels step=null (not step-specific). Latest=2 offset cap, no-text/no-files distinction and invalid/nonexistent attempts passed; runtime schemas checked. Per-step behavior fixture-covered, not claimed live on this run. Legacy diagnostics/full/preview/checks and artifact attempt attribution remain pending, issue #69 open, production unchanged.
 - [ ] Обязательное продолжение #69 / [#83](https://github.com/LeonidYasin/mcp-server/issues/83): убрать временный `step_filter_unsupported` для поддерживаемых completed combined ZIP. Проверяемая сегментация markers/timeline + attempt/SHA/job_id/step identity, no cross-step context; fixture/live TEST 4KB vs 16KB attempts1/2, same-name jobs, nested/repeated groups и ambiguous timestamps. Unsupported/unknown допустим только для конкретных недоказуемых случаев, не вечная реализация. Реализация [PR #84](https://github.com/LeonidYasin/mcp-server/pull/84), отдельная ветка `fix/combined-step-boundaries-83`, слит guarded TEST tool после разрешения: merge `73fe03fb3bb163df2a0a0b902b14326a2eb5132a`, reviewed HEAD `3ac49de7e404d1e36cb8d62f6b22e13eeb8ccc51` (initial `f510e7a...` live gate failed: both attempts unsupported from ordinary multiline input continuations outside target; failure recorded in #84). Fix allows those outside proven windows, still refuses untimestamped target content/control markers; +2 regressions, local605/VPS candidate605 (23.79s) passed; corrected deployed live re-test PASSED: exact repo605pytest/26.02s, CI3.10–3.13 success; real TunXBox step22 attempts1/2 combined_step lines4974–5768 (795)/1688–2621 (934) match independent broad markers+API times. Neighbor regex0 selected hits vs359/363 broad controls; head/tail/offset/context20/alias/latest2/source-lines/caps passed; production unchanged: проверенный non-overlap completed timeline + unique top-level runner Run markers, исходные номера строк, контекст внутри шага, отдельные identities same-file steps, mixed-copy deduplication. Local603/VPS candidate603 (25.68s) прошли; Первый live gate603 failed и сохранён в истории; после fix605 corrected deployed gate passed. Issue #83/69 не закрываются автоматически: legacy wrappers/artifact attribution остаются pending; primary segmentation PR #84 merged; production unchanged. До этого #69/финальные docs/mindmap/Pages не объявляются завершёнными; legacy wrappers/artifact attribution также pending.
 - [x] Diagnostic wrappers continuation / #69/#83: [PR #85](https://github.com/LeonidYasin/mcp-server/pull/85), branch `fix/workflow-diagnostic-attempts-69`, слит guarded TEST tool после разрешения: merge `b9787e4f40fe8b62f62dbafa632b60722e44f439`, reviewed HEAD `c52e7f11c640904de20a692828bc865b8163252c`. Latest/watch/run/full/preview/checks names and canonical Android/iOS diagnostics use bounded attempt readers; unique exact-job identity recheck, no empty/no-match-as-success. Old SDK transports fail closed. Unsafe hardcoded autofix-to-main disabled in candidate (not deployed production); mandatory safe replacement [#86](https://github.com/LeonidYasin/mcp-server/issues/86) separately tracked. Local634 / VPS candidate634 (27.17s), CI3.10–3.13 success; Deployed gate passed: exact repo634pytest/28.86s; runtime all9 definitions; authenticated full/preview/Android old/new step windows/caps, no-match run failure, watch snapshot, checks deprecated attempt-log source, iOS missing job, latest CI metadata and verified disabled autofix writes=false. No real iOS build/root-cause diagnosis claimed. Registered code no longer uses old SDK transports; production still unchanged, #86 replacement/artifact attribution/#58 pending. No unsafe autofix executed, production untouched.
-- [ ] Artifact attempt identity / #69: [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87), branch `fix/artifact-attempt-identity-69`, draft HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`. Run-context separately from artifact attempt-or-unknown; bounded IDs/SHA/time/digest/duplicates listing; explicit attempt unknown candidates separate, strict download refuses before redirect, ID-only legacy resolution preserves unknown. No timestamp/name/latest/SHA inference or invented attempt-artifacts endpoint. Local666 / VPS candidate666 (27.99s), CI3.10–3.13 success. Real public TunXBox attempt1/2 source gate:6 rows/3 duplicate names,6 unknown, strict ID11690225979 refuses and0 redirect calls; positive API-attempt metadata fixture-covered only. Deployed authenticated gate pending. Producer attribution protocol would require separate review, no TunXBox workflow/production changes.
-- [ ] Остальная часть шага 7b / #58 и шаги 8–12: запланированы, не реализованы этим обновлением.
+- [ ] Artifact attempt identity / #69: [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87), branch `fix/artifact-attempt-identity-69`, draft HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`. Run-context separately from artifact attempt-or-unknown; bounded IDs/SHA/time/digest/duplicates listing; explicit attempt unknown candidates separate, strict download refuses before redirect, ID-only legacy resolution preserves unknown. No timestamp/name/latest/SHA inference or invented attempt-artifacts endpoint. Local666 / VPS candidate666 (27.99s), CI3.10–3.13 success. Real public TunXBox attempt1/2 source gate:6 rows/3 duplicate names,6 unknown, strict ID11690225979 refuses and0 redirect calls; positive API-attempt metadata fixture-covered only. TEST checkout при подключении проверен на exact HEAD, CI 4/4 success; это только read-only connectivity/identity check. Deployed authenticated artifact acceptance gate pending. Producer attribution protocol would require separate review, no TunXBox workflow/production changes.
+- [ ] Новые #88/#89: полные требования и зависимости внесены в roadmap/карту/README/TOOLS/SANDBOX; реализация и сквозные проверки не выполнены.
+- [ ] Остальная часть шага 7b / #58 и шаги 8–14: запланированы, не реализованы этим обновлением.
 - [ ] Финальная синхронизация документации, майндмэпа и GitHub Pages: запланирована; опубликованный сайт ещё не проверен.
 
 ---
 
 ## Экосистема проектов (карта)
+
+Техническая архитектура, границы доверия и планируемый файловый маршрут: [версионируемая карта проекта](docs/project-map.md). Экосистемная таблица ниже описывает отдельные проекты, не готовую бинарную интеграцию между ними.
 
 У автора несколько связанных репозиториев вокруг одной идеи: **находимость и обмен через ИИ-агента**.
 

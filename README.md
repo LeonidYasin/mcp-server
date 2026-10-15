@@ -1,7 +1,7 @@
 # MCP GitHub Server
 
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
-[![tools](https://img.shields.io/badge/tools-110-brightgreen)](TOOLS.md)
+[![tools](https://img.shields.io/badge/tools-runtime_registry-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 Расширяемый MCP HTTP-сервер с модульной архитектурой и автоматическим обнаружением инструментов. Изначально вырос из обёртки над GitHub API, сейчас — универсальный набор инструментов для агента.
@@ -15,19 +15,30 @@
 | Что | Где источник правды |
 |-----|---------------------|
 | **Версия** | `pyproject.toml` (single-source; читается динамически в коде) — **0.4.3** |
-| **Список инструментов** | рантайм-реестр: `list_my_tools`; полный каталог — [`TOOLS.md`](TOOLS.md) — **110** |
+| **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **5** от **2026-09-27** |
+| **Документация** | ревизия **6** от **2026-10-15** |
 
-> **Ревизия документации: 5 · 2026-09-27.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv.
+> **Ревизия документации: 6 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач.
+
+---
+
+## Статус проекта и новые задачи
+
+- [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
+- **Новый файловый маршрут запланирован, не реализован:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
+- `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Возможность реального клиента отправлять bytes надо доказать отдельно.
+- `create_or_update_binary_file` сейчас декодирует base64 **как UTF-8** и записывает файл в Git: это не универсальный ZIP/XLSX upload и не staging. `download_artifact` относится к **Actions artifacts**, а не к Release assets.
+- [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87) — Draft, artifact attempt identity: не выдавать установку кандидата в TEST за завершённый live acceptance. `auto_fix_build` в `main` отключён; безопасная замена — [#86](https://github.com/LeonidYasin/mcp-server/issues/86).
+- Эти планы не разрешают production deploy, публикацию приватных файлов, изменение приватности репозитория, платные сервисы или реальные вычисления. GitHub Pages — отдельный статический сайт; публикация не подтверждена этим PR.
 
 ---
 
 ## Возможности
 
-**Всего инструментов: 110** (полный каталог — [`TOOLS.md`](TOOLS.md)). Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
+**Актуальный состав инструментов:** `list_my_tools` на выбранном сервере и `describe_tool(name)`; каталог — [`TOOLS.md`](TOOLS.md). Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
 
-### 🐙 `github/` — GitHub API (82)
+### 🐙 `github/` — GitHub API
 
 Файлы, коммиты, ветки, PR (включая review-threads), issues, releases, tags, gists, Actions/workflows, search, security-алерты.
 
@@ -407,8 +418,10 @@ python -m mcp_server.server
 | Файл | Что внутри |
 |------|------------|
 | [`README.md`](README.md) | этот файл: установка, запуск, обзор подпакетов, Source of truth |
-| [`TOOLS.md`](TOOLS.md) | **полный каталог всех 110 инструментов**, сгруппированный по подпакетам |
-| [`ROADMAP.md`](ROADMAP.md) | дорожная карта: сделанные батчи, Synapse 7b, token economy, безопасность |
+| [`TOOLS.md`](TOOLS.md) | каталог по подпакетам, контракты и явно обозначенные ограничения |
+| [`ROADMAP.md`](ROADMAP.md) | дорожная карта: текущие issues/PR, зависимости #88 → #89, сделанные батчи и backlog |
+| [`docs/project-map.md`](docs/project-map.md) | карта архитектуры, доверительных границ и статусов разработки |
+| [`docs/binary-transfer-plan.md`](docs/binary-transfer-plan.md) | план #88 → #89: клиентские bytes, staging, Release assets, Actions и критерии приёмки |
 | [`SANDBOX.md`](SANDBOX.md) | изоляция локальных инструментов (localfs/localgit/shell), уровни 1–4 |
 | [`docs/synapse-protocol.md`](docs/synapse-protocol.md) | JSON-схема обмена (item: offer/want, profile, contact, exchange) |
 | [`docs/skills/github-mcp-safe-workflow/SKILL.md`](docs/skills/github-mcp-safe-workflow/SKILL.md) | **Skill для ИИ-агентов**: безопасный workflow работы с GitHub через MCP |
@@ -427,6 +440,8 @@ mcp-server/
 ├── SANDBOX.md
 ├── TOOLS.md                 # полный каталог инструментов
 ├── docs/
+│   ├── project-map.md        # архитектура, границы и статусы
+│   ├── binary-transfer-plan.md # план #88 → #89 (не готовый API)
 │   ├── synapse-protocol.md   # JSON-схема item/profile/contact/exchange
 │   └── skills/               # Skills для ИИ-агентов (см. ниже)
 └── mcp_server/

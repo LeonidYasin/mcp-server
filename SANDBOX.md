@@ -8,6 +8,14 @@
 
 ---
 
+## Клиентская среда и серверный workspace — разные границы
+
+`LOCAL_TOOLS_ROOT` ограничивает рабочую директорию локальных tools на MCP-сервере; это **не общий диск с клиентом**. Например, Notion `/data/input.zip` недоступен VPS по тому же имени. `run_command`/server-local `path` не передают bytes; cwd-ограничение само по себе не является полной OS-изоляцией shell. Защита чтения/записи вне workspace зависит также от пользователя, sandbox/container и service policy.
+
+Новый канал [#88 → #89](docs/binary-transfer-plan.md) пока запланирован: доказанный client transport → отдельный bounded staging → scoped opaque `file_id` → Release assets. Нельзя считать произвольный path или незавершённый upload валидным file_id. Нужны authentication/owner isolation, проверка bytes/size/SHA-256, квоты/TTL/cleanup, no traversal/symlink/SSRF и redaction tickets/секретов. Сам сервер не получает доступ к клиентскому sandbox.
+
+Не ослаблять изоляцию TEST/production и не включать shell для решения передачи файла. Тот же GitHub PAT сохраняет права в обоих окружениях; отдельный Unix-пользователь не ограничивает GitHub-доступ. [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
+
 ## Уровни изоляции
 
 | Уровень | Что даёт | Когда использовать |
