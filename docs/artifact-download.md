@@ -26,6 +26,18 @@ prevent resolution. A cap yields lookup_incomplete, never an assumed unique matc
 Duplicate names yield ambiguous with at most 20 candidate IDs; select the exact
 artifact_id rather than guessing. Run identity is checked when run_id is supplied.
 
+## Actions artifacts are not Release assets
+
+This implemented resolver is for **Actions artifacts**. It does not upload a client
+attachment, implement binary staging, upload/download Release assets, or prove that
+a remote client can read a server-local path. Those are planned separately in
+[#88](https://github.com/LeonidYasin/mcp-server/issues/88) →
+[#89](https://github.com/LeonidYasin/mcp-server/issues/89); see the
+[binary transfer plan](binary-transfer-plan.md) and [project map](project-map.md).
+Artifact attempt ownership changes in PR #87 remain a Draft candidate, not merged
+functionality described by this main contract. A resolved URL alone is not a
+verified download: byte count and expected hash must be checked by the consumer.
+
 ## Redirect and credential boundary
 
 - Destination metadata URLs are never fetched or trusted. The redirect must come

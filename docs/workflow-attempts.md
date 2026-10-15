@@ -49,11 +49,12 @@ Use the same tuple `(owner, repo, run_id, run_attempt, head_sha)` when reasoning
 about a snapshot. There is currently no server-side workflow-log cache; future
 caching must include this identity, not just run ID or artifact name.
 
-## Deliberately deferred to part 2
+## Continuations and remaining gate
 
 Four primary readers now have a separate [attempt logs contract](workflow-attempt-logs.md)
-with bounded downloads and [supported combined-step segmentation](workflow-step-boundaries.md); residual ambiguous formats fail closed. Legacy
-diagnostics/full/preview/checks wrappers and artifact attempt attribution remain
-unmigrated. Do not treat a pinned snapshot as proof those legacy results or a
-same-named artifact belong to its attempt.
+with bounded downloads and [supported combined-step segmentation](workflow-step-boundaries.md); residual ambiguous formats fail closed. Legacy diagnostics/full/preview/checks wrappers have since migrated to
+[bounded attempt adapters](workflow-diagnostic-adapters.md) in PR #85. Their names
+do not imply full archives, polling, Checks API or universal compiler diagnosis.
+Artifact attempt attribution remains a separate Draft candidate in PR #87; do
+not treat a pinned snapshot or same-named artifact as proof of ownership.
 Issue #69 remains open until these cases and live rerun checks pass.

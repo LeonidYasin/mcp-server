@@ -1,0 +1,1295 @@
+{
+  "format_version": 1,
+  "profiles": {
+    "default": {
+      "count": 113,
+      "tools": [
+        {
+          "category": "github",
+          "name": "add_issue_comment",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "add_labels",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "add_pr_comment",
+          "token_required": true
+        },
+        {
+          "category": "build",
+          "name": "auto_fix_build",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "base64_decode",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "base64_encode",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "cancel_workflow",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "close_issue",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "close_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "compare_branches",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_branch",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_gist",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_issue",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_or_update_binary_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_or_update_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_or_update_file_with_sha",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_release",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_repo",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_tag",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "csv_generate",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "csv_parse",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "date_convert",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "delete_branch",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "delete_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "delete_tag",
+          "token_required": true
+        },
+        {
+          "category": "meta",
+          "name": "describe_tool",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "dispatch_workflow",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "download_artifact",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_android_build_error",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_branch",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_commit_diff",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_commit_status",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_file_blame",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_file_contents",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_file_sha",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_full_workflow_logs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_gist",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_ios_build_error",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_issue",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_latest_release",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_latest_run_id",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_latest_workflow_error",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_info",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_languages",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_topics",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_tree",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_review_threads",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_run_logs_by_step",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_step_logs_via_checks",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_by_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_logs_preview",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_run_logs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_run_status",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_run_steps",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "grep_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "grep_run_logs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "grep_workflow_logs",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "hash_text",
+          "token_required": false
+        },
+        {
+          "category": "web",
+          "name": "html_to_markdown",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "json_format",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "json_query",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "json_to_yaml",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "list_artifacts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_branches",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_code_scanning_alerts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_commits",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_dependabot_alerts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_directory",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_gists",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_issues",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_my_repos",
+          "token_required": true
+        },
+        {
+          "category": "meta",
+          "name": "list_my_tools",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "list_pull_requests",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_releases",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_repo_contributors",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_secret_scanning_alerts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_tags",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_workflow_runs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_workflows",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "markdown_to_html",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "merge_branches",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "merge_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "move_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "push_multiple_files",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_file_chunk",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_full_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_multiple_files",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_run_logs_offset",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "regex_test",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "replace_in_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "request_pr_review",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "rerun_failed_jobs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "rerun_workflow",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "resolve_review_thread",
+          "token_required": true
+        },
+        {
+          "category": "web",
+          "name": "rss_read",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_code",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_commits",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_issues",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_repositories",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "text_diff",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "timestamp_now",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "unresolve_review_thread",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_gist",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_repo",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_repo_info",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "uuid_generate",
+          "token_required": false
+        },
+        {
+          "category": "build",
+          "name": "watch_build",
+          "token_required": true
+        },
+        {
+          "category": "web",
+          "name": "web_fetch",
+          "token_required": false
+        },
+        {
+          "category": "web",
+          "name": "web_search",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "yaml_to_json",
+          "token_required": true
+        }
+      ]
+    },
+    "all_enabled": {
+      "count": 143,
+      "tools": [
+        {
+          "category": "github",
+          "name": "add_issue_comment",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "add_labels",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "add_pr_comment",
+          "token_required": true
+        },
+        {
+          "category": "build",
+          "name": "auto_fix_build",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "base64_decode",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "base64_encode",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "cancel_workflow",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "close_issue",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "close_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "compare_branches",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_branch",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_gist",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_issue",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_or_update_binary_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_or_update_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_or_update_file_with_sha",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_release",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_repo",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "create_tag",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "csv_generate",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "csv_parse",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "date_convert",
+          "token_required": false
+        },
+        {
+          "category": "synapse",
+          "name": "deactivate_item",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "delete_branch",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "delete_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "delete_tag",
+          "token_required": true
+        },
+        {
+          "category": "meta",
+          "name": "describe_tool",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "dispatch_workflow",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "download_artifact",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "draft_profile_from_dialog",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "find_my_match",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_android_build_error",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_branch",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_commit_diff",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_commit_status",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_file_blame",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_file_contents",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_file_sha",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_full_workflow_logs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_gist",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_ios_build_error",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_issue",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_latest_release",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_latest_run_id",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_latest_workflow_error",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_info",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_languages",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_topics",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_repo_tree",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_review_threads",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_run_logs_by_step",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_step_logs_via_checks",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_by_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_logs_preview",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_run_logs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_run_status",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "get_workflow_run_steps",
+          "token_required": true
+        },
+        {
+          "category": "localgit",
+          "name": "git_commit",
+          "token_required": true
+        },
+        {
+          "category": "localgit",
+          "name": "git_diff",
+          "token_required": true
+        },
+        {
+          "category": "localgit",
+          "name": "git_log",
+          "token_required": true
+        },
+        {
+          "category": "localgit",
+          "name": "git_pull",
+          "token_required": true
+        },
+        {
+          "category": "localgit",
+          "name": "git_push",
+          "token_required": true
+        },
+        {
+          "category": "localgit",
+          "name": "git_status",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "grep_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "grep_run_logs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "grep_workflow_logs",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "hash_text",
+          "token_required": false
+        },
+        {
+          "category": "web",
+          "name": "html_to_markdown",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "index_github",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "json_format",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "json_query",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "json_to_yaml",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "list_artifacts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_branches",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_code_scanning_alerts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_commits",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_dependabot_alerts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_directory",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_gists",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_issues",
+          "token_required": true
+        },
+        {
+          "category": "localfs",
+          "name": "list_local_dir",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "list_my_items",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_my_repos",
+          "token_required": true
+        },
+        {
+          "category": "meta",
+          "name": "list_my_tools",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "list_pull_requests",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_releases",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_repo_contributors",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_secret_scanning_alerts",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_tags",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_workflow_runs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_workflows",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "markdown_to_html",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "merge_branches",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "merge_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "model_me",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "move_file",
+          "token_required": true
+        },
+        {
+          "category": "process",
+          "name": "process_status",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "propose_contact",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "publish_profile",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "push_multiple_files",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_file_chunk",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_full_file",
+          "token_required": true
+        },
+        {
+          "category": "localfs",
+          "name": "read_local_file",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_multiple_files",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "read_run_logs_offset",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "regex_test",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "replace_in_file",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "report_match_outcome",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "request_pr_review",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "rerun_failed_jobs",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "rerun_workflow",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "resolve_review_thread",
+          "token_required": true
+        },
+        {
+          "category": "web",
+          "name": "rss_read",
+          "token_required": true
+        },
+        {
+          "category": "shell",
+          "name": "run_command",
+          "token_required": true
+        },
+        {
+          "category": "shell",
+          "name": "run_python",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "save_note",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_code",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_commits",
+          "token_required": true
+        },
+        {
+          "category": "localfs",
+          "name": "search_in_files",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_issues",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "search_notes",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "search_people",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "search_repositories",
+          "token_required": true
+        },
+        {
+          "category": "process",
+          "name": "start_background",
+          "token_required": true
+        },
+        {
+          "category": "process",
+          "name": "stop_process",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "submit_offer",
+          "token_required": true
+        },
+        {
+          "category": "synapse",
+          "name": "submit_want",
+          "token_required": true
+        },
+        {
+          "category": "process",
+          "name": "tail_log",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "text_diff",
+          "token_required": false
+        },
+        {
+          "category": "utils",
+          "name": "timestamp_now",
+          "token_required": false
+        },
+        {
+          "category": "github",
+          "name": "unresolve_review_thread",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_gist",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_pull_request",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_repo",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "update_repo_info",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "uuid_generate",
+          "token_required": false
+        },
+        {
+          "category": "build",
+          "name": "watch_build",
+          "token_required": true
+        },
+        {
+          "category": "web",
+          "name": "web_fetch",
+          "token_required": false
+        },
+        {
+          "category": "web",
+          "name": "web_search",
+          "token_required": false
+        },
+        {
+          "category": "localfs",
+          "name": "write_local_file",
+          "token_required": true
+        },
+        {
+          "category": "utils",
+          "name": "yaml_to_json",
+          "token_required": true
+        }
+      ]
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # MCP GitHub Server
 
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
-[![tools](https://img.shields.io/badge/tools-110-brightgreen)](TOOLS.md)
+[![tools](https://img.shields.io/badge/tools-runtime_registry-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 
 Расширяемый MCP HTTP-сервер с модульной архитектурой и автоматическим обнаружением инструментов. Изначально вырос из обёртки над GitHub API, сейчас — универсальный набор инструментов для агента.
@@ -14,20 +14,31 @@
 
 | Что | Где источник правды |
 |-----|---------------------|
-| **Версия** | `pyproject.toml` (single-source; читается динамически в коде) — **0.4.3** |
-| **Список инструментов** | рантайм-реестр: `list_my_tools`; полный каталог — [`TOOLS.md`](TOOLS.md) — **110** |
+| **Версия** | `mcp_server/__init__.py::__version__` — **0.4.3**; `pyproject.toml` читает её через dynamic version |
+| **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **5** от **2026-09-27** |
+| **Документация** | ревизия **7** от **2026-10-15** |
 
-> **Ревизия документации: 5 · 2026-09-27.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv.
+> **Ревизия документации: 7 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards.
+
+---
+
+## Статус проекта и новые задачи
+
+- [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
+- **Новый файловый маршрут запланирован, не реализован:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
+- `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Возможность реального клиента отправлять bytes надо доказать отдельно.
+- `create_or_update_binary_file` сейчас декодирует base64 **как UTF-8** и записывает файл в Git: это не универсальный ZIP/XLSX upload и не staging. `download_artifact` относится к **Actions artifacts**, а не к Release assets.
+- [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87) — Draft, artifact attempt identity: не выдавать установку кандидата в TEST за завершённый live acceptance. `auto_fix_build` в `main` отключён; безопасная замена — [#86](https://github.com/LeonidYasin/mcp-server/issues/86).
+- Эти планы не разрешают production deploy, публикацию приватных файлов, изменение приватности репозитория, платные сервисы или реальные вычисления. GitHub Pages — отдельный статический сайт; публикация не подтверждена этим PR.
 
 ---
 
 ## Возможности
 
-**Всего инструментов: 110** (полный каталог — [`TOOLS.md`](TOOLS.md)). Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
+**Актуальный состав инструментов:** `list_my_tools` на выбранном сервере и `describe_tool(name)`; каталог — [`TOOLS.md`](TOOLS.md). Инструменты разложены по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать и отключать отдельно.
 
-### 🐙 `github/` — GitHub API (82)
+### 🐙 `github/` — GitHub API
 
 Файлы, коммиты, ветки, PR (включая review-threads), issues, releases, tags, gists, Actions/workflows, search, security-алерты.
 
@@ -68,7 +79,7 @@
 
 ### 🧠 `synapse/` — находимость людей (`ENABLE_SYNAPSE=1`)
 
-`publish_profile`, `search_people`, `propose_contact`, `save_note`, `search_notes`, `index_github`. Батч 7a — keyword-MVP; батч 7b (эмбеддинг-матчинг, item-модель offer/want) — в работе. Протокол — [`docs/synapse-protocol.md`](docs/synapse-protocol.md).
+При `ENABLE_SYNAPSE=1` зарегистрированы **14 инструментов**: `publish_profile`, `search_people`, `propose_contact`, `save_note`, `search_notes`, `index_github`, `submit_offer`, `submit_want`, `list_my_items`, `deactivate_item`, `model_me`, `find_my_match`, `draft_profile_from_dialog`, `report_match_outcome`. Item/embedding-код уже в main; регистрация не доказывает качество matching или доступность настроенного provider. Без provider используется keyword fallback. Протокол — [`docs/synapse-protocol.md`](docs/synapse-protocol.md).
 
 ### 🔒 `localfs/` — локальные файлы (4, по умолчанию выключено)
 
@@ -80,7 +91,11 @@
 
 ### 🔒 `shell/` — sandboxed shell / python (2, по умолчанию выключено)
 
-`run_command`, `run_python`. Флаг `ENABLE_LOCAL_SHELL=1`, выполнение только внутри `LOCAL_TOOLS_ROOT`. См. [`SANDBOX.md`](SANDBOX.md).
+`run_command`, `run_python`. Флаг `ENABLE_LOCAL_SHELL=1`; **cwd** ограничен `LOCAL_TOOLS_ROOT`, но исполняемый код имеет права пользователя сервера и может обращаться к другим доступным файлам/сети. Это не OS sandbox.
+
+### 🔒 `process/` — фоновые процессы (4, Linux-only runtime)
+
+`start_background`, `stop_process`, `process_status`, `tail_log`. Тот же `ENABLE_LOCAL_SHELL=1`; Linux identity guard, группы процессов, bounded чтение логов. [Контракт](docs/process-manager.md). См. [`SANDBOX.md`](SANDBOX.md).
 
 ---
 
@@ -89,10 +104,18 @@
 ```bash
 git clone https://github.com/LeonidYasin/mcp-server.git
 cd mcp-server
-pip install -e .
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e .
 ```
 
-Либо вручную: `pip install flask httpx python-dotenv flask-cors`.
+На Ubuntu с PEP 668 не устанавливать пакет в системный Python. Для разработки в уже активированном venv:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Для обычного запуска достаточно `python -m pip install -e .`; `[dev]` добавляет pytest для проверки проекта.
 
 ## Запуск
 
@@ -102,9 +125,9 @@ pip install -e .
 python -m mcp_server.server
 ```
 
-Сервер слушает `http://0.0.0.0:3001`, MCP-эндпоинт — `POST /mcp`. Health-check — `GET /health` (показывает `tool_count`, список инструментов и диагностику последнего запроса).
+По умолчанию сервер слушает **`http://127.0.0.1:3001`**, MCP-эндпоинт — `POST /mcp`. Bind можно явно переопределить `MCP_HOST`/`MCP_PORT`. `GET /health` показывает версию/build, `tool_count`, список инструментов и факт наличия заголовка последнего запроса, но не сам токен. При внешнем доступе защищать и `/health`: он раскрывает диагностическую информацию.
 
-> ⚠️ **Это dev-режим.** Внутри используется встроенный сервер Werkzeug, который сам Flask не рекомендует для продакшена: он однопоточный, не масштабируется и не рассчитан на публичный доступ. Для локальной работы и отладки — ок, для боевого сервера — нет (см. раздел «Продакшен» ниже).
+> ⚠️ **Это dev-режим.** Внутри используется встроенный dev-сервер Werkzeug; это не production deployment boundary, независимо от режима обработки потоков. Для локальной работы и отладки — ок, для боевого сервера — нет (см. раздел «Продакшен» ниже).
 
 Токен GitHub передаётся заголовком `Authorization: Bearer <token>`.
 
@@ -199,7 +222,7 @@ sudo systemctl status mcp-server
 - **Request header:** `X-API-Key: <СЕКРЕТНЫЙ_КЛЮЧ_КЛИЕНТА>`
 - GitHub-токен по-прежнему передаётся в `Authorization: Bearer <github_token>` и доходит до приложения как есть — Caddy его не трогает.
 
-> **Почему не запускать `python -m mcp_server.server` в проде.** Этот путь вызывает `app.run(host="0.0.0.0", port=3001)` (см. `mcp_server/server.py`) — сервер слушает все интерфейсы и становится доступен из глобального интернета без TLS и без аутентификации. Gunicorn за Caddy эту дыру закрывает.
+> **Почему не использовать dev-сервер в production.** `main()` по умолчанию использует loopback (`MCP_HOST=127.0.0.1`, `MCP_PORT=3001`, `debug=False`), но это не полноценная граница безопасности. Нужны production WSGI, TLS, аутентификация на proxy и OS policy. Явный `MCP_HOST=0.0.0.0` без такой защиты опасен; GitHub PAT не заменяет отдельную авторизацию доступа к MCP.
 
 #### 6. Windows: Gunicorn не подходит — используйте Waitress
 
@@ -223,7 +246,7 @@ waitress-serve --host=127.0.0.1 --port=3001 --threads=4 mcp_server.server:app
 | Linux / macOS | **Gunicorn** | стандарт де-факто, multi-process |
 | Windows | **Waitress** | чистый Python, multi-thread, без `fcntl` |
 
-> **Для локального тестирования PR на Windows** production-сервер не обязателен: dev-режим (`python -m mcp_server.server`) полностью достаточен, чтобы убедиться, что код работает. Waitress/Gunicorn нужны только для реального боевого запуска.
+> **Для локального HTTP smoke на Windows** достаточно dev-сервера. Это не заменяет pytest, Linux process-manager tests, CI и live gates; process tools требуют Linux `/proc`. Waitress — вариант production WSGI для Windows, не замена OS-изоляции.
 
 #### 7. Пошаговый деплой на Ubuntu VPS (проверено вживую)
 
@@ -386,7 +409,7 @@ ufw status
 
 ```bash
 export ENABLE_LOCAL_TOOLS=1          # localfs + localgit
-export ENABLE_LOCAL_SHELL=1          # shell (run_command, run_python)
+export ENABLE_LOCAL_SHELL=1          # shell + process (опасные OS-права; только изолированная среда)
 export ENABLE_SYNAPSE=1              # synapse
 export LOCAL_TOOLS_ROOT=/workspace   # whitelist-корень (по умолчанию ~/workspace)
 python -m mcp_server.server
@@ -398,7 +421,7 @@ python -m mcp_server.server
 - **Тип:** HTTP
 - **Заголовок:** `Authorization: Bearer <ваш_github_token>`
 
-> **Какой транспорт выбирать в плагине DeepSeek++.** В поле **Transport** плагина есть отдельные варианты: `Streamable HTTP`, `HTTP`, `SSE`, `Studio Bridge`, `Native`. Для этого сервера выбирайте **`Streamable HTTP`** — он реализует MCP Streamable HTTP с persistent-сессией (`Mcp-Session-Id` переносится между запросами). Вариант `HTTP` в плагине — тоже HTTP, но **без сохранения сессии**; он часто работает, однако `Streamable HTTP` — корректный и рекомендуемый выбор (см. [MCP Transport Mechanisms](https://deepwiki.com/zhu1090093659/deepseek-pp/4.1-mcp-transport-mechanisms) в документации плагина).
+> **Транспорт:** используйте клиентский режим MCP Streamable HTTP, поддерживающий JSON-ответы на `POST /mcp`. Текущая реализация stateless: не выдаёт `Mcp-Session-Id`, не поддерживает SSE-поток (`GET /mcp` возвращает 405) и не реализует resumable sessions. Названия режимов в конкретном клиенте не гарантируют совместимость; клиент, требующий SSE или обязательный session ID, нужно проверять отдельно. [Фактический HTTP-контракт и offline smoke](docs/http-transport.md).
 
 ---
 
@@ -407,9 +430,14 @@ python -m mcp_server.server
 | Файл | Что внутри |
 |------|------------|
 | [`README.md`](README.md) | этот файл: установка, запуск, обзор подпакетов, Source of truth |
-| [`TOOLS.md`](TOOLS.md) | **полный каталог всех 110 инструментов**, сгруппированный по подпакетам |
-| [`ROADMAP.md`](ROADMAP.md) | дорожная карта: сделанные батчи, Synapse 7b, token economy, безопасность |
-| [`SANDBOX.md`](SANDBOX.md) | изоляция локальных инструментов (localfs/localgit/shell), уровни 1–4 |
+| [`TOOLS.md`](TOOLS.md) | каталог по подпакетам, контракты и явно обозначенные ограничения |
+| [`ROADMAP.md`](ROADMAP.md) | дорожная карта: текущие issues/PR, зависимости #88 → #89, сделанные батчи и backlog |
+| [`docs/project-map.md`](docs/project-map.md) | карта архитектуры, доверительных границ и статусов разработки |
+| [`docs/binary-transfer-plan.md`](docs/binary-transfer-plan.md) | план #88 → #89: клиентские bytes, staging, Release assets, Actions и критерии приёмки |
+| [`SANDBOX.md`](SANDBOX.md) | границы localfs/localgit/shell/process, уровни 1–3 и ограничения |
+| [`docs/http-transport.md`](docs/http-transport.md) | stateless HTTP-контракт, token gate и безопасный offline smoke |
+| [`docs/validation.md`](docs/validation.md) | воспроизводимые проверки каталога, ссылок, тестов и сборки |
+| [`docs/tool-inventory.json`](docs/tool-inventory.json) | автоматически сверяемые default/all-enabled профили реестра |
 | [`docs/synapse-protocol.md`](docs/synapse-protocol.md) | JSON-схема обмена (item: offer/want, profile, contact, exchange) |
 | [`docs/skills/github-mcp-safe-workflow/SKILL.md`](docs/skills/github-mcp-safe-workflow/SKILL.md) | **Skill для ИИ-агентов**: безопасный workflow работы с GitHub через MCP |
 
@@ -421,12 +449,17 @@ python -m mcp_server.server
 
 ```
 mcp-server/
-├── pyproject.toml           # source of truth для версии
+├── pyproject.toml           # dynamic version из mcp_server/__init__.py
 ├── README.md
 ├── ROADMAP.md
 ├── SANDBOX.md
 ├── TOOLS.md                 # полный каталог инструментов
 ├── docs/
+│   ├── http-transport.md     # HTTP-контракт и ограничения
+│   ├── validation.md         # проверка документации и сборки
+│   ├── tool-inventory.json   # проверяемый snapshot реестра
+│   ├── project-map.md        # архитектура, границы и статусы
+│   ├── binary-transfer-plan.md # план #88 → #89 (не готовый API)
 │   ├── synapse-protocol.md   # JSON-схема item/profile/contact/exchange
 │   └── skills/               # Skills для ИИ-агентов (см. ниже)
 └── mcp_server/
@@ -440,6 +473,7 @@ mcp-server/
         ├── localfs/         # локальные файлы (ENABLE_LOCAL_TOOLS)
         ├── localgit/        # git в workspace (ENABLE_LOCAL_TOOLS)
         ├── meta/            # list_my_tools, describe_tool
+        ├── process/         # фоновые процессы (ENABLE_LOCAL_SHELL, Linux)
         ├── shell/           # shell/python (ENABLE_LOCAL_SHELL)
         ├── synapse/         # находимость людей (ENABLE_SYNAPSE)
         ├── utils/           # утилиты и данные
@@ -452,7 +486,7 @@ mcp-server/
 
 ### Шаг 1. Создайте файл в нужном подпакете
 
-Пример: `mcp_server/tools/github/create_branch.py`
+Учебный пример формы декоратора на существующем `create_branch` (не создавайте второй tool с тем же именем — в реестре names должны быть уникальными):
 
 ```python
 """MCP tool: create_branch - создаёт новую ветку."""
@@ -483,4 +517,4 @@ def create_branch(client: GitHubClient, owner: str, repo: str, branch: str, from
 
 ### Шаг 3. Обновите доки
 
-Добавьте инструмент в [`TOOLS.md`](TOOLS.md) и, если нужно, в этот README. Инкрементируйте **ревизию документации** в блоке Source of truth.
+Добавьте инструмент в [`TOOLS.md`](TOOLS.md) и, если нужно, в этот README. Обновите snapshot (`python scripts/check_docs.py --write-inventory`), проверьте diff и выполните `python scripts/check_docs.py` + `python -m pytest -q`. Inventory regeneration не заменяет review: планируемые API в snapshot не включать. Инкрементируйте **ревизию документации** в блоке Source of truth. См. [validation](docs/validation.md).

@@ -2,16 +2,41 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 5 · **Дата:** 2026-09-28 · **Всего инструментов: 117**
+> **Ревизия:** 7 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
 ---
 
-## 🐙 `github/` — GitHub API (86)
+## Проверяемый профиль реестра
 
-### Файлы (11)
-`get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+
+| Категория handler (уникальные registry names) | Default | All enabled |
+| --- | --- | --- |
+| github | 90 | 90 |
+| build | 2 | 2 |
+| utils / meta / web | 15 / 2 / 4 | 15 / 2 / 4 |
+| localfs / localgit | 0 / 0 | 4 / 6 |
+| shell / process | 0 / 0 | 2 / 4 |
+| synapse | 0 | 14 |
+
+Списки ниже — **логические группы**; некоторые Actions/build names повторяются, поэтому их подзаголовки нельзя складывать для получения общего числа. Handler category в snapshot отражает реальное место зарегистрированной функции, не старый план батчей. Process names обнаруживаются при флаге, но управление требует Linux `/proc`. [Token gate](docs/http-transport.md) имеет отдельные ограничения, а `auto_fix_build` зарегистрирован, но отключён.
+
+---
+
+## Планируемые файловые API — не зарегистрированы
+
+[#88](https://github.com/LeonidYasin/mcp-server/issues/88) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89): client upload → scoped staging `file_id` → Release asset → Actions → verified bytes. `begin_file_upload` / `append_file_chunk` / `finish_file_upload` — лишь один из вариантов дизайна, как и будущие `list_release_assets`, `upload_release_asset`, `download_release_asset`; не вызывать их как готовые tools. Основной транспорт выбирается после проверки реального клиента. [План](docs/binary-transfer-plan.md) · [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
+
+---
+
+## 🐙 `github/` — GitHub API
+
+### Файлы (12)
+`get_file_contents`, `get_file_sha`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory`
+
+`create_or_update_binary_file` несмотря на имя декодирует base64 через UTF-8 и записывает в Git. Не подходит для произвольных бинарных ZIP/XLSX, staging и передачи клиентских файлов (#88). `read_multiple_files` — чтение файлов GitHub, не загрузка вложений клиента.
 
 ### Коммиты (4)
 `list_commits`, `get_commit_status`, `get_commit_diff`, `get_file_blame`
@@ -36,8 +61,10 @@
 ### Метки (1)
 `add_labels`
 
-### Releases / Tags (7)
+### Releases / Tags
 `list_releases`, `create_release`, `get_latest_release`, `list_tags`, `create_tag`, `delete_tag`
+
+В main нет полного Release assets upload/list/download lifecycle. #64 — tags/releases; новый #89 — assets и Actions после #88. Это **план**, не доступные методы. Не путать Release assets с `download_artifact` (Actions artifacts). [Зависимости и acceptance](docs/binary-transfer-plan.md).
 
 ### Gists (4)
 `create_gist`, `list_gists`, `get_gist`, `update_gist`
@@ -56,7 +83,7 @@
 ### Repo management (3)
 `create_repo`, `list_my_repos`, `update_repo`
 
-### Batch / multiple (3)
+### Batch / multiple (2)
 `push_multiple_files`, `read_multiple_files`
 
 `push_multiple_files`: existing blob modes сохраняются; explicit `files[].mode`, optional `expected_head_sha`, один complete tree read и non-force ref update. [Modes/concurrency contract](docs/batch-push.md).
@@ -114,7 +141,7 @@
 
 `run_command`, `run_python`
 
-Флаг `ENABLE_LOCAL_SHELL=1`. Команды выполняются только внутри `LOCAL_TOOLS_ROOT`. См. `SANDBOX.md`.
+Флаг `ENABLE_LOCAL_SHELL=1`. Только **cwd** ограничен `LOCAL_TOOLS_ROOT`; filesystem/network-доступ исполняемого кода определяется OS policy, не этим флагом. См. `SANDBOX.md`.
 
 ---
 
@@ -130,12 +157,12 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 
 ---
 
-## 🧠 `synapse/` — находимость людей (6+, флаг `ENABLE_SYNAPSE=1`)
+## 🧠 `synapse/` — находимость людей (14, флаг `ENABLE_SYNAPSE=1`)
 
-`publish_profile`, `search_people`, `propose_contact`, `save_note`, `search_notes`, `index_github`
+`publish_profile`, `search_people`, `propose_contact`, `save_note`, `search_notes`, `index_github`, `submit_offer`, `submit_want`, `list_my_items`, `deactivate_item`, `model_me`, `find_my_match`, `draft_profile_from_dialog`, `report_match_outcome`
 
-Батч 7a — каркас без эмбеддингов (keyword-MVP). Батч 7b (эмбеддинг-матчинг, item-модель offer/want) — в работе. Данные в `SYNAPSE_DATA_DIR`. Протокол — `docs/synapse-protocol.md`.
+Батч 7a — keyword-MVP; 8 дополнительных item/matching tools уже регистрируются из main при включённом флаге. Провайдер задаётся отдельно, без него keyword fallback. Provider availability/качество не подтверждаются одной регистрацией. Данные в `SYNAPSE_DATA_DIR`. Протокол — `docs/synapse-protocol.md`.
 
 ---
 
-_Ревизия 5 · 2026-09-28 · всего 117 инструментов. При добавлении/удалении инструмента — обновить этот файл, счётчик и инкрементировать ревизию._
+_Ревизия 7 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
