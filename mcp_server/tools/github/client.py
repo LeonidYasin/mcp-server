@@ -6,6 +6,8 @@ import base64
 import json
 import io
 import zipfile
+import re
+from urllib.parse import urlsplit, unquote, quote
 
 
 class GitHubClient:
@@ -62,6 +64,48 @@ class GitHubClient:
             raise Exception("Request timeout after 30 seconds")
         except Exception as e:
             raise Exception(f"Request failed: {str(e)}")
+
+    def resolve_artifact_download(self, owner: str, repo: str, artifact_id: int) -> dict:
+        """Resolve only the fixed GitHub API redirect; never fetch its destination/body."""
+        result = {"outcome": "unknown", "download_url": None, "http_status": None, "error": None}
+        if (not isinstance(owner, str) or not re.fullmatch(r"[A-Za-z0-9-]+", owner)
+                or not isinstance(repo, str) or repo in (".", "..")
+                or not re.fullmatch(r"[A-Za-z0-9_.-]+", repo)
+                or type(artifact_id) is not int or artifact_id < 1):
+            return {**result, "outcome": "invalid_input", "error": "invalid_identity"}
+        path = f"/repos/{quote(owner, safe='')}/{quote(repo, safe='')}/actions/artifacts/{artifact_id}/zip"
+        try:
+            # _request calls raise_for_status (302 raises in httpx), and ordinary
+            # client requests follow redirects. Neither path is safe for this purpose.
+            with self._client.stream("GET", path, headers=dict(self._headers), follow_redirects=False) as response:
+                result["http_status"] = response.status_code
+                if response.status_code != 302:
+                    return {**result, "outcome": "api_refused" if response.status_code >= 400 else "unexpected_response",
+                            "error": "download_endpoint_not_302"}
+                location = response.headers.get("Location", "")
+                if not isinstance(location, str) or not location or len(location) > 16384:
+                    raise ValueError("invalid redirect")
+                if any(ord(c) < 33 or ord(c) > 126 for c in location) or "\\" in location:
+                    raise ValueError("invalid redirect characters")
+                parts = urlsplit(location)
+                host = parts.hostname or ""
+                allowed = (host == "objects.githubusercontent.com"
+                           or re.fullmatch(r"[a-z0-9-]+(?:\.[a-z0-9-]+)*\.actions\.githubusercontent\.com", host)
+                           or re.fullmatch(r"productionresultssa[0-9]+\.blob\.core\.windows\.net", host))
+                if (parts.scheme != "https" or not allowed or parts.port not in (None, 443)
+                        or parts.username is not None or parts.password is not None or parts.fragment
+                        or not parts.path.startswith("/")):
+                    raise ValueError("untrusted redirect")
+                # A signed CDN capability may be returned, but never reflect our PAT.
+                auth = self._headers.get("Authorization", "")
+                token = auth[7:] if auth.startswith("Bearer ") else ""
+                if token and (token in location or token in unquote(location)):
+                    raise ValueError("credential reflected in redirect")
+                return {**result, "outcome": "resolved", "download_url": location}
+        except ValueError:
+            return {**result, "outcome": "redirect_rejected", "error": "untrusted_or_missing_location"}
+        except Exception:
+            return {**result, "error": "download_request_failed"}
 
     def _ensure_utf8_dict(self, data: dict) -> dict:
         """Ensure all string values in dict are properly encoded as UTF-8."""
@@ -192,68 +236,20 @@ class GitHubClient:
         return self._safe_json(resp.json()).get("check_runs", [])
 
     def get_job_logs(self, owner: str, repo: str, job_id: int) -> str:
-        """Get logs for a specific job."""
-        resp = self._request("GET", f"{self.BASE_URL}/repos/{owner}/{repo}/actions/jobs/{job_id}/logs")
-        try:
-            return resp.text
-        except UnicodeDecodeError:
-            return resp.content.decode('utf-8', errors='replace')
+        """Deprecated unsafe legacy transport; use bounded attempt readers."""
+        raise RuntimeError("legacy_log_transport_disabled_use_attempt_readers")
 
     def get_workflow_run_logs(self, owner: str, repo: str, run_id: int) -> bytes:
-        """Download workflow run logs as raw bytes.
-
-        ВНИМАНИЕ: GitHub отдаёт это как ZIP-архив. Для текста используй
-        get_workflow_run_logs_text() / get_workflow_run_logs_files().
-
-        Returns:
-            Raw ZIP content as bytes
-        """
-        url = f"{self.BASE_URL}/repos/{owner}/{repo}/actions/runs/{run_id}/logs"
-
-        # First request to get redirect URL
-        resp = self._client.get(url, headers=self._headers, follow_redirects=False)
-
-        if resp.status_code == 302:
-            redirect_url = resp.headers.get("Location")
-            if redirect_url:
-                log_resp = self._client.get(redirect_url, follow_redirects=True)
-                if log_resp.status_code == 200:
-                    return log_resp.content
-                raise Exception(f"Failed to download logs: {log_resp.status_code}")
-            raise Exception("Redirect URL not found")
-        raise Exception(f"Unexpected status code: {resp.status_code}")
+        """Deprecated unsafe legacy transport; use bounded attempt readers."""
+        raise RuntimeError("legacy_log_transport_disabled_use_attempt_readers")
 
     def get_workflow_run_logs_files(self, owner: str, repo: str, run_id: int) -> Dict[str, str]:
-        """Скачать ZIP-логи и распаковать в {filename: text}.
-
-        GitHub отдаёт /actions/runs/{id}/logs как ZIP. Раньше инструменты
-        декодировали ZIP как UTF-8 → мусор 'PK\\x03\\x04'. Здесь распаковываем.
-        """
-        raw = self.get_workflow_run_logs(owner, repo, run_id)  # bytes (ZIP)
-        if isinstance(raw, str):
-            raw = raw.encode("utf-8", errors="replace")
-        out: Dict[str, str] = {}
-        try:
-            with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-                for name in zf.namelist():
-                    if name.endswith("/"):
-                        continue
-                    try:
-                        out[name] = zf.read(name).decode("utf-8", errors="replace")
-                    except Exception:
-                        continue
-        except zipfile.BadZipFile:
-            out["(raw)"] = raw.decode("utf-8", errors="replace")
-        return out
+        """Deprecated unsafe legacy transport; use bounded attempt readers."""
+        raise RuntimeError("legacy_log_transport_disabled_use_attempt_readers")
 
     def get_workflow_run_logs_text(self, owner: str, repo: str, run_id: int) -> str:
-        """Распакованные логи, склеенные в текст с заголовками файлов."""
-        files = self.get_workflow_run_logs_files(owner, repo, run_id)
-        parts = []
-        for name, text in files.items():
-            parts.append(f"===== {name} =====")
-            parts.append(text)
-        return "\n".join(parts)
+        """Deprecated unsafe legacy transport; use bounded attempt readers."""
+        raise RuntimeError("legacy_log_transport_disabled_use_attempt_readers")
 
     def get_commit_status(self, owner: str, repo: str, ref: str) -> dict:
         """Get combined commit status."""

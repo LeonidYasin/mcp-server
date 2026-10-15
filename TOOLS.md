@@ -45,6 +45,8 @@
 ### Actions / Workflows (17)
 `dispatch_workflow`, `rerun_workflow`, `rerun_failed_jobs`, `cancel_workflow`, `list_workflows`, `list_workflow_runs`, `get_workflow_by_file`, `list_artifacts`, `download_artifact`, `get_workflow_run_status`, `get_workflow_run_steps`, `get_workflow_logs_preview`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `read_run_logs_offset`, `grep_run_logs`, `grep_workflow_logs`
 
+`download_artifact`: разрешает настоящий 302 Location без follow/CDN-запроса и передачи PAT; `artifact_id` или точное `name` + `run_id`, bounded lookup `max_pages`, отказ при неоднозначности/неполноте. Компактный `metadata:` содержит чувствительный short-lived download_url только при resolved; не путать с API URL/retention expiry. [Контракт и credential boundary](docs/artifact-download.md).
+
 ### Security (3)
 `list_dependabot_alerts`, `list_code_scanning_alerts`, `list_secret_scanning_alerts`
 
@@ -67,6 +69,8 @@
 ## 🏗️ `build/` — сборка и отладка (13)
 
 `watch_build`, `auto_fix_build`, `get_android_build_error`, `get_ios_build_error`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `get_latest_workflow_error`, `get_workflow_run_logs`, `get_full_workflow_logs`, `get_workflow_by_file`, `list_workflow_runs`, `get_latest_run_id`, `get_workflow_run_steps`
+
+`get_workflow_run_status`, `get_workflow_run_steps`: optional `run_attempt`, `max_pages` (1–20, default 5), `max_jobs` (0–100, default 20), `max_steps` (0–500, default 100). Attempt identity, source completeness and output truncation are separate. [Attempt snapshot contract](docs/workflow-attempts.md). Attempt-aware log readers: `read_run_logs_offset`, `grep_run_logs`, `get_run_logs_by_step`, `grep_workflow_logs`; structured responses; combined-step filtering via exact timeline + unique runner markers, case-specific ambiguity fallback. [Combined step boundaries](docs/workflow-step-boundaries.md). [Logs contract/migration](docs/workflow-attempt-logs.md). Legacy diagnostic/full/preview/watch/checks names now use bounded attempt adapters with explicit contract changes. [Adapter migration](docs/workflow-diagnostic-adapters.md). Unsafe template-to-main `auto_fix_build` is disabled pending reviewed replacement.
 
 > Часть инструментов `build/` функционально пересекается с группой Actions в `github/` — это исторически сложившееся разделение (build-специфичные обёртки).
 
