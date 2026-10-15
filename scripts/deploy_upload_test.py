@@ -69,7 +69,7 @@ def run_as_user(args, log, cwd=None, timeout=180, capture=False):
            "PIP_CONFIG_FILE=/dev/null", "PIP_DISABLE_PIP_VERSION_CHECK=1",
            "PYTHONNOUSERSITE=1", "PYTHONDONTWRITEBYTECODE=1"]
     return subprocess.run(["/usr/sbin/runuser", "-u", USER, "--", "/usr/bin/env", "-i", *env, *map(str, args)],
-                          cwd=cwd, stdout=subprocess.PIPE if capture else log,
+                          cwd=cwd or HOME, stdout=subprocess.PIPE if capture else log,
                           stderr=log if capture else subprocess.STDOUT, text=capture,
                           timeout=timeout, check=True)
 
