@@ -23,7 +23,7 @@ flowchart TD
     Registry --> Github --> API
     Registry --> Local --> Workspace
     Registry --> Other
-    Client -. "КАНДИДАТ: bounded chunks; deployed gate pending" .-> Stage
+    Client -. "КАНДИДАТ: 50-byte auth smoke PASS; full gate pending" .-> Stage
     Stage -. "зависимость #88 → #89" .-> Assets
     Assets -. "ПЛАН: authorised input, verify size/hash" .-> Actions
     Actions --> Output
