@@ -53,6 +53,7 @@ def test_root_orchestration_and_rollback_are_confined(monkeypatch, tmp_path, hea
         result = real_fstat(fd)
         return SimpleNamespace(st_mode=result.st_mode, st_uid=0, st_nlink=1)
     monkeypatch.setattr(DEPLOY.os, 'geteuid', lambda:0)
+    monkeypatch.setattr(DEPLOY.os, 'umask', lambda mode:0o022)
     monkeypatch.setattr(DEPLOY.os, 'open', safe_open)
     monkeypatch.setattr(DEPLOY.os, 'fstat', fake_stat)
     monkeypatch.setattr(DEPLOY.os, 'chown', lambda *args, **kwargs:None)
