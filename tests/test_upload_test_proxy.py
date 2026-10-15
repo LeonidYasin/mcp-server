@@ -67,7 +67,7 @@ def test_duplicate_candidate_refused():
 def test_cleanup_preserves_unrelated_route_and_uses_root_etag(monkeypatch):
     config=fixture_config()
     parts,routes,route,_=PROXY.plan(config,RID)
-    PROXY.at(config,parts)[:]=routes
+    PROXY.at(config,parts)[:]=copy.deepcopy(routes)
     unrelated={'match':[{'path':['/another']}],'handle':[{'handler':'static_response','status_code':204}]}
     inner(config).insert(0,unrelated)
     requests=[]
@@ -86,7 +86,7 @@ def test_cleanup_preserves_unrelated_route_and_uses_root_etag(monkeypatch):
 def test_cleanup_refuses_changed_own_route(monkeypatch):
     config=fixture_config()
     parts,routes,route,_=PROXY.plan(config,RID)
-    PROXY.at(config,parts)[:]=routes
+    PROXY.at(config,parts)[:]=copy.deepcopy(routes)
     inner(config)[0]['terminal']=True
     monkeypatch.setattr(PROXY,'admin',lambda method,*args,**kw:(config,'etag') if method=='GET' else pytest.fail('must not patch'))
     with pytest.raises(PROXY.ProxyError,match='cleanup_route_changed'): PROXY.remove_route({'route':route})
@@ -95,7 +95,7 @@ def test_cleanup_refuses_changed_own_route(monkeypatch):
 def test_cleanup_retries_cas_without_overwriting_concurrent_edits(monkeypatch):
     config=fixture_config()
     parts,routes,route,_=PROXY.plan(config,RID)
-    PROXY.at(config,parts)[:]=routes
+    PROXY.at(config,parts)[:]=copy.deepcopy(routes)
     attempts=[]
     def admin(method,parts=(),payload=None,etag=None):
         if method=='GET': return copy.deepcopy(config),'etag-'+str(len(attempts))
