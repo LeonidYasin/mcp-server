@@ -17,9 +17,9 @@
 | **Версия** | `mcp_server/__init__.py::__version__` — **0.4.3**; `pyproject.toml` читает её через dynamic version |
 | **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **7** от **2026-10-15** |
+| **Документация** | ревизия **8** от **2026-10-15** |
 
-> **Ревизия документации: 7 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards.
+> **Ревизия документации: 8 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
 
 ---
 
@@ -27,10 +27,11 @@
 
 - [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
 - **Новый файловый маршрут запланирован, не реализован:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
-- `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Возможность реального клиента отправлять bytes надо доказать отдельно.
+- `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Малый synthetic client→TEST probe подтвердил сохранение bytes/size/hash через file-backed аргументы; это не готовый upload API и не доказательство доступности такого механизма во всех клиентах. [Результат и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
 - `create_or_update_binary_file` сейчас декодирует base64 **как UTF-8** и записывает файл в Git: это не универсальный ZIP/XLSX upload и не staging. `download_artifact` относится к **Actions artifacts**, а не к Release assets.
 - [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87) — Draft, artifact attempt identity: не выдавать установку кандидата в TEST за завершённый live acceptance. `auto_fix_build` в `main` отключён; безопасная замена — [#86](https://github.com/LeonidYasin/mcp-server/issues/86).
-- Эти планы не разрешают production deploy, публикацию приватных файлов, изменение приватности репозитория, платные сервисы или реальные вычисления. GitHub Pages — отдельный статический сайт; публикация не подтверждена этим PR.
+- **Production обновлён по отдельному разрешению:** `mcp-server.service` закреплён на `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6`, 113 tools, опасные локальные категории выключены. TEST остаётся на кандидате #87. [Снимок окружений и evidence](docs/deployment-status.md). Новые commits/PR не разворачиваются автоматически.
+- Эти планы не разрешают новые deployments, публикацию приватных файлов, изменение приватности репозитория, платные сервисы или реальные вычисления. GitHub Pages — отдельный статический сайт: после merge #70 deployment успешен, страницы проверены по HTTP; визуальный Mermaid на опубликованном сайте ещё не принят.
 
 ---
 
@@ -44,7 +45,7 @@
 
 | Группа | Инструменты |
 |--------|-------------|
-| Файлы | `get_file_contents`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory` |
+| Файлы | `get_file_contents`, `get_file_sha`, `create_or_update_file`, `create_or_update_file_with_sha`, `create_or_update_binary_file`, `delete_file`, `move_file`, `replace_in_file`, `read_file_chunk`, `read_full_file`, `grep_file`, `list_directory` |
 | Коммиты | `list_commits`, `get_commit_status`, `get_commit_diff`, `get_file_blame` |
 | Ветки / сравнение | `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
 | PR | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `update_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `get_review_threads`, `resolve_review_thread`, `unresolve_review_thread` |
@@ -436,6 +437,7 @@ python -m mcp_server.server
 | [`docs/binary-transfer-plan.md`](docs/binary-transfer-plan.md) | план #88 → #89: клиентские bytes, staging, Release assets, Actions и критерии приёмки |
 | [`SANDBOX.md`](SANDBOX.md) | границы localfs/localgit/shell/process, уровни 1–3 и ограничения |
 | [`docs/http-transport.md`](docs/http-transport.md) | stateless HTTP-контракт, token gate и безопасный offline smoke |
+| [`docs/deployment-status.md`](docs/deployment-status.md) | датированный снимок production/TEST, rollout evidence и оставшиеся gates |
 | [`docs/validation.md`](docs/validation.md) | воспроизводимые проверки каталога, ссылок, тестов и сборки |
 | [`docs/tool-inventory.json`](docs/tool-inventory.json) | автоматически сверяемые default/all-enabled профили реестра |
 | [`docs/synapse-protocol.md`](docs/synapse-protocol.md) | JSON-схема обмена (item: offer/want, profile, contact, exchange) |
@@ -456,6 +458,7 @@ mcp-server/
 ├── TOOLS.md                 # полный каталог инструментов
 ├── docs/
 │   ├── http-transport.md     # HTTP-контракт и ограничения
+│   ├── deployment-status.md # production/TEST и evidence rollout
 │   ├── validation.md         # проверка документации и сборки
 │   ├── tool-inventory.json   # проверяемый snapshot реестра
 │   ├── project-map.md        # архитектура, границы и статусы

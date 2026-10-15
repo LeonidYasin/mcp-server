@@ -1,6 +1,6 @@
 # Карта проекта mcp-server
 
-Ревизия документации 7 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта текущего кода и backlog, не подтверждение production rollout.
+Ревизия документации 8 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
 
@@ -49,7 +49,7 @@ flowchart TD
 | Actions snapshots/logs | Attempt-pinned status/steps/readers, combined-step boundaries, adapters в main через #81/#82/#84/#85 | #69/#83 ещё open: сверить полные критерии; не заявлять универсальную сегментацию неоднозначных архивов |
 | Artifact ownership | PR #87 Draft; HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI success, TEST checkout совпадает | Authenticated deployed artifact acceptance pending. Не выводить attempt по имени, времени или общему SHA |
 | Diagnostics / fix | #85 убрал ложный success по пустым логам, unsafe auto-fix отключён | #58 compiler-specific диагностика; #86 repo-specific reviewed branch/PR workflow |
-| Binary ingress | Универсального client→server канала нет; legacy binary-file API требует UTF-8 и пишет в Git | **#88**, сначала client feasibility; bytes/hash/ownership/quota/cleanup |
+| Binary ingress | Малый synthetic client→TEST probe прошёл; универсального upload/staging API нет; legacy binary-file API требует UTF-8 | **#88**, выбрать основной transport и реализовать bytes/hash/ownership/quota/cleanup; [ограничения probe](binary-transfer-plan.md#предварительная-feasibility--2026-10-15) |
 | Release lifecycle / assets | list/create/latest release и отдельные tag tools есть; полного assets цикла нет | #64 lifecycle; **#89 зависит от #88**, общий release lookup/IDs, без дублирующих API |
 | Надёжность / стоимость | Текущие safety contracts сохраняются | #53 access diagnostics; #59 post-effect reconciliation; #77 end-to-end token audit |
 | Admin / secrets / сайт | Существующие repo admin tools не равны полному lifecycle Pages | #66 secure secrets boundary; #68 verified features/Pages, configured ≠ deployed ≠ HTTP verified |
@@ -57,7 +57,7 @@ flowchart TD
 
 ## Порядок для нового файлового сценария
 
-1. **#88 / feasibility:** реальный клиент отправляет bytes выбранным доступным механизмом; иначе явно зафиксировать blocker, а не выдавать server path за transport.
+1. **#88 / transport:** малый synthetic probe уже выполнен через file-backed MCP arguments в текущем клиенте. Выбрать и документировать основной bounded/streaming механизм без shell; это ещё не API и не доказательство поддержки другими клиентами.
 2. **#88 / staging:** scoped file_id только после size/hash validation; resumable/idempotent chunks если выбран chunk transport; quotas, TTL, cleanup, isolation.
 3. **#89 / release contracts:** согласовать с #64 release lookup и IDs, bounded list/upload/download; unknown POST → reconcile; явный name conflict.
 4. **#89 / E2E:** отдельно разрешённый synthetic ZIP через private Release → Actions → output artifact; проверить содержимое, bytes/size/SHA-256 в обе стороны. Большой synthetic ~41 МБ — отдельный разрешённый прогон #88.
@@ -73,4 +73,4 @@ flowchart TD
 - **binary-transfer-plan**: единый контракт требований #88/#89, acceptance и non-goals.
 - **artifact-download**: Actions resolver не подменяет Release asset API или verified bytes transport.
 
-В дереве main и документационного PR не найден отдельный прежний mindmap/site source. Этот Markdown — новый версионируемый источник карты. Это не утверждение, что внешний сайт отсутствует: текущая конфигурация Pages и опубликованное содержимое ещё не проверены. Эта правка не создаёт Pages deployment и не меняет настройки репозитория.
+Этот Markdown — версионируемый источник карты. После merge #70 существующий Pages workflow завершился успешно; опубликованные страницы проверены по HTTP 200. На странице карты найден Mermaid code block, но визуальный рендер диаграммы на Pages ещё не принят. Эта правка не меняет настройки Pages и не разворачивает MCP runtime. [Состояние окружений и ссылки на evidence](deployment-status.md).

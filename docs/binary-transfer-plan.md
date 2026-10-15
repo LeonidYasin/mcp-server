@@ -1,10 +1,10 @@
 # План бинарного маршрута: #88 → #89
 
-Ревизия документации 7 · 2026-10-15. **Статус: требования и дизайн-гейты, не реализованный API.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). На момент triage оба open, комментариев нет. [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
+Ревизия документации 8 · 2026-10-15. **Статус: требования и дизайн-гейты, не реализованный API.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). Оба issue open; после triage добавлены [feasibility #88](https://github.com/LeonidYasin/mcp-server/issues/88#issuecomment-6200183545) и [зависимости #89](https://github.com/LeonidYasin/mcp-server/issues/89#issuecomment-6200184998). [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
 
 ## Что есть и чего пока нет
 
-Исходный код main проверен на `b9787e4f40fe8b62f62dbafa632b60722e44f439`:
+Кодовая база закреплена production rollout на `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6` (документационный merge #70, без изменения runtime относительно предшествующего аудита). [Окружения](deployment-status.md):
 
 | Компонент | Факт | Не означает |
 | --- | --- | --- |
@@ -23,6 +23,19 @@
 - bounded MCP chunks, например `begin_file_upload` → `append_file_chunk` → `finish_file_upload`.
 
 Имена — предложения, инструменты ещё не зарегистрированы. Не обещать, что Notion автоматически отправляет локальное вложение: MCP-сервер сам не получает доступ к клиентскому sandbox. Если доступного механизма нет, это явный blocker, а не повод считать server-side path решением. Не печатать весь base64 большого файла в сообщениях/контексте модели.
+
+### Предварительная feasibility — 2026-10-15
+
+Из sandbox текущего агента через JSON-файл аргументов MCP в TEST `run_python` переданы только synthetic bytes. Payload не печатался в сообщениях модели; на сервере данные декодированы и проверены в памяти, без записи staging-файлов и без изменения checkout/services. [Протокол проверки](https://github.com/LeonidYasin/mcp-server/issues/88#issuecomment-6200183545).
+
+| Образец | Размер bytes | SHA-256, совпал клиент/TEST |
+| --- | --- | --- |
+| non-UTF-8 | 32768 | `e11360251d1173650cdcd20f111d8f1ca2e412f572e8b36a4dc067121c1799b8` |
+| ZIP | 600 | `f595d6a8a1d2798475008cb0abcf015f02fafea41d25c4527cd5977cbc9856e4` |
+
+ZIP прочитан через BytesIO без extract; вложенный synthetic.bin (32768 bytes) имеет тот же hash, что первый образец. Файл аргументов — 45171 bytes. Это доказывает только малый переход в текущей агентной среде, **не готовый upload API**, не streaming и не доступность такого механизма во всех клиентах. Использованный shell-capable TEST tool — лишь probe; целевой API не должен требовать shell или его включения в production.
+
+Не проверены: хранение payload в истории/логах MCP host, большие объёмы и token/memory budgets, XLSX, owner isolation, quotas/TTL/cleanup и staging API. Private inputs, ~41 МБ, Release upload и Actions dispatch не выполнялись. Все acceptance checkboxes ниже относятся к будущему API и остаются открытыми.
 
 ### Обязательные свойства staging
 
@@ -76,6 +89,6 @@
 - **#77:** измерять schemas + arguments + results + turns; передавать bytes вне контекста модели, экономия не отменяет integrity/ownership metadata.
 - **#53 / #59:** честные access errors и reconciliation при неизвестном результате записи, без неявных fallback.
 - **#69 / PR #87:** Actions artifact attempt ownership отдельно от Release asset identity; неизвестное владение попыткой остаётся unknown.
-- **#68 / docs/site:** после реализации обновить реальные examples, проверить ссылки/сборку и фактический Pages deployment. Текущий docs PR ничего не публикует.
+- **#68 / docs/site:** после реализации обновить реальные examples, проверить ссылки/сборку и фактический Pages deployment. После merge #70 Pages deployment/HTTP подтверждены отдельно; будущие API examples и визуальный Mermaid требуют новой проверки. Docs PR не разворачивает MCP runtime.
 
 Не входит: новый compute service, запуск боевой научной обработки, изменение методики/данных, реальные секреты, платные сервисы, production deploy или публичная публикация приватных исходников. Live mutations, объекты тестирования и крупный прогон требуют отдельного разрешения.
