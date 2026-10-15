@@ -1,6 +1,6 @@
 # План бинарного маршрута: #88 → #89
 
-Ревизия документации 6 · 2026-10-15. **Статус: требования и дизайн-гейты, не реализованный API.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). На момент triage оба open, комментариев нет. [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
+Ревизия документации 7 · 2026-10-15. **Статус: требования и дизайн-гейты, не реализованный API.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). На момент triage оба open, комментариев нет. [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
 
 ## Что есть и чего пока нет
 

@@ -1,6 +1,6 @@
 # Воспроизводимая проверка документации
 
-Ревизия 6 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
+Ревизия 7 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
 
 ## Локальный gate
 

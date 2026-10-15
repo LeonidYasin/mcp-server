@@ -1,6 +1,6 @@
 # Карта проекта mcp-server
 
-Ревизия документации 6 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта текущего кода и backlog, не подтверждение production rollout.
+Ревизия документации 7 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта текущего кода и backlog, не подтверждение production rollout.
 
 ## Архитектура и границы доверия
 
