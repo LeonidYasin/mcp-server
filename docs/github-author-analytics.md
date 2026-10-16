@@ -4,6 +4,8 @@
 
 [Machine-readable proposal](examples/github-author-analytics-contract.json) · [Synthetic design examples and pending handler test matrix](examples/github-author-analytics-design-fixtures.json).
 
+[One-question workflow demonstration](scenarios/public-author-first-look.md) shows an agent-facing answer, measured local MCP/API components and open host-cost gates. It is not deployed acceptance or selection of the market-facing pilot in #105.
+
 ## Current runtime: default profile/repos plus opt-in Events
 
 ```json
