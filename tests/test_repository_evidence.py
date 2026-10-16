@@ -568,3 +568,65 @@ def test_path_policy_removed_comparison_path_not_prioritized():
                         {"files": [{"path": "src/z_deleted.py", "status": "removed"}]})
     assert plan["selected"][0]["path"] == "src/main.py"
     assert plan["comparison_paths_used"] == 0
+
+
+def _replace_corpus_file(corpus, path, text):
+    _, files, tree = corpus
+    files[path].clear()
+    files[path].update(file_data(path, text))
+    entry = next(row for row in tree if row["path"] == path)
+    entry.update(sha=files[path]["sha"], size=files[path]["size"])
+
+
+def test_auto_selects_and_cites_deep_function_without_extra_gets(corpus):
+    fake, _, _ = corpus
+    _replace_corpus_file(corpus, "src/engine.py",
+                         "\n" * 120 + "def execute():\n    return 123\n" + "\n" * 120)
+    result = auto(fake)
+    file = next(f for f in result["files"] if f["path"] == "src/engine.py")
+    assert file["start_line"] == 119 and file["end_line"] == 198
+    assert "def execute():" in file["text"]
+    assert file["url"].endswith("#L119-L198") and not file["whole_file_included"]
+    assert file["range_selection"]["anchor_line_retained"]
+    assert file["range_selection"]["python_body_end_retained"]
+    assert result["budget"]["requests"] == 9
+    choice = next(f for f in result["file_selection"]["selected"] if f["path"] == file["path"])
+    assert choice["start_line"] == file["start_line"] and choice["range_reason"] == "priority_callable_name"
+
+
+def test_explicit_range_is_not_moved_to_a_function(corpus):
+    fake, _, _ = corpus
+    _replace_corpus_file(corpus, "src/engine.py", "# requested header\n" + "\n" * 120 + "def execute(): pass\n")
+    result = run(fake, evidence_files=[{"path": "src/engine.py", "start_line": 1, "max_lines": 1}])
+    assert result["files"][0]["text"] == "# requested header"
+    assert result["files"][0]["range_selection"]["strategy"] == "explicit"
+
+
+def test_auto_large_function_is_not_reported_as_completely_read(corpus):
+    fake, _, _ = corpus
+    _replace_corpus_file(corpus, "src/engine.py", "\n" * 100 + "def execute():\n" + "    x=1\n" * 120)
+    file = next(f for f in auto(fake)["files"] if f["path"] == "src/engine.py")
+    assert file["range_selection"]["python_body_end_retained"] is False
+    assert not file["range_selection"]["full_callable_verified"]
+    assert file["requested_range_complete"] and not file["whole_file_included"]
+
+
+def test_auto_failed_read_plan_range_remains_unknown(corpus):
+    fake, _, _ = corpus
+    original = fake.override
+    fake.override = lambda r: httpx.Response(404, text="missing") if r.url.path.endswith("/contents/src/engine.py") else original(r)
+    result = auto(fake)
+    choice = next(f for f in result["file_selection"]["selected"] if f["path"] == "src/engine.py")
+    assert choice["start_line"] is None and result["state"] == "partial"
+
+
+def test_character_cap_cannot_claim_omitted_anchor_was_read(corpus):
+    fake, _, _ = corpus
+    _replace_corpus_file(corpus, "src/engine.py",
+                        "\n" * 118 + "#" + "x" * 6001 + "\n\ndef execute(): pass\n" + "\n" * 100)
+    file = next(f for f in auto(fake)["files"] if f["path"] == "src/engine.py")
+    assert file["range_selection"]["anchor"]["line"] == 121
+    assert file["range_selection"]["anchor_line_retained"] is False
+    assert file["range_selection"]["python_body_end_retained"] is False
+    assert file["text"] == "" and file["end_line"] is None
+    assert "#L" not in file["url"] and file["requested_range_complete"] is False

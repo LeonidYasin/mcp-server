@@ -86,7 +86,7 @@ def select_files(blobs, comparison=None):
                        "changed_source_path_in_observed_comparison"
                        if role == "implementation" and is_changed else "conventional_" + role + "_path"),
             "changed_in_observed_comparison": is_changed,
-            "start_line": 1, "max_lines": 80,
+            "start_line": None, "max_lines": 80, "range_strategy": "auto_callable_v1",
         })
 
     for role in ("overview", "runtime", "architecture", "license", "implementation", "implementation"):
@@ -104,7 +104,7 @@ def select_files(blobs, comparison=None):
         "comparison_paths_used": len(changed) if changed is not None else None,
         "limitations": [
             "Names/paths are hints, not proof of file contents or implementation quality.",
-            "First 80 LF-delimited lines; relevant logic may be elsewhere. Explicit ranges remain available.",
+            "At most80 LF-delimited lines per file; callable-name hints may miss relevant logic. Explicit ranges remain available.",
             "Vendored/generated/test/example path conventions are excluded heuristically, not perfectly.",
             "Monorepos, unconventional names and incomplete trees/comparisons can hide relevant files.",
             "Changed means observed three-dot path changes, not novelty, importance or correctness.",

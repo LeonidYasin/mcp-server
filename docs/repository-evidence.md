@@ -53,7 +53,8 @@ Conventional dependency/vendor/generated/test/example directories, lock files, c
 names, Python `__init__`/`__main__` wrappers and minified/declaration files are excluded
 heuristically. These are not perfect
 semantic classifiers. Relevant examples, unconventional files, monorepo subprojects and
-logic far below line80can be missed. Caller can follow up with explicit file/range requests.
+unrecognized functions or logic outside the selected window can be missed. Caller can
+follow up with explicit file/range requests.
 
 With explicit `compare_parent=true` on a fork, comparison happens **before** auto planning
 and reading Contents so its displayed changed source paths can be prioritized. Only the
@@ -64,12 +65,61 @@ explicit gap and a path-only fallback, not an assertion of no changes.
 `file_selection` returns strategy, selected paths, role **hints**, fixed reasons, candidate
 counts and `semantic_relevance_verified=false`. This is a plan; only entries in `files`
 are delivered source evidence. The plan may remain after failed reads or output-budget
-removal, and must not be cited as if the source were read. Each auto file asks for its
-first80LF-delimited lines, still bounded to6000characters and whole lines per excerpt.
+removal, and must not be cited as if the source were read. Planned auto `start_line` is null
+until a file is successfully decoded and its window selected. Returned evidence carries
+the actual start/end and `range_selection`; the successful plan entry is updated to match.
+Each auto file returns at most80LF-delimited lines, still bounded to6000characters and
+whole lines per excerpt.
 Unicode paragraph/line separator characters inside a source line do not shift GitHub
 line anchors; CRLF line endings are normalized for display.
 
 See [automatic-selection measurements and limitations](scenarios/repository-evidence-auto-sample.md).
+
+### Callable-centered windows
+
+After regular-blob identity, size, UTF-8 and credential-reflection checks, the collector may
+select a source window **locally from the already downloaded file**. No additional GitHub
+reads, code installation/import/execution, model calls or shell commands are introduced.
+The existing per-file128KiB cap remains. Explicit caller ranges are never moved.
+
+`auto_callable_v1` applies only to auto-selected implementation files longer than80lines.
+Short files and documents/manifests/licenses retain their beginning. Python uses standard
+library `ast.parse`, never import/exec/eval; Go/Scala/JS/TS use basic declaration patterns
+after conservative comment/string masking. Lexical recognizers are not full language parsers:
+exotic/generic/multiline syntax, Scala symbols and JS regexp/interpolation may be missed or
+misidentified. Other languages, syntax failures, absent declarations and analysis caps fall
+back to the header with a fixed explicit reason, not a fabricated function match.
+
+Eligible declaration names are ranked by a fixed heuristic: execute, call, processing
+(handle/dispatch/audit/validate/etc.), entrypoints (run/serve/main/etc.), then other callables;
+specific query/tool-call names also have execution priority. Common constructor/formatting
+helpers are skipped. Equal priorities choose the earliest eligible declaration.
+Nested Python functions are eligible too; this is not a call graph or reachable-code proof.
+Names express where to inspect, **not** proven effects, safety or business value.
+No per-repository path/name exceptions or source-text instructions are used.
+
+At most8000LF lines,20000walked Python AST nodes and256eligible declaration candidates.
+AST construction itself is bounded by the input file cap, not hard real-time cancellation;
+parse/recursion/resource errors fall back conservatively. Cap failures do not claim a
+complete candidate scan or zero candidates. Bare CR inside a source line uses a header
+fallback so parser newline normalization cannot shift LF-based citation anchors.
+
+Choose one contiguous window starting two lines before the declaration (minimum1), up to
+80lines/6000characters. This can omit decorators, earlier context, related helpers or the
+rest of a long function. Character clipping never cuts a source line. If clipping omits
+the chosen declaration, `anchor_line_retained=false`; the anchor is not evidence it was
+returned. Python's `python_body_end_retained` only reports whether the parsed last body line
+fits the delivered excerpt; for lexical matches it is null. It is not a correctness or
+complete-inspection assertion. `full_callable_verified=false` and semantic relevance false
+remain conservative even when the Python body endpoint is included.
+
+Per-file `range_selection` records strategy, parser/lexical method, fixed reason, anchor
+name/line, eligible candidate count (unknown on incomplete/no scan), scan limits/completeness,
+and actual retention flags. `requested_range_complete` still means the selected bounded
+range was delivered, not the file, function or behavior was completely studied.
+Use `get_repo_info` explicit ranges / existing `read_file_chunk` for further context.
+
+See [the measured callable-window scenario](scenarios/repository-evidence-window-sample.md).
 
 ## Evidence contract
 
@@ -153,6 +203,9 @@ budgets, malformed/refused sources, credential reflection, partial results, lega
 and actual MCP dispatcher JSON-text transport/token gate.
 Auto tests also cover role diversity, deterministic ranking, fork-priority ordering, refusal
 fallback, oversized files/symlinks, incomplete trees, input conflicts and Unicode line anchors.
+Window tests cover Python AST/async and nested declarations, Go/Scala/JS/TS lexical matches,
+fake declarations in comments/strings, explicit-range preservation, parser/candidate/node/line
+caps, exact pinned deep-function anchors, incomplete long bodies and failed-read plans.
 Initial tests exposed two fixture issues (a non-existent dispatcher module and a body threshold
 that was larger than the fixture); these were corrected, not counted as runtime fixes.
 Review also identified a real safety gap before publication: Contents may dereference symlinks.

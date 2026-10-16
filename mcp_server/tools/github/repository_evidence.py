@@ -186,7 +186,7 @@ def _selected_tree(reader, full, tree_sha, specs):
                       "selected_regular_files": sorted(selected) if wanted is not None else []}
 
 
-def _file(reader, full, sha, spec, expected_blob):
+def _file(reader, full, sha, spec, expected_blob, role_hint=None):
     path = spec["path"]
     data, source = reader.get("/repos/" + full + "/contents/" + quote(path, safe="/"), {"ref": sha})
     if (data.get("type") != "file" or data.get("path") != path or
@@ -218,6 +218,14 @@ def _file(reader, full, sha, spec, expected_blob):
         lines.pop()
     lines = [line.removesuffix("\r") for line in lines]
     start, limit = spec["start_line"], spec["max_lines"]
+    if role_hint is not None:
+        from mcp_server.tools.github.repository_excerpt_selection import select_window
+        range_selection = select_window(path, lines, role_hint, limit)
+        start = range_selection["start_line"]
+    else:
+        range_selection = {"strategy": "explicit", "start_line": start, "max_lines": limit}
+    if time.monotonic() >= reader.deadline:
+        raise Refused("time_budget")
     selected = lines[start - 1:start - 1 + limit]
     # Never cut a source line and then cite it as a full line.
     retained, chars = [], 0
@@ -227,12 +235,19 @@ def _file(reader, full, sha, spec, expected_blob):
         retained.append(line)
         chars += len(line) + 1
     end = start + len(retained) - 1 if retained else None
+    anchor = range_selection.get("anchor")
+    if anchor is not None:
+        range_selection["anchor_line_retained"] = end is not None and start <= anchor["line"] <= end
+        range_selection["python_body_end_retained"] = (
+            range_selection["anchor_line_retained"] and end >= anchor["end_line"]
+            if anchor["end_line"] is not None else None)
     url = "https://github.com/" + full + "/blob/" + sha + "/" + quote(path, safe="/")
     return {"path": path, "blob_sha": blob, "content_sha256": hashlib.sha256(raw).hexdigest(),
             "source": source, "total_lines": len(lines), "start_line": start, "end_line": end,
             "text": "\n".join(retained), "returned_lines": len(retained),
             "requested_range_complete": len(retained) == len(selected),
             "whole_file_included": start == 1 and len(retained) == len(lines),
+            "range_selection": range_selection,
             "url": url + (f"#L{start}-L{end}" if end is not None else ""),
             "untrusted_source_text": True}
 
@@ -353,7 +368,8 @@ def observe(client, **kwargs):
         compare_fork()
         plan = select_files(blobs, result["fork_comparison"])
         result["file_selection"] = plan
-        normalized = [{k: item[k] for k in ("path", "start_line", "max_lines")} for item in plan["selected"]]
+        normalized = [{"path": item["path"], "start_line": 1, "max_lines": item["max_lines"],
+                       "role_hint": item["role_hint"]} for item in plan["selected"]]
         result["selection_tree"]["selected_regular_files"] = [item["path"] for item in normalized]
         if result["selection_tree"]["provider_truncated"]:
             result["gaps"].append({"error": "auto_selection_tree_truncated"})
@@ -366,8 +382,13 @@ def observe(client, **kwargs):
             result["gaps"].append({"path": spec["path"], "error": "regular_file_not_verified_in_tree"})
             continue
         try:
-            result["files"].append(_file(reader, full, result["revision"]["sha"], spec,
-                                         blobs[spec["path"]]))
+            observed = _file(reader, full, result["revision"]["sha"], spec,
+                             blobs[spec["path"]], spec.get("role_hint"))
+            result["files"].append(observed)
+            if selection == "auto":
+                chosen = next(item for item in result["file_selection"]["selected"] if item["path"] == spec["path"])
+                chosen["start_line"] = observed["start_line"]
+                chosen["range_reason"] = observed["range_selection"]["reason"]
         except Refused as exc:
             result["gaps"].append({"path": spec["path"], "error": str(exc)})
     if selection == "explicit":

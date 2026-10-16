@@ -1,6 +1,9 @@
 # Automatic repository file selection: measured sample
 
 **Candidate-local, not deployed; three fixed repositories, not a GitHub-wide sample.**
+Historical path-selection sample: this runtime used first80line excerpts. Its original
+runtime hashes remain unchanged. See [the later callable-window sample](repository-evidence-window-sample.md)
+for the subsequent within-file selection feature.
 Observed 2026-10-16T21:47:45.256734+00:00.
 The existing Flask MCP dispatcher received three real `tools/call` requests with
 `get_repo_info(mode=public_evidence, file_selection=auto)` and pinned refs.
