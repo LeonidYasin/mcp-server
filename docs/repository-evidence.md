@@ -27,6 +27,16 @@ analyst in explicit mode. No README guesses in explicit mode.
 Extra arguments and bool-as-integer are rejected. Evidence arguments in legacy mode are
 rejected instead of silently ignored.
 
+### Question-led explicit follow-up
+
+An analyst can follow a first observation with additional explicit ranges at the **same full SHA**.
+This adds no automatic call-graph traversal or background reads. A separate call is needed for
+a second range of the same path (paths must be unique within a request). All normal verification
+and budgets apply anew; a prior read is not trusted as a cached integrity verdict.
+See the [question-led follow-up scenario](scenarios/repository-evidence-followup-sample.md)
+for credential-client and write-control chains, an explicit claim ledger and remaining unknowns.
+Only delivered file ranges support citations; plans and failed reads do not.
+
 ### Automatic selection
 
 ```json

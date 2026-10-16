@@ -658,3 +658,50 @@ def test_auto_rust_tool_retains_attribute_and_declaration_without_body_boundary_
     assert r["anchor"]["name"] == "list_accounts" and r["registration_line_retained"]
     assert r["anchor_line_retained"] and r["python_body_end_retained"] is None
     assert r["anchor"]["end_line"] is None and not r["full_callable_verified"]
+
+def test_followup_uses_previous_sha_not_fresh_default_branch(corpus):
+    fake, _, _ = corpus
+    _replace_corpus_file(corpus, 'src/engine.py', '\n'.join(f'# line {i}' for i in range(1, 221)) + '\n')
+    initial = run(fake, evidence_files=[{'path': 'src/engine.py', 'start_line': 1, 'max_lines': 5}])
+    fake.meta['default_branch'] = 'new-default'
+    before = len(fake.calls)
+    followup = run(fake, ref=initial['revision']['sha'],
+                   evidence_files=[{'path': 'src/engine.py', 'start_line': 170, 'max_lines': 10}])
+    assert followup['state'] == 'observed'
+    assert followup['revision']['sha'] == initial['revision']['sha'] == HEAD
+    assert followup['repository']['default_branch'] == 'new-default'
+    file = followup['files'][0]
+    assert file['text'].splitlines() == [f'# line {i}' for i in range(170, 180)]
+    assert file['url'].endswith(f'/{HEAD}/src/engine.py#L170-L179')
+    assert file['range_selection']['strategy'] == 'explicit'
+    assert file['content_sha256'] == initial['files'][0]['content_sha256']
+    assert followup['budget']['requests'] == len(fake.calls[before:]) == 4
+    assert not any('/commits/new-default' in str(r.url) for r in fake.calls[before:])
+    assert dict(fake.calls[-1].url.params) == {'ref': HEAD}
+
+
+def test_partial_followup_preserves_only_successfully_read_sources(corpus):
+    fake, _, _ = corpus
+    initial = run(fake, ref=HEAD, evidence_files=[{'path': 'src/engine.py'}])
+    original = fake.override
+    fake.override = lambda r: httpx.Response(404, json={}) if r.url.path.endswith('/contents/src/server.py') else original(r)
+    followup = run(fake, ref=initial['revision']['sha'], evidence_files=[
+        {'path': 'src/engine.py'}, {'path': 'src/server.py'}])
+    assert initial['state'] == 'observed' and len(initial['files']) == 1
+    assert followup['state'] == 'partial'
+    assert [f['path'] for f in followup['files']] == ['src/engine.py']
+    assert followup['files'][0]['content_sha256'] == initial['files'][0]['content_sha256']
+    assert followup['gaps'] and followup['budget']['requests'] == 5
+    assert not any(f['path'] == 'src/server.py' for f in followup['files'])
+
+
+def test_followup_rechecks_blob_instead_of_trusting_previous_read(corpus):
+    fake, files, _ = corpus
+    initial = run(fake, ref=HEAD, evidence_files=[{'path': 'src/engine.py'}])
+    # Self-consistent replacement body/hash, but not the blob in the pinned tree.
+    files['src/engine.py'] = file_data('src/engine.py', 'Different unverified body\n')
+    followup = run(fake, ref=initial['revision']['sha'], evidence_files=[{'path': 'src/engine.py'}])
+    assert initial['state'] == 'observed' and initial['files'][0]['text']
+    assert followup['state'] == 'partial' and followup['files'] == []
+    assert followup['gaps'][0]['error'] == 'file_unverified_or_too_large'
+    assert followup['budget']['requests'] == 4
