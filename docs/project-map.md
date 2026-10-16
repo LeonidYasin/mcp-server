@@ -55,6 +55,12 @@ flowchart TD
 | Admin / secrets / сайт | Существующие repo admin tools не равны полному lifecycle Pages | #66 secure secrets boundary; #68 verified features/Pages, configured ≠ deployed ≠ HTTP verified |
 | Synapse / экосистема | Существующие feature-gated категории; отдельные связанные проекты | Item/embedding roadmap и таблица экосистемы сохранены в ROADMAP; не смешивать с binary transport |
 
+## Новый backlog research / discoverability — 2026-10-16
+
+**План, не существующие runtime tools:** #99 — GitHub authors/zero-star repos; #100 — repo analytics/similarity/batch; #101 — read-only HN/Reddit и проверка reuse/providers; #102 — research_idea; #103 — read-only discoverability audit; #104 — preview/catalog dry-run и отдельно согласованная публикация; #105 — один product pilot, readiness и feedback. Полные контракты, ссылки и порядок зависимостей — в [новом разделе ROADMAP](../ROADMAP.md#новый-backlog--github-analytics-research-и-discoverability-2026-10-16).
+
+GitHub/API primitives и adapters → композиции → проверка полезности → отдельное approval публикаций. Существующие P0/P1, #88/#89 и security gates не вытесняются; #77 задаёт cost budgets, #53 — доступ, #59 — reconciliation, #68 — Pages verification. Нет обещаний глобального охвата GitHub, прогноза реакции аудитории или гарантированного роста; другие проекты/production не меняются.
+
 ## Порядок для нового файлового сценария
 
 1. **#88 / transport:** малый synthetic probe уже выполнен через file-backed MCP arguments в текущем клиенте. Выбрать и документировать основной bounded/streaming механизм без shell; это ещё не API и не доказательство поддержки другими клиентами.
