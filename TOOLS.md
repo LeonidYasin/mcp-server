@@ -84,6 +84,8 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 
 Candidate, not deployed: `get_repo_info` supports explicit `mode=public_evidence` for
 anonymous, commit-pinned selected excerpts and optional bounded fork comparison.
+Optional `file_selection=auto` chooses up to six files with explained path heuristics;
+default explicit selection remains available. Auto does not verify semantic relevance.
 Default legacy text is unchanged. No runtime/novelty/commercial verdict is inferred.
 See [evidence contract and limits](docs/repository-evidence.md).
 

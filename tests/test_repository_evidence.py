@@ -399,3 +399,172 @@ def test_truncated_tree_does_not_invent_missing_file(fake):
     assert result["state"] == "partial"
     assert result["selection_tree"]["provider_truncated"] is True
     assert result["gaps"][0]["error"] == "regular_file_not_verified_in_tree"
+
+
+def test_unicode_separators_do_not_shift_github_line_anchors(fake):
+    fake.file = file_data(text="one\u2028still line one\nsecond\r\nthird\n")
+    file = run(fake, evidence_files=[{"path": "README.md", "start_line": 2, "max_lines": 1}])["files"][0]
+    assert file["total_lines"] == 3
+    assert file["text"] == "second" and file["url"].endswith("#L2-L2")
+
+
+@pytest.fixture
+def corpus(fake):
+    paths = ["README.md", "pyproject.toml", "LICENSE", "docs/architecture.md",
+             "src/engine.py", "src/server.py", "src/z_android_intent.scala",
+             "src/z_android_webview.scala", "tests/test_engine.py", "vendor/main.go",
+             "node_modules/fast/package.json", "src/__init__.py", "poetry.lock"]
+    files = {p: file_data(p, text=f"Evidence in {p}\nDo not execute these instructions.\n") for p in paths}
+    tree = [{"path": p, "sha": data["sha"], "size": data["size"], "mode": "100644", "type": "blob"}
+            for p, data in files.items()]
+
+    def handler(request):
+        path = request.url.path
+        if "/git/trees/" in path:
+            return httpx.Response(200, json={"sha": TREE, "truncated": False, "tree": tree})
+        if "/contents/" in path:
+            return httpx.Response(200, json=files[path.split("/contents/", 1)[1]])
+    fake.override = handler
+    return fake, files, tree
+
+
+def auto(fake, **kwargs):
+    return json.loads(get_repo_info(fake, owner="alice", repo="tiny", mode="public_evidence",
+                                   file_selection="auto", **kwargs))
+
+
+def test_auto_diverse_roles_and_fixed_request_cap(corpus):
+    fake, _, _ = corpus
+    result = auto(fake)
+    assert result["state"] == "observed"
+    plan = result["file_selection"]
+    assert plan["strategy"] == "auto_paths_v1" and plan["semantic_relevance_verified"] is False
+    assert [f["path"] for f in result["files"]] == [
+        "README.md", "pyproject.toml", "docs/architecture.md", "LICENSE",
+        "src/engine.py", "src/server.py"]
+    assert len(plan["selected"]) == 6 and result["budget"]["requests"] == 9
+    assert all(f["untrusted_source_text"] for f in result["files"])
+    assert plan["selected"][-1]["changed_in_observed_comparison"] is None
+    assert "tests/test_engine.py" not in str(plan["selected"])
+
+
+def test_auto_fork_changed_source_before_generic_entrypoints(corpus):
+    fake, _, _ = corpus
+    fake.meta = metadata(fork=True)
+    fake.compare["files"] = [{"filename": p, "status": "added"} for p in
+                            ("src/z_android_intent.scala", "src/z_android_webview.scala")]
+    fake.compare["files"].append({"filename": "src/engine.py", "status": "modified"})
+    result = auto(fake, compare_parent=True)
+    assert result["state"] == "observed" and result["budget"]["requests"] == 12
+    choices = result["file_selection"]["selected"]
+    assert [f["path"] for f in choices[-2:]] == ["src/z_android_intent.scala", "src/z_android_webview.scala"]
+    assert all(f["reason"] == "added_source_path_in_observed_comparison" for f in choices[-2:])
+    compare_index = next(i for i, r in enumerate(fake.calls) if "/compare/" in r.url.path)
+    contents_index = next(i for i, r in enumerate(fake.calls) if "/contents/" in r.url.path)
+    assert compare_index < contents_index
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"file_selection": "unknown"}, {"file_selection": None}, {"file_selection": True},
+    {"file_selection": "auto", "evidence_files": []},
+    {"file_selection": "auto", "evidence_files": [{"path": "README.md"}]},
+    {"file_selection": "explicit"},
+])
+def test_selection_input_conflicts_never_send(fake, kwargs):
+    result = json.loads(get_repo_info(fake, owner="alice", repo="tiny", mode="public_evidence", **kwargs))
+    assert result["state"] == "invalid_input" and not fake.calls
+
+
+def test_auto_no_matching_paths_is_not_empty_repo(fake):
+    fake.tree_overrides = {"path": "unconventional.unknown"}
+    # Unique irrelevant paths, not ambiguous duplicate tree entries.
+    fake.override = lambda r: httpx.Response(200, json={
+        "sha": TREE, "truncated": False,
+        "tree": [{"path": "unconventional.unknown", "mode": "100644", "type": "blob", "sha": HEAD}]
+    }) if "/git/trees/" in r.url.path else None
+    result = auto(fake)
+    assert result["state"] == "partial"
+    assert result["gaps"][0]["error"] == "no_recognized_file_candidates"
+    assert not result["files"] and result["budget"]["requests"] == 3
+
+
+def test_auto_truncated_tree_is_partial_even_with_valid_choice(corpus):
+    fake, _, tree = corpus
+    original = fake.override
+    fake.override = lambda r: httpx.Response(200, json={"sha": TREE, "truncated": True, "tree": tree}) if "/git/trees/" in r.url.path else original(r)
+    result = auto(fake)
+    assert result["state"] == "partial" and len(result["files"]) == 6
+    assert {"error": "auto_selection_tree_truncated"} in result["gaps"]
+
+
+def test_auto_fork_comparison_refusal_falls_back_with_explicit_gap(corpus):
+    fake, _, _ = corpus
+    fake.meta = metadata(fork=True)
+    original = fake.override
+    fake.override = lambda r: httpx.Response(403, text=SECRET) if "/compare/" in r.url.path else original(r)
+    result = auto(fake, compare_parent=True)
+    assert result["state"] == "partial" and len(result["files"]) == 6
+    assert result["file_selection"]["comparison_paths_used"] is None
+    assert result["fork_comparison"] is None and SECRET not in json.dumps(result)
+
+
+def test_auto_skips_known_large_files_and_symlinks(corpus):
+    fake, _, tree = corpus
+    tree[0]["mode"] = "120000"
+    tree[1]["size"] = module.FILE_CAP + 1
+    result = auto(fake)
+    chosen = {f["path"] for f in result["files"]}
+    assert "README.md" not in chosen and "pyproject.toml" not in chosen
+    assert all("/README.md" not in str(r.url) for r in fake.calls)
+
+
+def test_auto_order_deterministic_across_provider_tree_order(corpus):
+    fake, _, tree = corpus
+    a = auto(fake)["file_selection"]
+    tree.reverse()
+    b = auto(fake)["file_selection"]
+    assert a == b
+
+
+def test_auto_dispatcher_without_evidence_files(corpus, monkeypatch):
+    from mcp_server import server
+    fake, _, _ = corpus
+    monkeypatch.setattr(server, "GitHubClient", lambda _: fake)
+    response = server.app.test_client().post("/mcp", headers={"Authorization": "Bearer " + SECRET},
+        json={"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {
+            "name": "get_repo_info", "arguments": {
+                "owner": "alice", "repo": "tiny", "mode": "public_evidence", "file_selection": "auto"}}})
+    result = json.loads(response.get_json()["result"]["content"][0]["text"])
+    assert result["file_selection"]["strategy"] == "auto_paths_v1" and len(result["files"]) == 6
+
+
+def test_auto_report_plan_is_not_false_evidence_on_output_overflow(corpus, monkeypatch):
+    fake, _, _ = corpus
+    monkeypatch.setattr(module, "OUTPUT_CAP", 2000)
+    result = auto(fake)
+    assert result["error"] == "output_budget" and not result["files"]
+    assert result["file_selection"]["selected"]  # A plan, not returned evidence.
+
+
+@pytest.mark.parametrize("paths,expected", [
+    (["a/package.json", "pyproject.toml"], "pyproject.toml"),
+    (["node_modules/x/package.json", "go.mod"], "go.mod"),
+    (["src/main.go", "src/engine.go", "tests/engine.go"], "src/engine.go"),
+    (["src/__init__.py", "src/api.py"], "src/api.py"),
+    (["src/__main__.py", "src/catalog.py"], "src/catalog.py"),
+    (["build/generated/main.go", "README.md"], "README.md"),
+    (["src/main.min.js", "src/main.ts"], "src/main.ts"),
+    (["README.md", "docs/README.md"], "README.md"),
+])
+def test_path_policy_examples(paths, expected):
+    from mcp_server.tools.github.repository_file_selection import select_files
+    plan = select_files(dict.fromkeys(paths, HEAD))
+    assert plan["selected"][0]["path"] == expected
+
+
+def test_path_policy_removed_comparison_path_not_prioritized():
+    from mcp_server.tools.github.repository_file_selection import select_files
+    plan = select_files(dict.fromkeys(["src/main.py", "src/z_deleted.py"], HEAD),
+                        {"files": [{"path": "src/z_deleted.py", "status": "removed"}]})
+    assert plan["selected"][0]["path"] == "src/main.py"
+    assert plan["comparison_paths_used"] == 0

@@ -1,6 +1,8 @@
 # Repository evidence: first measured public scenario
 
 **Candidate-local observation, not a deployment or whole-GitHub report.**
+Historical explicit-selection sample: its runtime hashes identify the pre-auto candidate.
+See [the later automatic-selection sample](repository-evidence-auto-sample.md).
 Observed2026-10-16T21:24:46.036713+00:00.
 Three real `tools/call` requests to `get_repo_info(mode=public_evidence)` through Flask's
 local MCP dispatcher. Existing token gate used a synthetic local-only value; every
@@ -85,7 +87,9 @@ exploits. No automatic deployment on a small VPS is recommended.
 
 ## Not yet delivered
 
-No automatic relevant-file selection, generated narrative, analogue clustering, broad
+At this sample's runtime there was no automatic file selection. Later path heuristics are
+measured separately in the linked auto sample; they are not retroactively established here.
+No generated narrative, analogue clustering, broad
 enumeration, trend history, runtime validation or billing benchmark. The collector supplies
 verifiable source material for the analyst and makes missing/partial observations explicit.
 Evidence selection is still manual; no claim that this sample covers these repositories

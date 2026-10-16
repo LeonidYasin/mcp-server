@@ -3,6 +3,8 @@
 Second research layer after discovery: **selected source evidence, not a generated sales pitch**.
 Existing `get_repo_info` gains explicit `mode=public_evidence`; default authenticated legacy
 text is unchanged. No new registered tool, dependency, model, database or background worker.
+File selection is explicit by default; opt-in `file_selection=auto` adds explained path
+heuristics, not an LLM or a claim of semantic relevance.
 This branch is independent of the Search candidate: callers can supply a repository discovered
 with existing tools. No assumption that another draft has been merged or deployed.
 
@@ -12,17 +14,62 @@ with existing tools. No assumption that another draft has been merged or deploye
 {"name":"get_repo_info","arguments":{"owner":"Johnmelo","repo":"codebadger-mola","mode":"public_evidence","ref":"9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f","evidence_files":[{"path":"pyproject.toml"},{"path":"src/services/query_executor.py","start_line":146,"max_lines":40}],"compare_parent":true}}
 ```
 
-One repository per call. Explicit `evidence_files`: 1–6 unique paths, each object has `path`,
+One repository per call. Default `file_selection=explicit` requires `evidence_files`:
+1–6 unique paths, each object has `path`,
 optional 1-based `start_line` (default1, max1000000), `max_lines` (default80, max100).
 Paths use a conservative ASCII segment allowlist: no URLs, traversal, encoded separators,
 backslashes or symlink/submodule following. Unsupported paths are invalid input, not evidence
 that a file does not exist. Call existing `get_repo_tree`/`grep_file` first to choose paths;
 selection and relevance are the analyst's responsibility. One bounded pinned Git tree read
 verifies selected blob identities and regular-file modes; it does not select files for the
-analyst. No README guesses.
+analyst in explicit mode. No README guesses in explicit mode.
 `ref` is a branch/tag/SHA; default is the separately observed default branch.
 Extra arguments and bool-as-integer are rejected. Evidence arguments in legacy mode are
 rejected instead of silently ignored.
+
+### Automatic selection
+
+```json
+{"name":"get_repo_info","arguments":{"owner":"Johnmelo","repo":"codebadger-mola","mode":"public_evidence","file_selection":"auto","ref":"9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f","compare_parent":true}}
+```
+
+Auto and `evidence_files` are mutually exclusive, even an empty explicit list. It uses the
+same bounded pinned tree, not extra traversal requests. Known oversized files and non-regular
+blobs are excluded before planning. A truncated tree produces a partial selection with an
+explicit gap, even when all chosen file reads succeed. No recognizable paths is a gap,
+not an empty repository or evidence that relevant implementation does not exist.
+
+`auto_paths_v1` chooses up to six files with fixed diversity slots:
+overview/README, runtime manifest, architecture document, license, two implementation files.
+Unfilled slots can use deployment config, additional manifests, implementation or overview
+documents. Root paths are preferred for documents/manifests; implementation paths prefer
+observed changed source paths (added before modified/renamed), then conventional
+engine/server/main/app/tools names. Added-file priority is an exploration heuristic,
+not a claim of importance, originality or correctness.
+Within equal priorities, depth and lexical order make selection deterministic.
+No minimum stars or popularity signal enters selection.
+
+Conventional dependency/vendor/generated/test/example directories, lock files, common test
+names, Python `__init__`/`__main__` wrappers and minified/declaration files are excluded
+heuristically. These are not perfect
+semantic classifiers. Relevant examples, unconventional files, monorepo subprojects and
+logic far below line80can be missed. Caller can follow up with explicit file/range requests.
+
+With explicit `compare_parent=true` on a fork, comparison happens **before** auto planning
+and reading Contents so its displayed changed source paths can be prioritized. Only the
+at-most40displayed comparison rows are used, not a hidden uncapped list or patches. Removed
+and unchanged rows do not receive changed-path priority. Refused comparison leaves an
+explicit gap and a path-only fallback, not an assertion of no changes.
+
+`file_selection` returns strategy, selected paths, role **hints**, fixed reasons, candidate
+counts and `semantic_relevance_verified=false`. This is a plan; only entries in `files`
+are delivered source evidence. The plan may remain after failed reads or output-budget
+removal, and must not be cited as if the source were read. Each auto file asks for its
+first80LF-delimited lines, still bounded to6000characters and whole lines per excerpt.
+Unicode paragraph/line separator characters inside a source line do not shift GitHub
+line anchors; CRLF line endings are normalized for display.
+
+See [automatic-selection measurements and limitations](scenarios/repository-evidence-auto-sample.md).
 
 ## Evidence contract
 
@@ -85,7 +132,7 @@ sample excludes verbatim third-party excerpts; their hashes and citation ranges 
 
 ## Report composition
 
-For each selected repository, the analyst should write:
+After explicit or automatic selection, the analyst should write:
 
 1. **Hook:** one understandable, source-supported distinction, not a restated description.
 2. **Practical use:** user's task and expected input/output; mark untested use cases as hypotheses.
@@ -104,6 +151,8 @@ this feature does not implement either.
 Offline tests exercise pinning, content integrity, ranges, fork comparison, anonymous transport,
 budgets, malformed/refused sources, credential reflection, partial results, legacy compatibility
 and actual MCP dispatcher JSON-text transport/token gate.
+Auto tests also cover role diversity, deterministic ranking, fork-priority ordering, refusal
+fallback, oversized files/symlinks, incomplete trees, input conflicts and Unicode line anchors.
 Initial tests exposed two fixture issues (a non-existent dispatcher module and a body threshold
 that was larger than the fixture); these were corrected, not counted as runtime fixes.
 Review also identified a real safety gap before publication: Contents may dereference symlinks.
@@ -112,3 +161,5 @@ Git tree before reading Contents; regression tests cover this boundary.
 
 See [the measured three-repository scenario](scenarios/repository-evidence-first-sample.md)
 and [its observation metadata](examples/repository-evidence-public-sample.json).
+That earlier explicit-selection sample retains the hashes of its earlier runtime; it is
+not relabelled as a live run of later automatic-selection changes.

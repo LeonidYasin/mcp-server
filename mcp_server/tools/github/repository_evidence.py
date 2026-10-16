@@ -167,22 +167,23 @@ def _selected_tree(reader, full, tree_sha, specs):
     if (data.get("sha") != tree_sha or not isinstance(data.get("tree"), list) or
             type(data.get("truncated")) is not bool):
         raise Refused("tree_unverified")
-    wanted = {spec["path"] for spec in specs}
+    wanted = {spec["path"] for spec in specs} if specs is not None else None
     selected, seen = {}, set()
     for entry in data["tree"]:
         if (not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or
-                entry["path"] not in wanted):
+                (wanted is not None and entry["path"] not in wanted)):
             continue
         path = entry["path"]
         if path in seen:
             raise Refused("ambiguous_tree")
         seen.add(path)
-        if (entry.get("type") == "blob" and entry.get("mode") in ("100644", "100755") and
+        if (_path(path) and entry.get("type") == "blob" and entry.get("mode") in ("100644", "100755") and
+                (wanted is not None or not _int(entry.get("size")) or entry["size"] <= FILE_CAP) and
                 SHA.fullmatch(str(entry.get("sha", "")))):
             selected[path] = entry["sha"]
     return selected, {"source": source, "entries_received": len(data["tree"]),
                       "provider_truncated": data["truncated"],
-                      "selected_regular_files": sorted(selected)}
+                      "selected_regular_files": sorted(selected) if wanted is not None else []}
 
 
 def _file(reader, full, sha, spec, expected_blob):
@@ -211,7 +212,11 @@ def _file(reader, full, sha, spec, expected_blob):
         raise Refused("file_decode_or_integrity_failed") from None
     if reader.credential and reader.credential in text:
         raise Refused("credential_reflection_rejected")
-    lines = text.splitlines()
+    # GitHub anchors count LF-delimited lines, not Unicode paragraph separators.
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    lines = [line.removesuffix("\r") for line in lines]
     start, limit = spec["start_line"], spec["max_lines"]
     selected = lines[start - 1:start - 1 + limit]
     # Never cut a source line and then cite it as a full line.
@@ -263,9 +268,9 @@ def _compare(reader, full, head, parent):
 
 
 def observe(client, **kwargs):
-    """Explicit file selection, one repo, bounded anonymous public evidence."""
+    """Explicit or opt-in heuristic selection, one repo, bounded public evidence."""
     result = {"schema_version": 1, "mode": "public_repository_evidence", "state": "invalid_input",
-              "repository": None, "revision": None, "selection_tree": None,
+              "repository": None, "revision": None, "selection_tree": None, "file_selection": None,
               "files": [], "fork_comparison": None,
               "sources": [], "gaps": [], "error": None,
               "budget": {"requests": 0, "max_requests": MAX_REQUESTS, "response_bytes": 0,
@@ -295,14 +300,17 @@ def observe(client, **kwargs):
 
     full = str(kwargs.get("owner", "")) + "/" + str(kwargs.get("repo", ""))
     specs, ref, compare = kwargs.get("evidence_files"), kwargs.get("ref"), kwargs.get("compare_parent", False)
+    selection = kwargs.get("file_selection", "explicit")
     valid = (isinstance(kwargs.get("owner"), str) and isinstance(kwargs.get("repo"), str) and
-             set(kwargs) <= {"owner", "repo", "evidence_files", "ref", "compare_parent"} and
-             _identity(full) and type(compare) is bool and isinstance(specs, list) and 1 <= len(specs) <= 6)
+             set(kwargs) <= {"owner", "repo", "evidence_files", "ref", "compare_parent", "file_selection"} and
+             _identity(full) and type(compare) is bool and selection in ("explicit", "auto") and
+             ((selection == "explicit" and isinstance(specs, list) and 1 <= len(specs) <= 6) or
+              (selection == "auto" and "evidence_files" not in kwargs)))
     if ref is not None:
         valid &= (isinstance(ref, str) and 0 < len(ref) <= 240 and
                   all(c.isprintable() for c in ref))
     normalized, seen = [], set()
-    if valid:
+    if valid and selection == "explicit":
         for spec in specs:
             if not isinstance(spec, dict) or not set(spec) <= {"path", "start_line", "max_lines"}:
                 valid = False
@@ -322,10 +330,37 @@ def observe(client, **kwargs):
         result["repository"] = _metadata(reader, full)
         result["revision"] = _pin(reader, full, ref or result["repository"]["default_branch"])
         blobs, result["selection_tree"] = _selected_tree(reader, full,
-            result["revision"]["tree_sha"], normalized)
+            result["revision"]["tree_sha"], normalized if selection == "explicit" else None)
     except Refused as exc:
         result.update(state="unavailable", error=str(exc))
         return done()
+    def compare_fork():
+        if not compare or not result["repository"]["fork"]:
+            return
+        parent = result["repository"]["parent"]
+        if parent is None:
+            result["gaps"].append({"error": "fork_parent_unverified"})
+            return
+        try:
+            result["fork_comparison"] = _compare(reader, full, result["revision"]["sha"], parent)
+        except Refused as exc:
+            result["gaps"].append({"error": str(exc), "scope": "fork_comparison"})
+        except (AttributeError, TypeError):
+            result["gaps"].append({"error": "comparison_unverified", "scope": "fork_comparison"})
+
+    if selection == "auto":
+        from mcp_server.tools.github.repository_file_selection import select_files
+        compare_fork()
+        plan = select_files(blobs, result["fork_comparison"])
+        result["file_selection"] = plan
+        normalized = [{k: item[k] for k in ("path", "start_line", "max_lines")} for item in plan["selected"]]
+        result["selection_tree"]["selected_regular_files"] = [item["path"] for item in normalized]
+        if result["selection_tree"]["provider_truncated"]:
+            result["gaps"].append({"error": "auto_selection_tree_truncated"})
+        if not normalized:
+            result["gaps"].append({"error": "no_recognized_file_candidates"})
+    else:
+        result["file_selection"] = {"strategy": "explicit", "selected": normalized}
     for spec in normalized:
         if spec["path"] not in blobs:
             result["gaps"].append({"path": spec["path"], "error": "regular_file_not_verified_in_tree"})
@@ -335,16 +370,7 @@ def observe(client, **kwargs):
                                          blobs[spec["path"]]))
         except Refused as exc:
             result["gaps"].append({"path": spec["path"], "error": str(exc)})
-    if compare and result["repository"]["fork"]:
-        parent = result["repository"]["parent"]
-        if parent is None:
-            result["gaps"].append({"error": "fork_parent_unverified"})
-        else:
-            try:
-                result["fork_comparison"] = _compare(reader, full, result["revision"]["sha"], parent)
-            except Refused as exc:
-                result["gaps"].append({"error": str(exc), "scope": "fork_comparison"})
-            except (AttributeError, TypeError):
-                result["gaps"].append({"error": "comparison_unverified", "scope": "fork_comparison"})
+    if selection == "explicit":
+        compare_fork()
     result["state"] = "partial" if result["gaps"] else "observed"
     return done()

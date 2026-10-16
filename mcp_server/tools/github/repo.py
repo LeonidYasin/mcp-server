@@ -12,6 +12,8 @@ from mcp_server.tools.github.client import GitHubClient
         "mode": {"type": "string", "enum": ["legacy", "public_evidence"],
                  "description": "Default legacy preserves authenticated text; public_evidence returns bounded JSON text."},
         "ref": {"type": "string", "description": "public_evidence only: branch/tag/SHA, pinned before file reads; default default_branch."},
+        "file_selection": {"type": "string", "enum": ["explicit", "auto"],
+            "description": "public_evidence only: explicit(default) requires evidence_files; auto forbids evidence_files and selects <=6 files by explained path heuristics, not verified relevance."},
         "evidence_files": {"type": "array", "minItems": 1, "maxItems": 6,
             "description": "public_evidence only: explicit selected files, not discovery or arbitrary URL fetch.",
             "items": {"type": "object", "additionalProperties": False, "required": ["path"],
