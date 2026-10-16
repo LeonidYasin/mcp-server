@@ -1,4 +1,4 @@
-"""Validate design artifacts only; no author-analysis handler exists on this branch."""
+"""Validate design artifacts only; historical full proposal is distinct from the implemented phase1 handler."""
 import json
 from pathlib import Path
 
@@ -9,11 +9,15 @@ CONTRACT = json.loads((ROOT / 'docs/examples/github-author-analytics-contract.js
 EXAMPLES = json.loads((ROOT / 'docs/examples/github-author-analytics-design-fixtures.json').read_text())
 
 
-def test_proposal_does_not_claim_runtime_implementation():
+def test_full_proposal_is_distinct_from_the_implemented_phase1():
     from mcp_server.server import registry
-    assert CONTRACT['design_status'] == 'proposal_not_implemented'
-    assert CONTRACT['registration_change'] is False
-    assert registry.get(CONTRACT['candidate_name']) is None
+    assert CONTRACT['design_status'] == 'partially_implemented_profile_repos_only'
+    assert CONTRACT['registration_change'] is True
+    tool = registry.get(CONTRACT['candidate_name'])
+    assert tool is not None
+    assert set(tool.parameters) == set(CONTRACT['runtime_phase1']['accepted_fields'])
+    assert 'include_activity' not in tool.parameters
+    assert CONTRACT['runtime_phase1']['events_supported'] is False
     assert EXAMPLES['kind'] == 'design_examples_not_handler_outputs'
 
 

@@ -1,54 +1,8 @@
 {
-  "design_status": "proposal_not_implemented",
+  "design_status": "partially_implemented_profile_repos_only",
   "candidate_name": "analyze_github_author",
-  "registration_change": false,
+  "registration_change": true,
   "purpose": "one bounded public-author observation; not four registered wrappers",
-  "input_schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "username"
-    ],
-    "properties": {
-      "username": {
-        "type": "string",
-        "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
-        "maxLength": 39
-      },
-      "per_page": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 20,
-        "default": 20
-      },
-      "repo_page": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 10000,
-        "default": 1
-      },
-      "include_text": {
-        "type": "boolean",
-        "default": false
-      },
-      "include_activity": {
-        "type": "boolean",
-        "default": false
-      },
-      "activity_days": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 30,
-        "default": 30
-      },
-      "event_page": {
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 3,
-        "default": 1
-      }
-    }
-  },
   "transport": {
     "method": "GET",
     "origin": "https://api.github.com",
@@ -147,5 +101,71 @@
     "cost_baseline_and_actual_host_measurement_separate",
     "permitted_public_live_smoke",
     "maintainer_review"
-  ]
+  ],
+  "proposed_complete_input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "username"
+    ],
+    "properties": {
+      "username": {
+        "type": "string",
+        "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+        "maxLength": 39
+      },
+      "per_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20,
+        "default": 20
+      },
+      "repo_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 1
+      },
+      "include_text": {
+        "type": "boolean",
+        "default": false
+      },
+      "include_activity": {
+        "type": "boolean",
+        "default": false
+      },
+      "activity_days": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 30,
+        "default": 30
+      },
+      "event_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3,
+        "default": 1
+      }
+    }
+  },
+  "runtime_phase1": {
+    "implemented": true,
+    "name": "analyze_github_author",
+    "accepted_fields": [
+      "username",
+      "per_page",
+      "repo_page",
+      "include_text"
+    ],
+    "events_supported": false,
+    "private_supported": false,
+    "requests_max": 2,
+    "response_bytes_max": 262144,
+    "total_response_bytes_max": 524288,
+    "result_bytes_max": 65536,
+    "checked_deadline_seconds": 10,
+    "socket_timeout_seconds_max": 5,
+    "new_runtime_dependencies": []
+  },
+  "pinned_openapi_evidence": "github-author-openapi-2022-evidence.json"
 }

@@ -1,0 +1,152 @@
+{
+  "format_version": 1,
+  "provider": "github/rest-api-description",
+  "source_commit": "798498bd7d7350b26597b07cdcbb075d2eb0fa8a",
+  "source_path": "descriptions/api.github.com/api.github.com.2022-11-28.json",
+  "source_url": "https://raw.githubusercontent.com/github/rest-api-description/798498bd7d7350b26597b07cdcbb075d2eb0fa8a/descriptions/api.github.com/api.github.com.2022-11-28.json",
+  "source_sha256": "4d8394d818504d673a7e0687eca394e1f1e9a2d08d4847541e5ede1dac65e342",
+  "source_bytes": 13426541,
+  "spec_package_version_not_api_version": "1.1.4",
+  "runtime_header_unchanged": "2022-11-28",
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/users/{username}",
+      "operation_id": "users/get-by-username",
+      "description": "Provides publicly available information about someone with a GitHub account.\n\nIf the specified user has a [private profile](https://docs.github.com/account-and-profile/concepts/personal-profile#private-profiles), the `followers` and `following` values are `0` unless the request is authenticated as that user. A request authenticated as the specified user returns the actual values even if the token has no OAuth scopes.\n\nThe `events_url` value is a URI template. Replace `{/privacy}` with `/public` to retrieve only public events. Omit it to retrieve public events and, when authenticated as the user, private events. For more information, see \"[List events for the authenticated user](https://docs.github.com/rest/activity/events#list-events-for-the-authenticated-user).\"\n\nIf you are requesting information about an [Enterprise Managed User](https://docs.github.com/enterprise-cloud@latest/admin/managing-iam/understanding-iam-for-enterprises/about-enterprise-managed-users), or a GitHub App bot that is installed in an organization that uses Enterprise Managed Users, your requests must be authenticated as a user or GitHub App that has access to the organization to view that account's information. If you are not authorized, the request will return a `404 Not Found` status.\n\nThe `email` key in the following response is the publicly visible email address from your GitHub [profile page](https://github.com/settings/profile). When setting up your profile, you can select a primary email address to be public which provides an email entry for this endpoint. If you do not set a public email address for `email`, then it will have a value of `null`. You only see publicly visible email addresses when authenticated with GitHub. For more information, see [Authentication](https://docs.github.com/rest/guides/getting-started-with-the-rest-api#authentication).\n\nThe Emails API enables you to list all of your email addresses, and toggle a primary email to be visible publicly. For more information, see [Emails API](https://docs.github.com/rest/users/emails).",
+      "parameters": [
+        {
+          "name": "username",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "response_schema_title": null,
+      "response_schema_ref": null,
+      "phase1_implemented": true
+    },
+    {
+      "method": "GET",
+      "path": "/users/{username}/repos",
+      "operation_id": "repos/list-for-user",
+      "description": "Lists public repositories for the specified user.",
+      "parameters": [
+        {
+          "name": "username",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "all",
+              "owner",
+              "member"
+            ],
+            "default": "owner"
+          }
+        },
+        {
+          "name": "sort",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "pushed",
+              "full_name"
+            ],
+            "default": "full_name"
+          }
+        },
+        {
+          "name": "direction",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        {
+          "name": "per_page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 30
+          }
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 1
+          }
+        }
+      ],
+      "response_schema_title": "Minimal Repository",
+      "response_schema_ref": null,
+      "phase1_implemented": true
+    },
+    {
+      "method": "GET",
+      "path": "/users/{username}/events/public",
+      "operation_id": "activity/list-public-events-for-user",
+      "description": "> [!NOTE]\n> This API is not built to serve real-time use cases. Depending on the time of day, event latency can be anywhere from 30s to 6h.",
+      "parameters": [
+        {
+          "name": "username",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "per_page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 30
+          }
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 1
+          }
+        }
+      ],
+      "response_schema_title": "Event",
+      "response_schema_ref": null,
+      "phase1_implemented": false
+    }
+  ],
+  "limits": [
+    "Pinned OpenAPI verifies endpoint/parameter/shape contracts, not successful live acceptance.",
+    "300event/30day retention comes from dated human docs, not an immutable guarantee in the selected operation descriptions.",
+    "No API2026 header upgrade. Events are not implemented in phase1."
+  ]
+}

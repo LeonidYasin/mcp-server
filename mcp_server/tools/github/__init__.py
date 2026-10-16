@@ -245,3 +245,6 @@ __all__ = [
     "list_my_repos",
     "update_repo",
 ]
+
+# Public-author phase1; no Events/private workflow.
+from mcp_server.tools.github.author_analytics import analyze_github_author

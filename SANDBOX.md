@@ -1,6 +1,6 @@
 # SANDBOX.md — изолированный запуск MCP с доступом к локальным файлам
 
-Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 8 · 2026-10-15.
+Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 12 · 2026-10-16.
 
 Цель — минимизировать права и явно задать OS-изоляцию. **Сам пакет не гарантирует, что агент видит только одну папку.** Cwd/path guards не заменяют sandbox, защиту секретов, сетевую policy и ограничения ресурсов.
 
@@ -207,3 +207,7 @@ curl http://127.0.0.1:3001/health
 4. Доступ к `ssh-agent`, docker-сокету и другим IPC.
 
 Для arbitrary shell/process отдельный non-root user — лишь минимум. Не включать на личной машине с ценными данными или в production без проверенной policy, независимо от path guard. Установка/перезапуск сервисов и реальная проверка изоляции в этом docs PR не выполняются.
+
+## Кандидат аналитики авторов #99
+
+`analyze_github_author` не использует shell/диск/клиентские файлы и не расширяет PAT permissions: fixed GitHub GET, anonymous outbound, без cookies/default auth, redirects/retries/private data. Optional prose — untrusted data, не инструкции. Лимиты и partial/unknown не обходить расширением доступа. [Контракт](docs/github-author-analytics.md).
