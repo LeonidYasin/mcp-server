@@ -113,7 +113,11 @@ class _Reader:
             source['error'] = 'invalid_or_unavailable_response'
         finally:
             if response is not None:
-                response.close()
+                try:
+                    response.close()
+                except Exception:
+                    # Cleanup must not replace a bounded result or expose transport text.
+                    source['cleanup_error'] = 'response_close_failed'
         return None, None
 
 

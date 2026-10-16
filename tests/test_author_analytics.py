@@ -402,3 +402,32 @@ def test_invalid_profile_count_is_null_and_partial_not_zero(fake):
     assert r['profile']['counts']['followers'] is None
     assert r['profile']['field_states']['followers'] == 'unverifiable'
     assert r['outcome'] == 'partial'
+
+
+@pytest.mark.parametrize('case', ['refused', 'compressed', 'oversized', 'otherwise_valid'])
+def test_response_close_failure_is_bounded_and_redacted(fake, case):
+    class BrokenClose(httpx.SyncByteStream):
+        def __iter__(self):
+            yield (b'x' * (262144 + 8192) if case == 'oversized'
+                   else json.dumps(profile()).encode())
+
+        def close(self):
+            raise RuntimeError('TOP_SECRET close failure')
+
+    def handle(request):
+        fake.calls.append(request)
+        return httpx.Response(403 if case == 'refused' else 200,
+            headers={'Content-Encoding': 'gzip'} if case == 'compressed' else None,
+            stream=BrokenClose())
+
+    fake._client.close()
+    fake._client = httpx.Client(transport=httpx.MockTransport(handle))
+    r = run(fake)
+    expected = {'refused': 'http_refused', 'compressed': 'compressed_response_rejected',
+        'oversized': 'response_too_large', 'otherwise_valid': 'invalid_or_unavailable_response'}
+    assert r['sources'][0]['error'] == expected[case]
+    if case != 'otherwise_valid':
+        assert r['sources'][0]['cleanup_error'] == 'response_close_failed'
+    assert r['outcome'] == 'unavailable' and r['repos'] is None
+    assert len(fake.calls) == 1
+    assert 'TOP_SECRET' not in json.dumps(r)
