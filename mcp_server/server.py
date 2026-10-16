@@ -4,6 +4,7 @@ Token is passed via Authorization: Bearer <token> header.
 Implements the MCP Streamable HTTP transport (JSON-RPC 2.0 over POST /mcp).
 """
 
+import json
 import logging
 import os
 
@@ -81,6 +82,9 @@ def _build_banner() -> str:
 # Tools that don't need a GitHub token (pure functions / meta / web)
 TOKENLESS_PREFIXES = ("base64_", "hash_", "json_", "uuid_", "timestamp_", "date_", "regex_", "text_")
 TOKENLESS_NAMES = {"list_my_tools", "describe_tool", "web_fetch", "web_search"}
+UPLOAD_TOOL_NAMES = {"begin_file_upload", "append_file_chunk", "finish_file_upload",
+                     "get_file_upload_status", "cancel_file_upload", "cleanup_file_uploads"}
+
 
 
 def _tool_needs_token(tool_name: str) -> bool:
@@ -177,10 +181,28 @@ def mcp_handler():
     if request.method == "GET":
         return ("Method Not Allowed", 405, {"Allow": "POST"})
 
-    data = request.get_json(silent=True) or {}
+    if os.environ.get("ENABLE_FILE_UPLOADS", "").strip().lower() in {"1", "true", "yes", "on"}:
+        # Opt-in staging also opts into a bounded MCP envelope, BEFORE JSON
+        # allocation. Reading one extra byte handles chunked/unknown lengths.
+        limit = 1024 * 1024
+        if request.content_length is not None and request.content_length > limit:
+            return _json_rpc_error(None, -32600, "MCP request exceeds upload-mode body limit"), 413
+        raw = request.stream.read(limit + 1)
+        if len(raw) > limit:
+            return _json_rpc_error(None, -32600, "MCP request exceeds upload-mode body limit"), 413
+        try:
+            data = json.loads(raw)
+        except (ValueError, UnicodeError, RecursionError):
+            return _json_rpc_error(None, -32700, "Invalid JSON"), 400
+        if not isinstance(data, dict):
+            return _json_rpc_error(None, -32600, "Expected a JSON-RPC object"), 400
+    else:
+        data = request.get_json(silent=True) or {}
     method = data.get("method")
     req_id = data.get("id")
     params = data.get("params", {}) or {}
+    if not isinstance(params, dict):
+        return _json_rpc_error(req_id, -32602, "Expected params object")
 
     auth_header = request.headers.get("Authorization", "")
     token, note = _extract_token(auth_header)
@@ -195,7 +217,7 @@ def mcp_handler():
     logger.info(
         "Request: method=%s, id=%s, token=%s%s",
         method,
-        req_id,
+        "[redacted]" if method == "tools/call" and isinstance(params.get("name"), str) and params.get("name") in UPLOAD_TOOL_NAMES else req_id,
         "present" if token else "missing",
         f" ({note})" if note else "",
     )
@@ -243,6 +265,8 @@ def mcp_handler():
     if method == "tools/call":
         tool_name = params.get("name")
         args = params.get("arguments", {}) or {}
+        if not isinstance(tool_name, str) or not isinstance(args, dict):
+            return _json_rpc_error(req_id, -32602, "Expected tool name and arguments object")
 
         tool = registry.get(tool_name)
         if not tool or not tool.handler:
@@ -259,14 +283,26 @@ def mcp_handler():
             logger.warning("tools/call '%s' without token: %s", tool_name, hint)
             return _json_rpc_error(req_id, -32001, f"Missing GitHub token. {hint}")
 
+        client = None
         try:
             client = GitHubClient(token) if token else None
             output = tool.handler(client=client, **args)
             result = _normalize_content(output)
             return _json_rpc_result(req_id, result)
         except Exception as e:  # noqa: BLE001
+            # Upload args may contain binary payload/capabilities. Never reflect
+            # unexpected exceptions or tracebacks across this sensitive boundary.
+            if tool_name in UPLOAD_TOOL_NAMES:
+                logger.warning("Upload tool failed (details redacted)")
+                return _json_rpc_error(req_id, -32000, "Upload request failed")
             logger.exception("Tool %s error", tool_name)
             return _json_rpc_error(req_id, -32000, str(e))
+        finally:
+            if tool_name in UPLOAD_TOOL_NAMES and client is not None:
+                try:
+                    client._client.close()
+                except Exception:
+                    pass  # Never expose transport teardown details.
 
     if isinstance(method, str) and method.startswith("notifications/"):
         return ("", 202)

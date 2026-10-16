@@ -1,8 +1,8 @@
 # HTTP transport: реализованный контракт и ограничения
 
-Ревизия документации 8 · 2026-10-15. Источник — `mcp_server/server.py`, не общее описание MCP или возможностей конкретного клиента. Здесь описана текущая реализация; это не сертификат полного соответствия всем версиям MCP. [README](../README.md) · [Validation](validation.md).
+Ревизия документации 9 · 2026-10-15. Источник — `mcp_server/server.py`, не общее описание MCP или возможностей конкретного клиента. Здесь описана текущая реализация; это не сертификат полного соответствия всем версиям MCP. [README](../README.md) · [Validation](validation.md).
 
-[Датированный deployment snapshot](deployment-status.md) отделяет фактический production от TEST-кандидата. Малый feasibility probe #88 не добавляет upload endpoint и не меняет описанный HTTP-контракт.
+[Датированный deployment snapshot](deployment-status.md) отделяет фактический production от TEST-кандидата. Малый feasibility probe #88 не добавляет upload endpoint. Новый [opt-in chunk API](file-uploads.md) использует тот же tools/call endpoint: fresh `/user` auth плюс explicit allowlist, отдельная redaction ошибок и request ID; default OFF. При включении uploads все POST /mcp ограничены body 1 MiB до JSON parsing (HTTP 413), в том числе существующие tools; выключенный flag сохраняет прежнее поведение.
 
 ## Адреса и lifecycle
 

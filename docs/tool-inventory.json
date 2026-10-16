@@ -572,7 +572,7 @@
       ]
     },
     "all_enabled": {
-      "count": 143,
+      "count": 149,
       "tools": [
         {
           "category": "github",
@@ -587,6 +587,11 @@
         {
           "category": "github",
           "name": "add_pr_comment",
+          "token_required": true
+        },
+        {
+          "category": "uploads",
+          "name": "append_file_chunk",
           "token_required": true
         },
         {
@@ -605,8 +610,23 @@
           "token_required": false
         },
         {
+          "category": "uploads",
+          "name": "begin_file_upload",
+          "token_required": true
+        },
+        {
+          "category": "uploads",
+          "name": "cancel_file_upload",
+          "token_required": true
+        },
+        {
           "category": "github",
           "name": "cancel_workflow",
+          "token_required": true
+        },
+        {
+          "category": "uploads",
+          "name": "cleanup_file_uploads",
           "token_required": true
         },
         {
@@ -735,6 +755,11 @@
           "token_required": true
         },
         {
+          "category": "uploads",
+          "name": "finish_file_upload",
+          "token_required": true
+        },
+        {
           "category": "github",
           "name": "get_android_build_error",
           "token_required": true
@@ -767,6 +792,11 @@
         {
           "category": "github",
           "name": "get_file_sha",
+          "token_required": true
+        },
+        {
+          "category": "uploads",
+          "name": "get_file_upload_status",
           "token_required": true
         },
         {

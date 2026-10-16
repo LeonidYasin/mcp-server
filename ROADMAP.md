@@ -1,9 +1,11 @@
 # ROADMAP — расширение MCP-сервера
 
+> **Обновление приёмки #88:** file-backed ZIP и XLSX, live count quota 8/9 и освобождение ёмкости после cancel — PASS. Полная приёмка ещё открыта. [Матрица доказательств и оставшиеся gates](docs/upload-acceptance.md) · [XLSX/quota evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204702804).
+
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 8 · 2026-10-15** (см. README → Source of truth).
+> **Ревизия документации: 9 · 2026-10-15** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
@@ -24,16 +26,16 @@
 | #58 / #86 | Android/Kotlin диагностика и безопасный repo-specific auto-fix остаются open. Опасный template-to-main autofix отключён в main; замена не реализована. |
 | #53 / #59 | Диагностика доступа и неопределённый post-effect persistence остаются open; не повторять потенциально успешную мутацию вслепую. |
 | #64 | Lifecycle tags/releases остаётся open. Получение release IDs и asset API согласовать с #89, не делать два конкурирующих контракта. |
-| **#88 → #89 — открыты** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Малый synthetic client→TEST probe прошёл; staging/upload API и E2E ещё отсутствуют. #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
+| **#88 → #89 — открыты** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Малый synthetic client→TEST probe прошёл; Добавлен opt-in кандидат chunk/staging API с verified owner/allowlist, quotas/TTL и integrity; малый authenticated deployed smoke upload API прошёл (50 bytes / два чанка, size/hash, exact retry, incomplete refusal, stable file_id, cancel). Полная приёмка #88 и #89 E2E ещё pending: file-backed ZIP client→staging gate уже прошёл (110 124 bytes / 3 чанка, size/hash и cancel; [evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)); XLSX file-backed gate и live count quota 8/9 также прошли; live owner isolation, byte/global quotas/expiry, retention и отдельно разрешённый большой прогон не доказаны. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526). [Контракт](docs/file-uploads.md). #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
 | #66 / #68 | Actions secrets и verified repo/Pages configuration остаются open. Никаких настоящих secrets или изменения Pages в этом docs PR. |
 | #77 | Сквозной аудит всех методов: schemas + args + results + turns; отдельно измерить большой бинарный маршрут без base64 в контексте модели. |
 | Production / TEST | Production `b78b209…`, 113 tools; TEST отдельно `ef7993b…`, 119 tools (shell/process только TEST). Зависимости, TEST и Caddy при rollout не менялись. [Подробности](docs/deployment-status.md). |
-| Документация / сайт | PR #70 merged; Pages deployment success и HTTP 200 подтверждены. Mermaid в опубликованной странице визуально не принят. Ревизия 8 фиксирует rollout и feasibility, а не реализацию #88/#89. |
+| Документация / сайт | PR #70 merged; Pages deployment success и HTTP 200 подтверждены. Mermaid в опубликованной странице визуально не принят. Ревизия 8 зафиксировала rollout/feasibility и опубликована после #90; ревизия 9 добавляет кандидат #88, не его live acceptance. #89 не реализован. |
 
 ### Ближайшие зависимости
 
 1. Завершить отдельный live gate PR #87; merge только после review и явного согласования. #69/#83 закрываются только по полным критериям.
-2. Для нового файлового сценария малый feasibility probe выполнен; далее выбрать и документировать основной клиентский transport #88 и реализовать staging; только после этого #89. Объекты для mutating smoke tests и прогон ~41 МБ требуют отдельного разрешения.
+2. Для нового файлового сценария малый feasibility probe выполнен; выбран bounded MCP chunk transport и добавлен opt-in staging-кандидат; далее regression/native TEST и реальный клиентский acceptance нового API; только после этого #89. Объекты для mutating smoke tests и прогон ~41 МБ требуют отдельного разрешения.
 3. #89 согласовать с #64 (release lookup/IDs/assets), #59 (неопределённый POST), #53 (доступ), #77 (token/memory budgets). Actions artifact, Release asset и staging `file_id` — разные сущности.
 4. #58/#86, доступ, lifecycle, secrets и Pages сохраняются отдельными PR; будущие docs/site gates и deployments требуют отдельной проверки и разрешения. Уже выполненный rollout не означает принятия #87/#88/#89.
 
@@ -138,13 +140,19 @@ PR #70 слит: добавлены карта проекта и файловы�
 
 Дополнительный запрос пользователя: [#77](https://github.com/LeonidYasin/mcp-server/issues/77) — аудит всех методов на экономию токенов. Аудит можно вести параллельно reliability fixes; экономию внедрять по измерениям, учитывать в финальных schemas/TOOLS/README/экономичных recipes/mindmap/Pages, не ценой защит и фактов.
 
+### Кандидат #88 — реализация отдельно от rollout
+
+- Выбран bounded MCP chunk transport; шесть opt-in tools, default OFF, отдельный private root и explicit GitHub-user allowlist. Никакого shell, произвольного server path или URL-fetch.
+- Auth на каждом вызове через `/user`, SQLite transactional chunks/progress, idempotent begin/chunk/finish, verified opaque file_id, quotas/TTL/cleanup; [полный контракт](docs/file-uploads.md).
+- Unit/in-process Flask tests включают synthetic ZIP/XLSX/non-UTF-8; это не live deployed acceptance. #88 остаётся open: file-backed ZIP TEST/client gate пройден, но полная приёмка и отдельно разрешённый ~41 МБ прогон pending. #89 implementation/E2E отдельно.
+
 ### Завершено после документационного аудита — 2026-10-15
 
 - [x] PR #70: reviewed HEAD `602b6e9ffa8eb1f31d54db5610c56f9cc436e2ad`; VPS под `mcp-test`: 640 pytest, smoke import, wheel/sdist. Squash merge в `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6`; CI success.
 - [x] Production rollout этого SHA с guarded preflight и механизмом rollback (откат не потребовался); localhost и внешний MCP smoke passed. TEST, Caddy, зависимости и reboot не затронуты. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6202583914).
 - [x] Существующий Pages workflow автоматически отработал после merge #70; root/roadmap/map/plan/HTTP/validation HTTP 200. [Evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6200111705).
 - [x] #88: малый synthetic non-UTF-8/ZIP client→TEST probe, size/SHA-256 совпали. [Evidence и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
-- [ ] #88 upload/staging API, XLSX и отдельно разрешённый ~41 МБ gate; затем #89 private-release/Actions E2E.
+- [ ] #88: принять opt-in chunk/staging кандидат (synthetic XLSX теперь покрыт unit/HTTP tests), file-backed ZIP deployed client gate пройден; завершить live owner/byte-global-limits/expiry/retention и отдельно разрешённый ~41 МБ gate; затем #89 private-release/Actions E2E.
 - [ ] PR #87 authenticated deployed artifact gate; визуальная проверка Mermaid на опубликованном Pages.
 
 ### Статус выполнения — исторический журнал
