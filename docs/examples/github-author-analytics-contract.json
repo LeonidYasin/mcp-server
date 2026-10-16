@@ -1,0 +1,151 @@
+{
+  "design_status": "proposal_not_implemented",
+  "candidate_name": "analyze_github_author",
+  "registration_change": false,
+  "purpose": "one bounded public-author observation; not four registered wrappers",
+  "input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "username"
+    ],
+    "properties": {
+      "username": {
+        "type": "string",
+        "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+        "maxLength": 39
+      },
+      "per_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20,
+        "default": 20
+      },
+      "repo_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 1
+      },
+      "include_text": {
+        "type": "boolean",
+        "default": false
+      },
+      "include_activity": {
+        "type": "boolean",
+        "default": false
+      },
+      "activity_days": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 30,
+        "default": 30
+      },
+      "event_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3,
+        "default": 1
+      }
+    }
+  },
+  "transport": {
+    "method": "GET",
+    "origin": "https://api.github.com",
+    "outbound_auth": "none",
+    "redirects": false,
+    "retries": 0,
+    "cache": false,
+    "routes": [
+      {
+        "path": "/users/{username}",
+        "required": true
+      },
+      {
+        "path": "/users/{username}/repos",
+        "required": true,
+        "query": {
+          "type": "owner",
+          "sort": "full_name",
+          "direction": "asc",
+          "per_page": "input.per_page",
+          "page": "input.repo_page"
+        }
+      },
+      {
+        "path": "/users/{username}/events/public",
+        "required": false,
+        "only_if": "include_activity",
+        "query": {
+          "per_page": 100,
+          "page": "input.event_page"
+        }
+      }
+    ],
+    "requests_max": 3,
+    "response_bytes_max": 262144,
+    "total_response_bytes_max": 786432,
+    "result_bytes_max": 65536,
+    "socket_timeout_seconds_max": 5,
+    "checked_deadline_seconds": 15,
+    "hard_realtime_cancellation": false,
+    "stop_future_requests_on": [
+      401,
+      403,
+      429
+    ]
+  },
+  "scope": {
+    "repositories": "owned public repositories only, no Search and no global scan",
+    "private_supported": false,
+    "zero_stars_included": true,
+    "forks_included": true,
+    "archived_included": true,
+    "automatic_pagination": false,
+    "language_mode": "primary_language_by_returned_repository_count",
+    "byte_weighted_languages": false,
+    "events_complete_window_claim": false,
+    "events_are_commit_count": false
+  },
+  "provider_documentation_observation": {
+    "reviewed_on": "2026-10-16",
+    "rendered_api_version": "2026-03-10",
+    "runtime_api_version_to_reconfirm": "2022-11-28",
+    "version_upgrade_authorized": false,
+    "events_timeline_cap": 300,
+    "events_retention_days": 30,
+    "event_latency_seconds_min": 30,
+    "event_latency_seconds_max": 21600,
+    "sources": [
+      {
+        "url": "https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-a-user",
+        "sha256": "eb222efb9e5e5ab414d51d0e8065ea4c5f144ac61ad2e5a3d234ba82a79f9dcf",
+        "bytes": 1409410
+      },
+      {
+        "url": "https://docs.github.com/en/rest/activity/events?apiVersion=2022-11-28#list-public-events-for-a-user",
+        "sha256": "bc84d4a2d5db3abcda7258dfae623713635285735c21a8d9365c44c335b19513",
+        "bytes": 1577468
+      },
+      {
+        "url": "https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-a-user",
+        "sha256": "26301931ac968e89b7edadfb47a260e105162ba2f4e3561c6be079ba0611a4b5",
+        "bytes": 397437
+      }
+    ],
+    "query_apiVersion_did_not_freeze_rendered_version": true
+  },
+  "implementation_gates": [
+    "identity_validation_before_network",
+    "anonymous_outbound_even_with_dispatcher_token",
+    "no_link_or_profile_url_following",
+    "bounded_streaming_and_output",
+    "version_pinned_contract_revalidation",
+    "single_page_coverage_and_safe_continuation",
+    "no_private_rows_or_raw_event_payloads",
+    "mocked_handler_and_http_tests",
+    "cost_baseline_and_actual_host_measurement_separate",
+    "permitted_public_live_smoke",
+    "maintainer_review"
+  ]
+}
