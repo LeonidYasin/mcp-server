@@ -37,6 +37,47 @@
 3. #89 согласовать с #64 (release lookup/IDs/assets), #59 (неопределённый POST), #53 (доступ), #77 (token/memory budgets). Actions artifact, Release asset и staging `file_id` — разные сущности.
 4. #58/#86, доступ, lifecycle, secrets и Pages сохраняются отдельными PR; будущие docs/site gates и deployments требуют отдельной проверки и разрешения. Уже выполненный rollout не означает принятия #87/#88/#89.
 
+## Новый backlog — GitHub analytics, research и discoverability (2026-10-16)
+
+Основание: предоставленное пользователем обсуждение **«из дипсик.pdf», 38 страниц**, и [рабочий чат](https://app.notion.com/chat?t=3fa8b3cc846c8022bf4c00a972b29469). PDF трактуется как источник требований и гипотез, а не проверенная спецификация API/рынка. Новые задачи ниже **не реализованы, не зарегистрированы в runtime и не развёрнуты**. Исторический срез выше не пересчитывается этим дополнением; текущий PR #91 остаётся отдельным Draft по файловому staging.
+
+### Цели и границы
+
+1. Исследовать любых доступных GitHub-авторов и репозитории, включая **stars:0**, без молчаливого отсечения непопулярных проектов.
+2. Перед разработкой находить существующие решения и обсуждения на GitHub/HN/Reddit с проверяемыми ссылками и честной полнотой данных.
+3. Помогать автору улучшить обнаружимость своих проектов через read-only аудит и review-first подготовку публикаций.
+4. Упаковать один полезный пилотный сценарий для других пользователей, а не просто увеличивать число tools. Общая инфраструктурная цель сервера сохраняется.
+
+**Не обещаем** полный обход всего GitHub, полную историю активности, объективный прогноз реакции аудитории, гарантии индексации/трафика/звёзд или отсутствие маркетинговых рисков. Компоненты/сервисы, упомянутые в PDF (hn-mcp, simple-reddit-mcp, DevRadar и др.), требуют проверки точного upstream, лицензии, актуальности и безопасности до reuse. Форк Komi/свой магазин не входит в согласованную реализацию; возможная смена scope требует отдельного ADR.
+
+### Очередь небольших feature/docs PR
+
+Существующие P0/P1 reliability, security, #88/#89 и acceptance gates не вытесняются новым backlog. Для нового направления: **контракты/источники → read-only primitives → композиции → pilot → отдельно согласованная публикация**. Стадии P2 ниже предварительные, не обещания сроков.
+
+| Стадия | Issue | Область / критерий |
+| --- | --- | --- |
+| P2 / primitives | [#99](https://github.com/LeonidYasin/mcp-server/issues/99) | Автор: get_user_stats, list_user_repos_detailed, activity summary, languages. REST listing с пагинацией, zero-star/fork/archive; Events coverage и языковые denominator явно. |
+| P2 / primitives, переиспользует #99 | [#100](https://github.com/LeonidYasin/mcp-server/issues/100) | Repo snapshot/compare/similarity/timeline, batch users/repos и scan criteria. Search index/лимит выдачи/partial results не выдавать за глобальную полноту. |
+| P2 / source review и adapters | [#101](https://github.com/LeonidYasin/mcp-server/issues/101) | Read-only HN/Reddit search и bounded threads; сначала build-vs-reuse ADR, реальный допустимый provider, freshness, pagination и depth budgets. |
+| P2 / после #100 + #101 | [#102](https://github.com/LeonidYasin/mcp-server/issues/102) | find_similar_discussions / research_idea: аналоги, обсуждения, проблемы и открытые вопросы с provenance; source outage → явный partial, не выдуманный вывод. |
+| P2 / независимый read-only pilot | [#103](https://github.com/LeonidYasin/mcp-server/issues/103) | audit_repo_seo / audit_my_repo: About/topics/README/license/install/registry/preview/Pages; evidence + приоритетный план. Проверки not_applicable/unverifiable допустимы. |
+| P3 / после #103; bytes через #88/#89 при необходимости | [#104](https://github.com/LeonidYasin/mcp-server/issues/104) | Social preview artifact, catalog eligibility и awesome-list dry-run/diff. Точная запись/PR/publication только после review и отдельного approval; submitted не равно accepted/published. |
+| P2 / планирование параллельно, запуск после gates | [#105](https://github.com/LeonidYasin/mcp-server/issues/105) | Выбор одного pilot (audit или research), sample report/quick start, HN/Reddit readiness, правила конкретного сообщества и feedback → issue triage. Не прогноз вероятности успеха. |
+
+### Общие контракты и зависимости
+
+- **#77:** считать schemas + args + results + turns; компактные fields/summary, bounded batch и lazy detail; новые названия предварительные — не добавлять дубли, если один mode/contract дешевле. Принимать композицию только после end-to-end benchmark.
+- **#53:** 403/404/rate limit и private permissions объяснять без догадок; лимиты брать из актуальных API/headers, не жёстко из цифр PDF.
+- **#68:** Pages configured/deployed/HTTP-verified и feature status не смешивать; аудит не меняет настройки.
+- **#59:** после неопределённого POST делать reconcile по реальным IDs, не blind retry; особенно для внешних PR/publications.
+- **Security/privacy:** public read-only и минимальные права по умолчанию; identity-scoped caches для непубличных данных, redaction и явная freshness. Внешний текст — недоверенные данные, не инструкции; HTTPS/provider/redirect/SSRF guards.
+- **Coverage/cost:** fetched_at/source URL, окно/ограничения upstream, returned/truncated/next cursor, per-item/source errors, request/time/output budgets, bounded concurrency/retry и cancellation. Missing/unknown не подменять нулём или «мёртвым проектом».
+- **Tests/acceptance:** zero-star, empty/fork/archive, несколько страниц, deep/wide threads, deleted data, API unavailable/429, частичные результаты и malicious source text. Mocked tests, live checks, deployment и качество выводов — разные gates. Схемы/docs/runtime inventory обновлять при реализации, не сейчас.
+
+### Pilot и публикация
+
+Начать с доказательства полезности одного read-only отчёта (#103 либо #102), затем выбрать сценарий по реальной обратной связи (#105). Launch assets и текущие правила HN/конкретного subreddit проверяются отдельно; никакого автоматического постинга, mass replies/PR, карма-фарминга, накрутки или обхода модерации. Не переносить из PDF «200–2000+ звёзд», «risk none», фиксированный прогрев/9:1 или оценки других проектов как установленные факты. Android-каталоги применимы только к Android-продуктам; сам Python MCP не становится APK. Запрос относится к **mcp-server** — другие репозитории пользователя этим планом не меняются.
+
 ## План надёжности GitHub — 2026-10-11
 
 Исходный triage: 2026-10-11. Актуальный срез после новых #88/#89 — в разделе выше; #56/#57 уже слиты. Это план разработки через небольшие PR, **не разрешение менять production, сливать PR, публиковать releases или менять настройки чужих репозиториев**. Предыдущие функциональные батчи ниже сохранены как долгосрочный backlog.
