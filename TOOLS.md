@@ -168,3 +168,7 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 ---
 
 _Ревизия 8 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+
+## Candidate public repository Search mode
+
+[Public repository Search observations](docs/repository-search-observations.md) documents an opt-in JSON mode of existing search_repositories: one anonymous page, explicit forks/query, nullable metadata, coverage and safe continuation. Legacy default stays text; this candidate is not deployed and is not a global index/trend report.
