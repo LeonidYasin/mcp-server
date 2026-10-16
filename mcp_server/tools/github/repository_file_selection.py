@@ -86,7 +86,7 @@ def select_files(blobs, comparison=None):
                        "changed_source_path_in_observed_comparison"
                        if role == "implementation" and is_changed else "conventional_" + role + "_path"),
             "changed_in_observed_comparison": is_changed,
-            "start_line": None, "max_lines": 80, "range_strategy": "auto_callable_v1",
+            "start_line": None, "max_lines": 80, "range_strategy": "auto_callable_v2",
         })
 
     for role in ("overview", "runtime", "architecture", "license", "implementation", "implementation"):

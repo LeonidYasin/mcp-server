@@ -95,7 +95,7 @@ def test_no_callable_scala_query_fragment_is_honest_header_fallback():
 
 
 def test_unsupported_language_is_explicit_not_regex_guess():
-    result = choose(padded("fn execute() {}"), "engine.rs")
+    result = choose(padded("fn execute() {}"), "engine.zig")
     assert result["reason"] == "unsupported_language_header" and result["start_line"] == 1
 
 
@@ -138,3 +138,156 @@ def test_deterministic_and_small_context_before_definition():
     assert choose(source) == choose(source)
     result = choose(source)
     assert result["anchor"]["line"] - result["start_line"] == 2
+
+
+JS_IMPORT = 'import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";\n'
+JS_INSTANCE = 'const server = new McpServer({name:"example",version:"1"});\n'
+
+
+@pytest.mark.parametrize("method", ["tool", "registerTool"])
+def test_sdk_registration_callback_is_a_hint_not_named_function(method):
+    result = choose(JS_IMPORT + JS_INSTANCE + padded(
+        f'server.{method}(\n  "lookup_account",\n  {{}},\n  async () => {{ return data; }}\n);'), "index.ts")
+    anchor = result["anchor"]
+    assert result["strategy"] == "auto_callable_v2"
+    assert result["reason"] == "framework_registration_hint"
+    assert anchor["name"] == anchor["static_tool_name"] == "lookup_account"
+    assert anchor["kind"] == "mcp_registration_hint" and anchor["end_line"] is None
+    assert anchor["binding_scope_verified"] is False
+    assert anchor["line"] == 103
+
+
+def test_js_sdk_alias_and_static_type_annotation():
+    source = ('import { McpServer as Agent } from "@modelcontextprotocol/sdk/server/mcp.js";\n'
+              'const mcp: Agent = new Agent({});\n' + padded('mcp.tool("list", {}, async () => {});'))
+    assert choose(source, "main.ts")["anchor"]["name"] == "list"
+
+
+def test_js_dynamic_name_is_not_evaluated_or_presented_as_literal():
+    result = choose(JS_IMPORT + JS_INSTANCE + padded(
+        'server.registerTool(getNameAndDoSomething(), {}, async () => {});'), "index.ts")
+    assert result["anchor"]["static_tool_name"] is None
+    assert result["anchor"]["name"] == "server.registerTool"
+
+
+def test_js_literal_prefix_of_an_expression_is_not_a_static_tool_name():
+    result = choose(JS_IMPORT + JS_INSTANCE + padded(
+        'server.tool("prefix" + computeSuffix(), {}, async () => {});'), "index.ts")
+    assert result["anchor"]["static_tool_name"] is None
+
+
+@pytest.mark.parametrize("prefix", [
+    'import { McpServer } from "unrelated-package";\n' + JS_INSTANCE,
+    'const text = `\n' + JS_IMPORT + JS_INSTANCE + '`;\n',
+    '/*\n' + JS_IMPORT + JS_INSTANCE + '*/\n',
+    JS_IMPORT + '// ' + JS_INSTANCE,
+    JS_IMPORT + 'const server = notAnSdkConstructor();\n',
+])
+def test_js_registration_without_observed_sdk_constructor_binding_is_not_promoted(prefix):
+    result = choose(prefix + padded('server.tool("fake", {}, async () => {});'), "index.ts")
+    assert result["anchor"] is None
+
+
+def test_js_import_and_constructor_text_in_regex_literals_do_not_establish_context():
+    source = ('const fakeImport = /import {McpServer} from "@modelcontextprotocol/sdk"/;\n'
+              'const fakeConstructor = /const server = new McpServer()/;\n' +
+              padded('server.tool("fake", {}, async () => {});'))
+    assert choose(source, "index.ts")["anchor"] is None
+
+
+@pytest.mark.parametrize("fake", [
+    '// server.tool("fake", {}, async () => {});\n',
+    'const text = `\nserver.tool("fake", {}, async () => {});\n`;\n',
+    '/* server.tool("fake", {}, async () => {}); */\n',
+])
+def test_js_fake_registration_in_comments_and_templates_does_not_win(fake):
+    result = choose(JS_IMPORT + JS_INSTANCE + padded(fake + 'server.tool("real", {}, async () => {});'), "index.ts")
+    assert result["anchor"]["name"] == "real" and result["candidate_count"] == 1
+
+
+@pytest.mark.parametrize("module,constructor", [("mcp.server.fastmcp", "FastMCP"), ("fastmcp", "FastMCP"),
+                                             ("mcp.server.lowlevel", "Server")])
+def test_python_sdk_decorator_registration_precedes_unregistered_execute(module, constructor):
+    source = f"from {module} import {constructor} as Agent\nmcp = Agent('demo')\n"
+    source += padded("def execute(): return 1\n\n@mcp.tool()\ndef list_accounts():\n    return []")
+    result = choose(source)
+    assert result["anchor"]["name"] == "list_accounts"
+    assert result["anchor"]["kind"] == "mcp_decorator_hint"
+    assert result["reason"] == "framework_registration_hint"
+    assert result["start_line"] <= result["anchor"]["registration_line"] < result["anchor"]["line"]
+
+
+def test_unresolved_python_wrapper_is_not_assumed_sdk_binding():
+    source = "from local_wrapper import Server\nserver=Server()\n" + padded(
+        "@server.call_tool()\nasync def handle_call_tool():\n    pass")
+    result = choose(source)
+    assert result["anchor"]["name"] == "handle_call_tool"
+    assert "kind" not in result["anchor"]
+
+
+@pytest.mark.parametrize("declaration", [
+    "async fn execute_query<'a>(&'a self) {}",
+    "pub(crate) async fn execute_query<T>(value: T) {}",
+    "pub unsafe fn execute_query() {}",
+])
+def test_rust_fn_lifetimes_visibility_and_generics(declaration):
+    result = choose(padded(declaration), "src/main.rs")
+    assert result["method"] == "rs_lexical" and result["anchor"]["name"] == "execute_query"
+    assert result["anchor"]["end_line"] is None
+
+
+@pytest.mark.parametrize("attribute", [
+    "#[tool]", "#[rmcp::tool]", '#[tool(\n name = "imap_list",\n description = "not a fn execute()"\n)]',
+])
+def test_rust_tool_attribute_prioritized_and_its_context_is_in_window(attribute):
+    result = choose(padded("fn execute() {}\n\n" + attribute + "\nasync fn list_accounts(&self) {}"), "src/server.rs")
+    assert result["anchor"]["name"] == "list_accounts"
+    assert result["anchor"]["kind"] == "tool_attribute_hint"
+    assert result["start_line"] <= result["anchor"]["registration_line"] < result["anchor"]["line"]
+    assert result["anchor"]["end_line"] is None and not result["full_callable_verified"]
+
+
+def test_rust_same_line_attribute():
+    result = choose(padded("#[tool] async fn list_accounts() {}"), "src/server.rs")
+    assert result["anchor"]["kind"] == "tool_attribute_hint" and result["anchor"]["line"] == 101
+
+
+@pytest.mark.parametrize("fake", [
+    'let text = r#"\n#[tool]\nfn fake() {}\n"#;\n',
+    'let text = br###"\n" still raw "\n#[tool]\nfn fake() {}\n"###;\n',
+    '/* outer /* inner */\n#[tool]\nfn fake() {}\n*/\n',
+    '// #[tool]\n// fn fake() {}\n',
+])
+def test_rust_raw_strings_and_nested_comments_do_not_create_handlers(fake):
+    result = choose(padded(fake + "async fn handle() {}"), "src/server.rs")
+    assert result["anchor"]["name"] == "handle" and result["candidate_count"] == 1
+    assert "kind" not in result["anchor"]
+
+
+def test_rust_tool_router_attribute_is_not_tool_registration():
+    result = choose(padded("#[tool_router]\nfn execute() {}"), "src/server.rs")
+    assert "kind" not in result["anchor"]
+
+
+def test_rust_unrelated_statement_breaks_pending_attribute():
+    result = choose(padded("#[tool]\nconst X: u8 = 1;\nfn execute() {}"), "src/server.rs")
+    assert "kind" not in result["anchor"]
+
+
+def test_rust_distant_attribute_is_not_carried_into_later_function():
+    result = choose(padded("#[tool]\n" + "\n" * 30 + "fn execute() {}"), "src/server.rs")
+    assert "kind" not in result["anchor"]
+
+
+def test_framework_candidate_cap_still_limits_registration_scan():
+    source = JS_IMPORT + JS_INSTANCE + "\n".join(f'server.tool("t{i}", {{}}, async () => {{}});'
+                                                 for i in range(module.MAX_CANDIDATES + 1))
+    result = choose(source, "index.ts")
+    assert result["reason"] == "candidate_cap" and result["anchor"] is None
+
+
+def test_sdk_binding_cap_prevents_unbounded_receiver_matching():
+    source = JS_IMPORT + "\n".join(f'const s{i}=new McpServer({{}});' for i in range(33))
+    result = choose(padded(source), "index.ts")
+    assert result["reason"] == "framework_binding_cap"
+    assert result["anchor"] is None and not result["candidate_scan_complete"]

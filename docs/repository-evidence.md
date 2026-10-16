@@ -82,15 +82,17 @@ select a source window **locally from the already downloaded file**. No addition
 reads, code installation/import/execution, model calls or shell commands are introduced.
 The existing per-file128KiB cap remains. Explicit caller ranges are never moved.
 
-`auto_callable_v1` applies only to auto-selected implementation files longer than80lines.
+Current `auto_callable_v2` applies only to auto-selected implementation files longer than80lines.
 Short files and documents/manifests/licenses retain their beginning. Python uses standard
 library `ast.parse`, never import/exec/eval; Go/Scala/JS/TS use basic declaration patterns
-after conservative comment/string masking. Lexical recognizers are not full language parsers:
+and Rust uses basic `fn`/attribute patterns after conservative comment/string masking.
+Lexical recognizers are not full language parsers:
 exotic/generic/multiline syntax, Scala symbols and JS regexp/interpolation may be missed or
 misidentified. Other languages, syntax failures, absent declarations and analysis caps fall
 back to the header with a fixed explicit reason, not a fabricated function match.
 
-Eligible declaration names are ranked by a fixed heuristic: execute, call, processing
+Framework registration hints take priority, then eligible declaration names use a fixed
+heuristic: execute, call, processing
 (handle/dispatch/audit/validate/etc.), entrypoints (run/serve/main/etc.), then other callables;
 specific query/tool-call names also have execution priority. Common constructor/formatting
 helpers are skipped. Equal priorities choose the earliest eligible declaration.
@@ -120,6 +122,47 @@ range was delivered, not the file, function or behavior was completely studied.
 Use `get_repo_info` explicit ranges / existing `read_file_chunk` for further context.
 
 See [the measured callable-window scenario](scenarios/repository-evidence-window-sample.md).
+That historical v1 scenario keeps its original runtime hashes; later v2 changes are measured
+separately in [the registration/Rust regression scenario](scenarios/repository-evidence-framework-sample.md).
+
+### Registration and Rust hints (v2)
+
+For JS/TS, recognize statement-shaped `receiver.tool(...)` / `receiver.registerTool(...)`
+only after observing a named `McpServer`/`Server` SDK import (including a simple alias) and
+`const`/`let`/`var receiver = new ImportedConstructor(...)` syntax. SDK imports and bindings
+inside comments/strings are masked out; statement-start matching excludes ordinary regexp
+literal contents. This is not a JS parser, symbol resolver, module loader or scope analysis.
+Namespace/default/CommonJS imports, factories, reassignment, dynamic property access and
+split receiver/method syntax can be missed. A receiver shadowed in a different scope can
+still be misidentified: `binding_scope_verified=false` is deliberate.
+
+Only a simple quoted first-argument name followed by comma/closing parenthesis is exposed
+as `static_tool_name`. Dynamic expressions, escaped/template names and literal prefixes of
+concatenations stay unknown; no expression is evaluated. At most32constructor aliases or
+receiver bindings; exceeding that limit returns a header `framework_binding_cap`, avoiding
+unbounded receiver-by-line matching. This uses the already downloaded text, no SDK execution.
+
+For Python, AST-shaped `.tool` / `.call_tool` decorators are promoted only with observed
+named SDK constructors (`FastMCP` or low-level `Server`) and a simple assigned receiver.
+Local compatibility wrappers/factories are unresolved and remain ordinary callable hints.
+AST scopes are not resolved; alias shadowing remains uncertain. A registration can be a hint
+even if the function name resembles a constructor normally excluded by generic-name rules.
+
+For Rust, recognize basic visibility/async/unsafe/generic `fn` declarations and adjacent
+`#[tool(...)]` / qualified `#[...::tool]` attributes, including multiline attributes.
+`tool_router` is not treated as a tool declaration. Attribute carry-over is limited to24lines
+and interrupted by unrelated code; exotic same-line closing-attribute/code forms may be missed.
+ASCII lifetimes/labels are not mistaken for quoted strings; raw/hash strings and nested block
+comments are conservatively masked. This is **not** Rust parsing, macro expansion, cfg
+evaluation, reachability or proof that a `tool` macro belongs to MCP.
+
+Registration-shaped syntax has `kind`, `registration_line`, fixed reason
+`framework_registration_hint` and unverified binding/scope. Prefer including its preceding
+attribute/decorator when within20lines of the declaration, otherwise center on the callable
+and explicitly expose whether the registration line was retained. The80line/6000character
+caps still apply. Rust/JS body endpoints remain null; Python body-end retention does not
+establish correctness. Current `auto_paths_v1` file ranking is unchanged: monorepo role
+diversity and direct-dependency input formats remain open work.
 
 ## Evidence contract
 
@@ -206,6 +249,9 @@ fallback, oversized files/symlinks, incomplete trees, input conflicts and Unicod
 Window tests cover Python AST/async and nested declarations, Go/Scala/JS/TS lexical matches,
 fake declarations in comments/strings, explicit-range preservation, parser/candidate/node/line
 caps, exact pinned deep-function anchors, incomplete long bodies and failed-read plans.
+V2 tests additionally cover SDK constructor aliases, registrations and unresolved/dynamic names,
+Python decorators, Rust tool attributes/raw strings/lifetimes, fake comment/template/regexp
+matches, bounded bindings/candidates, registration retention and unknown lexical body endpoints.
 Initial tests exposed two fixture issues (a non-existent dispatcher module and a body threshold
 that was larger than the fixture); these were corrected, not counted as runtime fixes.
 Review also identified a real safety gap before publication: Contents may dereference symlinks.

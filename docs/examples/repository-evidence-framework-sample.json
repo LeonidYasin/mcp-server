@@ -1,0 +1,1324 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-16T22:51:43.670209+00:00",
+  "scope": "Former held-out repos now used as regression cases; framework and Rust source-window hints, candidate-local Flask MCP dispatcher, anonymous upstream. Not deployed-host validation.",
+  "runtime_files_sha256": {
+    "mcp_server/tools/github/repository_evidence.py": "140dba5225d180cca79bf7bf03174d9838a72cbbd7264cb4ab9be85c6fb7d5e9",
+    "mcp_server/tools/github/repo.py": "2dacba16d05d61361af51db26e7d6f2ab27d0cf252fe1b0c75685f9620c369e2",
+    "mcp_server/tools/github/repository_file_selection.py": "7002b598d6f2ff3b51eb8656182b0acf15ff8c4cda257ec8390e5001d844b300",
+    "mcp_server/tools/github/repository_excerpt_selection.py": "1b8244f8817a1cd3f7a823e4158df03dee73f3fd7bf94a111c512944ffe1d914",
+    "mcp_server/tools/github/repository_framework_hints.py": "163bd36dac2ba9b713b5b0e09e535ad4bda94536f1be2699f2ea5995243bcb7c"
+  },
+  "verbatim_source_excerpts_committed": false,
+  "cases": [
+    {
+      "arguments": {
+        "owner": "Aristide021",
+        "repo": "solana-dev-mcp",
+        "ref": "edcab432766f377d1506d163cd2f5bbbd48db759",
+        "mode": "public_evidence",
+        "compare_parent": false,
+        "file_selection": "auto"
+      },
+      "elapsed_seconds": 0.895158,
+      "tool_text_utf8_bytes": 16578,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 946293885,
+          "full_name": "Aristide021/solana-dev-mcp",
+          "fork": false,
+          "stars": 0,
+          "default_branch": "master",
+          "license_spdx": "MIT",
+          "parent": null,
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "edcab432766f377d1506d163cd2f5bbbd48db759",
+          "sha": "edcab432766f377d1506d163cd2f5bbbd48db759",
+          "tree_sha": "b04b7a6419ed87fc0b2af3df815aeeeb8ff5db23",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 7,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "README.md",
+            "package.json",
+            "LICENSE",
+            "index.ts"
+          ]
+        },
+        "file_selection": {
+          "strategy": "auto_paths_v1",
+          "selected": [
+            {
+              "path": "README.md",
+              "role_hint": "overview",
+              "reason": "conventional_overview_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "package.json",
+              "role_hint": "runtime",
+              "reason": "conventional_runtime_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "LICENSE",
+              "role_hint": "license",
+              "reason": "conventional_license_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "index.ts",
+              "role_hint": "implementation",
+              "reason": "conventional_implementation_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 16,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "framework_registration_hint"
+            }
+          ],
+          "max_files": 6,
+          "regular_paths_considered": 7,
+          "recognized_candidates": 4,
+          "semantic_relevance_verified": false,
+          "selection_exhaustive": false,
+          "comparison_paths_used": null,
+          "limitations": [
+            "Names/paths are hints, not proof of file contents or implementation quality.",
+            "At most80 LF-delimited lines per file; callable-name hints may miss relevant logic. Explicit ranges remain available.",
+            "Vendored/generated/test/example path conventions are excluded heuristically, not perfectly.",
+            "Monorepos, unconventional names and incomplete trees/comparisons can hide relevant files.",
+            "Changed means observed three-dot path changes, not novelty, importance or correctness."
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp",
+            "params": {},
+            "attempted_at": "2026-10-16T22:51:40.277590+00:00",
+            "fetched_at": "2026-10-16T22:51:40.418166+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 58,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp/commits/edcab432766f377d1506d163cd2f5bbbd48db759",
+            "params": {},
+            "attempted_at": "2026-10-16T22:51:40.418531+00:00",
+            "fetched_at": "2026-10-16T22:51:40.600986+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 57,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp/git/trees/b04b7a6419ed87fc0b2af3df815aeeeb8ff5db23",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T22:51:40.601170+00:00",
+            "fetched_at": "2026-10-16T22:51:40.735249+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 56,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp/contents/README.md",
+            "params": {
+              "ref": "edcab432766f377d1506d163cd2f5bbbd48db759"
+            },
+            "attempted_at": "2026-10-16T22:51:40.737080+00:00",
+            "fetched_at": "2026-10-16T22:51:40.833369+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 55,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp/contents/package.json",
+            "params": {
+              "ref": "edcab432766f377d1506d163cd2f5bbbd48db759"
+            },
+            "attempted_at": "2026-10-16T22:51:40.839060+00:00",
+            "fetched_at": "2026-10-16T22:51:40.930050+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 54,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp/contents/LICENSE",
+            "params": {
+              "ref": "edcab432766f377d1506d163cd2f5bbbd48db759"
+            },
+            "attempted_at": "2026-10-16T22:51:40.930938+00:00",
+            "fetched_at": "2026-10-16T22:51:41.026418+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 53,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Aristide021/solana-dev-mcp/contents/index.ts",
+            "params": {
+              "ref": "edcab432766f377d1506d163cd2f5bbbd48db759"
+            },
+            "attempted_at": "2026-10-16T22:51:41.026726+00:00",
+            "fetched_at": "2026-10-16T22:51:41.122660+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 52,
+              "x-ratelimit-reset": 1792194667
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 7,
+          "max_requests": 12,
+          "response_bytes": 38644,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "README.md",
+            "blob_sha": "5cc86296130e93672303d2765c006457e4ae6089",
+            "content_sha256": "1fcdf3a0420f2fda9b0c033effcc68ab24aec17364116cc3e259d1ca814d547c",
+            "source": 3,
+            "total_lines": 132,
+            "start_line": 1,
+            "end_line": 80,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/Aristide021/solana-dev-mcp/blob/edcab432766f377d1506d163cd2f5bbbd48db759/README.md#L1-L80",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "package.json",
+            "blob_sha": "1e984c6bb2f5368303f9caab862a6ae4d3441215",
+            "content_sha256": "b101888b4c5b3c48c290a42f3fc0dfbfb9f249757c77ab74f82419425c4167b2",
+            "source": 4,
+            "total_lines": 24,
+            "start_line": 1,
+            "end_line": 24,
+            "returned_lines": 24,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/Aristide021/solana-dev-mcp/blob/edcab432766f377d1506d163cd2f5bbbd48db759/package.json#L1-L24",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "LICENSE",
+            "blob_sha": "7ce50c23996d4a63d1c05da1d0d38809a50930a8",
+            "content_sha256": "c1ab4eaf7c2c19fe6257dc105fd9d06277f4a9dc2a2de8cfd9e5dbf64c17e6a8",
+            "source": 5,
+            "total_lines": 21,
+            "start_line": 1,
+            "end_line": 21,
+            "returned_lines": 21,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/Aristide021/solana-dev-mcp/blob/edcab432766f377d1506d163cd2f5bbbd48db759/LICENSE#L1-L21",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "index.ts",
+            "blob_sha": "e0cbb776f4cff5108f7cf5a6af4a2a8f93ebe816",
+            "content_sha256": "ac701807479e03b4b257b172cd01c7f681fe77edfcf61968619c6225fe04f955",
+            "source": 6,
+            "total_lines": 220,
+            "start_line": 16,
+            "end_line": 95,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "ts_lexical",
+              "reason": "framework_registration_hint",
+              "start_line": 16,
+              "max_lines": 80,
+              "anchor": {
+                "name": "getAccountInfo",
+                "line": 18,
+                "end_line": null,
+                "priority": -1,
+                "kind": "mcp_registration_hint",
+                "registration_line": 18,
+                "registration_method": "tool",
+                "receiver": "server",
+                "static_tool_name": "getAccountInfo",
+                "binding_hint": "sdk_named_import_and_constructor",
+                "binding_scope_verified": false
+              },
+              "candidate_count": 4,
+              "candidate_scan_complete": true,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false,
+              "anchor_line_retained": true,
+              "registration_line_retained": true,
+              "python_body_end_retained": null
+            },
+            "url": "https://github.com/Aristide021/solana-dev-mcp/blob/edcab432766f377d1506d163cd2f5bbbd48db759/index.ts#L16-L95",
+            "untrusted_source_text": true
+          }
+        ]
+      }
+    },
+    {
+      "arguments": {
+        "owner": "peakflo",
+        "repo": "pfMCP",
+        "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+        "mode": "public_evidence",
+        "compare_parent": false,
+        "file_selection": "auto"
+      },
+      "elapsed_seconds": 1.366326,
+      "tool_text_utf8_bytes": 25282,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 971774821,
+          "full_name": "peakflo/pfMCP",
+          "fork": true,
+          "stars": 21,
+          "default_branch": "main",
+          "license_spdx": "GPL-3.0",
+          "parent": "andrewtdiz/guMCP",
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+          "sha": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+          "tree_sha": "060ec432370b3f41345b8f59f1416549b4b02cfd",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 782,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "README.MD",
+            "requirements.txt",
+            "LICENSE",
+            "src/servers/main.py",
+            "src/servers/ahrefs/main.py",
+            "Dockerfile"
+          ]
+        },
+        "file_selection": {
+          "strategy": "auto_paths_v1",
+          "selected": [
+            {
+              "path": "README.MD",
+              "role_hint": "overview",
+              "reason": "conventional_overview_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "requirements.txt",
+              "role_hint": "runtime",
+              "reason": "conventional_runtime_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "LICENSE",
+              "role_hint": "license",
+              "reason": "conventional_license_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "src/servers/main.py",
+              "role_hint": "implementation",
+              "reason": "conventional_implementation_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "short_file_included_from_start"
+            },
+            {
+              "path": "src/servers/ahrefs/main.py",
+              "role_hint": "implementation",
+              "reason": "conventional_implementation_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1846,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "priority_callable_name"
+            },
+            {
+              "path": "Dockerfile",
+              "role_hint": "deployment",
+              "reason": "conventional_deployment_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            }
+          ],
+          "max_files": 6,
+          "regular_paths_considered": 496,
+          "recognized_candidates": 232,
+          "semantic_relevance_verified": false,
+          "selection_exhaustive": false,
+          "comparison_paths_used": null,
+          "limitations": [
+            "Names/paths are hints, not proof of file contents or implementation quality.",
+            "At most80 LF-delimited lines per file; callable-name hints may miss relevant logic. Explicit ranges remain available.",
+            "Vendored/generated/test/example path conventions are excluded heuristically, not perfectly.",
+            "Monorepos, unconventional names and incomplete trees/comparisons can hide relevant files.",
+            "Changed means observed three-dot path changes, not novelty, importance or correctness."
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP",
+            "params": {},
+            "attempted_at": "2026-10-16T22:51:41.141081+00:00",
+            "fetched_at": "2026-10-16T22:51:41.355025+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 51,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/commits/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+            "params": {},
+            "attempted_at": "2026-10-16T22:51:41.355231+00:00",
+            "fetched_at": "2026-10-16T22:51:41.558179+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 50,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/git/trees/060ec432370b3f41345b8f59f1416549b4b02cfd",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T22:51:41.558528+00:00",
+            "fetched_at": "2026-10-16T22:51:41.750418+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 49,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/README.MD",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T22:51:41.765663+00:00",
+            "fetched_at": "2026-10-16T22:51:41.905705+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 48,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/requirements.txt",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T22:51:41.906893+00:00",
+            "fetched_at": "2026-10-16T22:51:42.018774+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 47,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/LICENSE",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T22:51:42.020606+00:00",
+            "fetched_at": "2026-10-16T22:51:42.127440+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 46,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/servers/main.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T22:51:42.130567+00:00",
+            "fetched_at": "2026-10-16T22:51:42.216617+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 45,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/servers/ahrefs/main.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T22:51:42.216920+00:00",
+            "fetched_at": "2026-10-16T22:51:42.356858+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 44,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/Dockerfile",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T22:51:42.396314+00:00",
+            "fetched_at": "2026-10-16T22:51:42.494681+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 43,
+              "x-ratelimit-reset": 1792194667
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 9,
+          "max_requests": 12,
+          "response_bytes": 436108,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "README.MD",
+            "blob_sha": "c7adafc6f15a655653afdef92b3d26eb98d558f1",
+            "content_sha256": "fc7f6774b53bbeceaa31a1bbbc9b498c8872d961bdd0e82e46c9c395033a44c7",
+            "source": 3,
+            "total_lines": 234,
+            "start_line": 1,
+            "end_line": 80,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/README.MD#L1-L80",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "requirements.txt",
+            "blob_sha": "a29b292def6b32028c7f4c5cd53264ef06e80f46",
+            "content_sha256": "423568b4956077e84adb314585126b6b8cd1d2709aeaccaf0c20558e88d9425d",
+            "source": 4,
+            "total_lines": 430,
+            "start_line": 1,
+            "end_line": 80,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/requirements.txt#L1-L80",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "LICENSE",
+            "blob_sha": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+            "content_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+            "source": 5,
+            "total_lines": 674,
+            "start_line": 1,
+            "end_line": 80,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/LICENSE#L1-L80",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/servers/main.py",
+            "blob_sha": "1d0238c7e320592acd373b1163fde1b96ce1d5be",
+            "content_sha256": "5f5dfe5c6eed0d0bccefdd9f93bf01b47b61e5e519b56a75e0a27841c9d452ab",
+            "source": 6,
+            "total_lines": 34,
+            "start_line": 1,
+            "end_line": 34,
+            "returned_lines": 34,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "short_file_included_from_start",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/main.py#L1-L34",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/servers/ahrefs/main.py",
+            "blob_sha": "b1d45c09db8dec63f0288f156da3c11e609c06c7",
+            "content_sha256": "b3a77138a97b58f6d482a990d4f2ab86e674733cd0b6461a3e47cd265495daf2",
+            "source": 7,
+            "total_lines": 1983,
+            "start_line": 1846,
+            "end_line": 1925,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "python_ast",
+              "reason": "priority_callable_name",
+              "start_line": 1846,
+              "max_lines": 80,
+              "anchor": {
+                "name": "handle_call_tool",
+                "line": 1848,
+                "end_line": 1954,
+                "priority": 0
+              },
+              "candidate_count": 9,
+              "candidate_scan_complete": true,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false,
+              "anchor_line_retained": true,
+              "python_body_end_retained": false
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/ahrefs/main.py#L1846-L1925",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "Dockerfile",
+            "blob_sha": "bba634a6878bf1bc2b9ae4aae95da083cc117e13",
+            "content_sha256": "337ad455b39a09b88caf3a1a1d49c1a4f3adf69f6f0679294a75812e9598d36b",
+            "source": 8,
+            "total_lines": 10,
+            "start_line": 1,
+            "end_line": 10,
+            "returned_lines": 10,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/Dockerfile#L1-L10",
+            "untrusted_source_text": true
+          }
+        ]
+      }
+    },
+    {
+      "arguments": {
+        "owner": "bradsjm",
+        "repo": "mail-imap-mcp-rs",
+        "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+        "mode": "public_evidence",
+        "compare_parent": false,
+        "file_selection": "auto"
+      },
+      "elapsed_seconds": 1.17194,
+      "tool_text_utf8_bytes": 23492,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 1168569818,
+          "full_name": "bradsjm/mail-imap-mcp-rs",
+          "fork": false,
+          "stars": 0,
+          "default_branch": "main",
+          "license_spdx": "MIT",
+          "parent": null,
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+          "sha": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+          "tree_sha": "e7d66b2da80572410744bfdea7c9859dae17da13",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 68,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "README.md",
+            "Cargo.toml",
+            "LICENSE",
+            "src/server.rs",
+            "src/main.rs",
+            "Dockerfile"
+          ]
+        },
+        "file_selection": {
+          "strategy": "auto_paths_v1",
+          "selected": [
+            {
+              "path": "README.md",
+              "role_hint": "overview",
+              "reason": "conventional_overview_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "Cargo.toml",
+              "role_hint": "runtime",
+              "reason": "conventional_runtime_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "LICENSE",
+              "role_hint": "license",
+              "reason": "conventional_license_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            },
+            {
+              "path": "src/server.rs",
+              "role_hint": "implementation",
+              "reason": "conventional_implementation_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 78,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "framework_registration_hint"
+            },
+            {
+              "path": "src/main.rs",
+              "role_hint": "implementation",
+              "reason": "conventional_implementation_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 91,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "priority_callable_name"
+            },
+            {
+              "path": "Dockerfile",
+              "role_hint": "deployment",
+              "reason": "conventional_deployment_path",
+              "changed_in_observed_comparison": null,
+              "start_line": 1,
+              "max_lines": 80,
+              "range_strategy": "auto_callable_v2",
+              "range_reason": "non_implementation_header"
+            }
+          ],
+          "max_files": 6,
+          "regular_paths_considered": 51,
+          "recognized_candidates": 22,
+          "semantic_relevance_verified": false,
+          "selection_exhaustive": false,
+          "comparison_paths_used": null,
+          "limitations": [
+            "Names/paths are hints, not proof of file contents or implementation quality.",
+            "At most80 LF-delimited lines per file; callable-name hints may miss relevant logic. Explicit ranges remain available.",
+            "Vendored/generated/test/example path conventions are excluded heuristically, not perfectly.",
+            "Monorepos, unconventional names and incomplete trees/comparisons can hide relevant files.",
+            "Changed means observed three-dot path changes, not novelty, importance or correctness."
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs",
+            "params": {},
+            "attempted_at": "2026-10-16T22:51:42.505182+00:00",
+            "fetched_at": "2026-10-16T22:51:42.629858+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 42,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/commits/10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+            "params": {},
+            "attempted_at": "2026-10-16T22:51:42.630181+00:00",
+            "fetched_at": "2026-10-16T22:51:42.815410+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 41,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/git/trees/e7d66b2da80572410744bfdea7c9859dae17da13",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T22:51:42.815577+00:00",
+            "fetched_at": "2026-10-16T22:51:42.907733+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 40,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/README.md",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T22:51:42.908727+00:00",
+            "fetched_at": "2026-10-16T22:51:43.038396+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 39,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/Cargo.toml",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T22:51:43.039414+00:00",
+            "fetched_at": "2026-10-16T22:51:43.116065+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 38,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/LICENSE",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T22:51:43.116426+00:00",
+            "fetched_at": "2026-10-16T22:51:43.237681+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 37,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/src/server.rs",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T22:51:43.238294+00:00",
+            "fetched_at": "2026-10-16T22:51:43.333726+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 36,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/src/main.rs",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T22:51:43.358494+00:00",
+            "fetched_at": "2026-10-16T22:51:43.470717+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 35,
+              "x-ratelimit-reset": 1792194667
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/Dockerfile",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T22:51:43.499299+00:00",
+            "fetched_at": "2026-10-16T22:51:43.666426+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 34,
+              "x-ratelimit-reset": 1792194667
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 9,
+          "max_requests": 12,
+          "response_bytes": 112331,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "README.md",
+            "blob_sha": "ed5e9c95a85d9bbd63dff9eb1446422148e1571b",
+            "content_sha256": "ffac4d0e385b3a452bff0212cf2a0056e7ac2d57cca4b608ef79a408bc3f1549",
+            "source": 3,
+            "total_lines": 303,
+            "start_line": 1,
+            "end_line": 80,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/README.md#L1-L80",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "Cargo.toml",
+            "blob_sha": "7e90484ed4dd3070f734e5697f9629244af986ba",
+            "content_sha256": "5d99e22ed662f70a9e24ab0a1f257e63905a426091e6d4e4443294207ce618b9",
+            "source": 4,
+            "total_lines": 50,
+            "start_line": 1,
+            "end_line": 50,
+            "returned_lines": 50,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/Cargo.toml#L1-L50",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "LICENSE",
+            "blob_sha": "b77bf2ab726c6e7cb5a81a9d3b7dc38266ebfd3d",
+            "content_sha256": "06dcddbb6908a0c6dd4a9e8ec822eea41d5a460a53089fecccc8a68049e99241",
+            "source": 5,
+            "total_lines": 21,
+            "start_line": 1,
+            "end_line": 21,
+            "returned_lines": 21,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/LICENSE#L1-L21",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/server.rs",
+            "blob_sha": "6470c63e1c03aee3459f2ee73bd48cdce02b6871",
+            "content_sha256": "6df225482fd5d368adf7ceb72ad8f3150750f84f5d4f99c60c30fe96f0d800e6",
+            "source": 6,
+            "total_lines": 667,
+            "start_line": 78,
+            "end_line": 157,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "rs_lexical",
+              "reason": "framework_registration_hint",
+              "start_line": 78,
+              "max_lines": 80,
+              "anchor": {
+                "name": "list_accounts",
+                "line": 84,
+                "end_line": null,
+                "priority": -1,
+                "kind": "tool_attribute_hint",
+                "registration_line": 80,
+                "binding_scope_verified": false
+              },
+              "candidate_count": 24,
+              "candidate_scan_complete": true,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false,
+              "anchor_line_retained": true,
+              "registration_line_retained": true,
+              "python_body_end_retained": null
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server.rs#L78-L157",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/main.rs",
+            "blob_sha": "2fb3c3dd2600b9dde4a1b49b79caf59146ec1453",
+            "content_sha256": "a925244b30b6f3e2ddcb24a0991d6b6b612743d79323ff2d0e62fba4432b11ab",
+            "source": 7,
+            "total_lines": 584,
+            "start_line": 91,
+            "end_line": 170,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "rs_lexical",
+              "reason": "priority_callable_name",
+              "start_line": 91,
+              "max_lines": 80,
+              "anchor": {
+                "name": "main",
+                "line": 93,
+                "end_line": null,
+                "priority": 3
+              },
+              "candidate_count": 25,
+              "candidate_scan_complete": true,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false,
+              "anchor_line_retained": true,
+              "python_body_end_retained": null
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/main.rs#L91-L170",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "Dockerfile",
+            "blob_sha": "33b358e05f51e1e761ac62a5f8ece6ca1c46c73b",
+            "content_sha256": "7fea91681b03c41df37d0793c26a848ddfcbfb16d4bbb4c7f87093668565bb67",
+            "source": 8,
+            "total_lines": 10,
+            "start_line": 1,
+            "end_line": 10,
+            "returned_lines": 10,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "range_selection": {
+              "strategy": "auto_callable_v2",
+              "method": "header",
+              "reason": "non_implementation_header",
+              "start_line": 1,
+              "max_lines": 80,
+              "anchor": null,
+              "candidate_count": null,
+              "candidate_scan_complete": false,
+              "scan_limits": {
+                "lines": 8000,
+                "ast_nodes": 20000,
+                "candidates": 256,
+                "framework_bindings": 32
+              },
+              "semantic_relevance_verified": false,
+              "full_callable_verified": false
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/Dockerfile#L1-L10",
+            "untrusted_source_text": true
+          }
+        ]
+      }
+    }
+  ]
+}

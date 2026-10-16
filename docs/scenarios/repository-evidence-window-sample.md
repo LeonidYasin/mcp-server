@@ -1,6 +1,8 @@
 # Callable-centered repository excerpts: measured sample
 
 **Candidate-local, not deployed; three fixed previously examined repositories.**
+Historical v1 callable-window sample. See [the later v2 registration/Rust regression](repository-evidence-framework-sample.md);
+this file retains the original v1 measurements and hashes.
 Observed 2026-10-16T21:58:52.342133+00:00. Three real Flask MCP `tools/call` requests to
 `get_repo_info(mode=public_evidence, file_selection=auto)` with pinned refs and no caller
 file paths or line ranges. Only the fork used explicit `compare_parent=true`.

@@ -238,6 +238,9 @@ def _file(reader, full, sha, spec, expected_blob, role_hint=None):
     anchor = range_selection.get("anchor")
     if anchor is not None:
         range_selection["anchor_line_retained"] = end is not None and start <= anchor["line"] <= end
+        if anchor.get("registration_line") is not None:
+            range_selection["registration_line_retained"] = (
+                end is not None and start <= anchor["registration_line"] <= end)
         range_selection["python_body_end_retained"] = (
             range_selection["anchor_line_retained"] and end >= anchor["end_line"]
             if anchor["end_line"] is not None else None)

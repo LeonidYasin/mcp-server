@@ -630,3 +630,29 @@ def test_character_cap_cannot_claim_omitted_anchor_was_read(corpus):
     assert file["range_selection"]["python_body_end_retained"] is False
     assert file["text"] == "" and file["end_line"] is None
     assert "#L" not in file["url"] and file["requested_range_complete"] is False
+
+
+def test_auto_python_registration_and_body_citation_retention(corpus):
+    fake, _, _ = corpus
+    _replace_corpus_file(corpus, "src/server.py",
+                        "from mcp.server.fastmcp import FastMCP\nmcp=FastMCP('demo')\n" +
+                        "\n" * 100 + "@mcp.tool()\ndef list_accounts():\n    return []\n")
+    file = next(f for f in auto(fake)["files"] if f["path"] == "src/server.py")
+    r = file["range_selection"]
+    assert r["strategy"] == "auto_callable_v2" and r["anchor"]["kind"] == "mcp_decorator_hint"
+    assert r["registration_line_retained"] and r["anchor_line_retained"] and r["python_body_end_retained"]
+    assert file["start_line"] > 80 and file["url"].endswith(f"#L{file['start_line']}-L{file['end_line']}")
+
+
+def test_auto_rust_tool_retains_attribute_and_declaration_without_body_boundary_claim(corpus):
+    fake, files, tree = corpus
+    path = "src/server.rs"
+    files.pop("src/server.py")
+    files[path] = file_data(path, "\n" * 120 + '#[tool(name = "mail_list")]\nasync fn list_accounts() {}\n' + "\n" * 100)
+    entry = next(row for row in tree if row["path"] == "src/server.py")
+    entry.update(path=path, sha=files[path]["sha"], size=files[path]["size"])
+    file = next(f for f in auto(fake)["files"] if f["path"] == path)
+    r = file["range_selection"]
+    assert r["anchor"]["name"] == "list_accounts" and r["registration_line_retained"]
+    assert r["anchor_line_retained"] and r["python_body_end_retained"] is None
+    assert r["anchor"]["end_line"] is None and not r["full_callable_verified"]
