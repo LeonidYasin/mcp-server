@@ -82,6 +82,11 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 ### Repo info / admin (6)
 `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors`, `update_repo_info`, `get_repo_tree`
 
+Candidate, not deployed: `get_repo_info` supports explicit `mode=public_evidence` for
+anonymous, commit-pinned selected excerpts and optional bounded fork comparison.
+Default legacy text is unchanged. No runtime/novelty/commercial verdict is inferred.
+See [evidence contract and limits](docs/repository-evidence.md).
+
 ### Repo management (3)
 `create_repo`, `list_my_repos`, `update_repo`
 
