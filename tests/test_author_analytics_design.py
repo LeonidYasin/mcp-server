@@ -94,3 +94,13 @@ def test_examples_include_zero_empty_fork_archive_and_partial_cases():
     assert any(x['archived'] for x in cases['archived_and_forked_retained']['repos'])
     assert cases['second_page']['coverage']['requested_page'] == 2
     assert len(EXAMPLES['pending_handler_test_matrix']) >= 30
+
+
+def test_current_source_timestamp_semantics_are_explicit_not_historical_smoke_claims():
+    timing = CONTRACT['runtime_current']['source_timestamps']
+    assert timing['attempted_at'] == 'local_utc_immediately_before_http_send_or_null'
+    assert timing['fetched_at'] == 'local_utc_after_complete_bounded_http200_json_decode_within_deadline_or_null'
+    assert timing['skipped_reads_have_null_timestamps'] is True
+    assert timing['fetched_at_is_not_provider_updated_at_or_identity_validation'] is True
+    assert timing['wall_clock_is_not_duration_measurement'] is True
+    assert timing['retained_smoke_reports_predate_timestamp_clarification'] is True

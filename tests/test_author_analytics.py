@@ -431,3 +431,68 @@ def test_response_close_failure_is_bounded_and_redacted(fake, case):
     assert r['outcome'] == 'unavailable' and r['repos'] is None
     assert len(fake.calls) == 1
     assert 'TOP_SECRET' not in json.dumps(r)
+
+
+@pytest.mark.parametrize('reason', ['upstream_refused_remaining_reads', 'total_response_budget', 'request_budget', 'time_budget'])
+def test_skipped_source_has_no_attempt_or_fetch_time(fake, monkeypatch, reason):
+    import mcp_server.tools.github.author_analytics as module
+    monkeypatch.setattr(module.time, 'monotonic', lambda: 0.0)
+    reader = module._Reader(fake)
+    if reason == 'upstream_refused_remaining_reads':
+        reader.blocked = True
+    elif reason == 'total_response_budget':
+        reader.bytes = reader.total_cap
+    elif reason == 'request_budget':
+        reader.requests = reader.max_requests
+    else:
+        reader.deadline = 0.0
+    assert reader.get('/users/alice') == (None, None)
+    source = reader.sources[0]
+    assert source['error'] == reason and source['http_status'] is None
+    assert source['fetched_at'] is None and source['attempted_at'] is None
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize('case', ['refused', 'timeout', 'invalid_json', 'oversized'])
+def test_failed_source_has_attempt_time_but_no_completed_fetch_time(fake, monkeypatch, case):
+    import mcp_server.tools.github.author_analytics as module
+    when = '2026-10-16T20:00:00+00:00'
+    monkeypatch.setattr(module, '_now', lambda: when)
+    def handle(request):
+        fake.calls.append(request)
+        if case == 'timeout':
+            raise httpx.ReadTimeout('TOP_SECRET')
+        return httpx.Response(403 if case == 'refused' else 200,
+            content=b'x' * (module.BODY_CAP + 1) if case == 'oversized' else b'not-json')
+    fake._client.close()
+    fake._client = httpx.Client(transport=httpx.MockTransport(handle))
+    reader = module._Reader(fake)
+    assert reader.get('/users/alice') == (None, None)
+    source = reader.sources[0]
+    assert source['fetched_at'] is None and source['attempted_at'] == when
+    assert len(fake.calls) == 1 and 'TOP_SECRET' not in json.dumps(source)
+
+
+def test_fetch_time_marks_completed_json_not_request_start(fake, monkeypatch):
+    import mcp_server.tools.github.author_analytics as module
+    start, end = '2026-10-16T20:00:00+00:00', '2026-10-16T20:00:01+00:00'
+    times = iter([start, end])
+    monkeypatch.setattr(module, '_now', lambda: next(times))
+    reader = module._Reader(fake)
+    data, _ = reader.get('/users/alice')
+    assert data['id'] == 7
+    assert reader.sources[0]['fetched_at'] == end
+    assert reader.sources[0]['attempted_at'] == start
+    assert reader.sources[0]['state'] == 'observed'
+
+
+def test_request_construction_failure_is_not_a_network_attempt(fake, monkeypatch):
+    import mcp_server.tools.github.author_analytics as module
+    def fail(*args, **kwargs):
+        raise ValueError('TOP_SECRET')
+    monkeypatch.setattr(fake._client, 'build_request', fail)
+    reader = module._Reader(fake)
+    assert reader.get('/users/alice') == (None, None)
+    assert reader.sources[0]['fetched_at'] is None
+    assert reader.sources[0]['attempted_at'] is None
+    assert fake.calls == [] and 'TOP_SECRET' not in json.dumps(reader.sources)

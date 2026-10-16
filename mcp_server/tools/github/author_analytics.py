@@ -49,7 +49,7 @@ class _Reader:
         self.blocked = False
 
     def get(self, path, params=None):
-        source = {'url': API + path, 'query': params or {}, 'fetched_at': _now(),
+        source = {'url': API + path, 'query': params or {}, 'attempted_at': None, 'fetched_at': None,
                   'http_status': None, 'state': 'unavailable', 'error': None}
         self.sources.append(source)
         if self.blocked or self.bytes >= self.total_cap or self.requests >= self.max_requests or time.monotonic() >= self.deadline:
@@ -69,6 +69,7 @@ class _Reader:
             request.headers = httpx.Headers({'Host': 'api.github.com',
                 'Accept': 'application/vnd.github+json', 'Accept-Encoding': 'identity',
                 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'mcp-author-observation'})
+            source['attempted_at'] = _now()
             response = self.client._client.send(request, stream=True, follow_redirects=False, auth=None)
             source['http_status'] = response.status_code
             hints = {}
@@ -104,6 +105,7 @@ class _Reader:
             if time.monotonic() >= self.deadline:
                 source['error'] = 'time_budget'
                 return None, None
+            source['fetched_at'] = _now()
             source['state'] = 'observed'
             link = response.headers.get('link', '')
             return data, link if len(link) <= 4096 else 'invalid'

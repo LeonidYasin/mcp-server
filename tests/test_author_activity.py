@@ -153,6 +153,8 @@ def test_repo_refusal_stops_network_before_events(fake):
     assert len(fake.calls) == 2 and r['profile']['id'] == 7
     assert r['activity']['state'] == 'unverifiable'
     assert r['sources'][r['activity']['source']]['error'] == 'upstream_refused_remaining_reads'
+    assert r['sources'][2]['attempted_at'] is None and r['sources'][2]['fetched_at'] is None
+    assert r['sources'][1]['attempted_at'] is not None and r['sources'][1]['fetched_at'] is None
 
 
 def test_independent_events_survive_repo_server_failure(fake):
@@ -278,6 +280,7 @@ def test_exhausted_total_budget_does_not_make_event_request(fake, monkeypatch):
     assert len(fake.calls) == 2
     assert r['activity']['state'] == 'unverifiable'
     assert r['sources'][r['activity']['source']]['error'] == 'total_response_budget'
+    assert r['sources'][2]['attempted_at'] is None and r['sources'][2]['fetched_at'] is None
 
 
 def test_events_deadline_failure_preserves_completed_sections(fake, monkeypatch):
