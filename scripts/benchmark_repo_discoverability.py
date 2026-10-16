@@ -24,7 +24,7 @@ import tiktoken
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-for flag in ('ENABLE_LOCAL_TOOLS', 'ENABLE_LOCAL_SHELL', 'ENABLE_SYNAPSE'):
+for flag in ('ENABLE_LOCAL_TOOLS', 'ENABLE_LOCAL_SHELL', 'ENABLE_SYNAPSE', 'ENABLE_FILE_UPLOADS'):
     os.environ[flag] = '0'
 with contextlib.redirect_stdout(io.StringIO()):
     from mcp_server.server import registry, _normalize_content

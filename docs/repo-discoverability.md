@@ -62,3 +62,7 @@ No private audit, external website request, package install from audited repos o
 Regression review found/fixed whitespace-only metadata, code-fence/comment false signals and further requests after total-byte budget exhaustion. Nested/longer/unclosed fences and HTML comments no longer provide README heading signals. Absence of a heading still does not prove absence of functionality or linked documentation.
 
 [Offline token-accounting experiment](repo-audit-benchmark.md) includes full catalog, args, results, parallel/sequential response-round bounds and a batched legacy alternative. It is not actual host billing or an equal-evidence savings claim; #77 stays open. The formatter does not replace missing or denied evidence with invented drafts.
+
+## Cross-candidate integration check
+
+[Local compatibility review with Draft #91](pr-91-107-compatibility.md) records pinned inputs, six documentation/inventory conflicts, a detached resolved-tree test and registry profiles. This does not import uploads, resolve remote branches, change deployment, or complete either candidate acceptance.
