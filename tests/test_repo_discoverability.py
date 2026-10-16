@@ -457,3 +457,59 @@ def test_dynamic_descriptions_are_never_copied(fake):
     fake.routes['/repos/alice/demo/contents/pyproject.toml'] = blob('[project]\nname="demo"\ndescription="Static looking copy."\nkeywords=["python"]\ndynamic=["description", "keywords"]', 'pyproject.toml')
     r = run(fake)
     assert not any(x['target'] in ['About.description', 'topics'] for x in r['suggestions'])
+
+
+@pytest.mark.parametrize('entries', [
+    [{}], [{'name': '', 'type': 'file'}], [{'name': 'odd', 'type': 'unknown'}],
+    [{'name': 'package.json', 'type': 'file', 'sha': BLOB},
+     {'name': 'package.json', 'type': 'dir'}],
+])
+def test_malformed_or_duplicate_root_cannot_prove_no_packages(fake, entries):
+    fake.routes['/repos/alice/demo/contents'] = entries
+    r = run(fake)
+    assert checks(r)['package_metadata']['status'] == 'unverifiable'
+    assert not any(x['target'] in ('About.description', 'topics') for x in r['suggestions'])
+    assert not any(req.url.path.endswith('/contents/package.json') for req in fake.calls)
+
+
+def test_manifest_response_path_must_match_requested_root_file(fake):
+    manifest(fake, {'name': 'demo', 'description': 'Local utility.', 'keywords': ['python']})
+    fake.routes['/repos/alice/demo/contents/package.json']['path'] = 'nested/package.json'
+    r = run(fake)
+    assert checks(r)['package_metadata']['status'] == 'unverifiable'
+    assert not any(x['target'] in ('About.description', 'topics') for x in r['suggestions'])
+
+
+@pytest.mark.parametrize('change', [
+    {'name': '   '}, {'dynamic': [42]}, {'dynamic': [None]},
+    {'description': 42}, {'keywords': ['python', 42]}, {'keywords': 'python'},
+])
+def test_invalid_manifest_fields_do_not_generate_copy(fake, change):
+    manifest(fake, {'name': 'demo', 'description': 'Local utility.', 'keywords': ['python'], **change})
+    r = run(fake)
+    assert checks(r)['package_metadata']['status'] == 'unverifiable'
+    assert not any(x['target'] in ('About.description', 'topics') for x in r['suggestions'])
+
+
+def test_blank_manifest_keywords_are_missing_not_present(fake):
+    manifest(fake, {'name': 'demo', 'description': 'Local utility.', 'keywords': [' ', '']})
+    assert checks(run(fake))['package_metadata']['status'] == 'missing'
+
+
+def test_manifest_parser_recursion_error_fails_closed(fake, monkeypatch):
+    fake.routes['/repos/alice/demo/contents'] = [{'name': 'package.json', 'type': 'file', 'sha': BLOB}]
+    text = '{"name":"demo","extra":' + '[' * 2000 + '0' + ']' * 2000 + '}'
+    fake.routes['/repos/alice/demo/contents/package.json'] = blob(text, 'package.json')
+    # Exercise the parser failure deterministically: other suite tests or hosts
+    # can change Python's recursion limit, so depth alone is not a stable trigger.
+    original_loads = json.loads
+
+    def fail_on_manifest(value, *args, **kwargs):
+        if value == text:
+            raise RecursionError('simulated parser depth exhaustion')
+        return original_loads(value, *args, **kwargs)
+
+    monkeypatch.setattr(json, 'loads', fail_on_manifest)
+    r = run(fake)
+    assert checks(r)['package_metadata']['status'] == 'unverifiable'
+    assert not any(x['target'] in ('About.description', 'topics') for x in r['suggestions'])

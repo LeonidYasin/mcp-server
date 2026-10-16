@@ -295,7 +295,13 @@ def audit_repo_seo(client, **kwargs):
           'Android project: evaluate catalog eligibility separately; not proof of publication.' if kind == 'android' else
           'Project type not declared.' if kind == 'unknown' else 'Declared non-Android project; APK catalogs not applicable.')
 
-    root_valid = isinstance(root, list) and len(root) < 1000 and all(isinstance(x, dict) for x in root)
+    root_valid = (isinstance(root, list) and len(root) < 1000 and all(
+        isinstance(x, dict) and isinstance(x.get('name'), str) and bool(x['name'].strip())
+        and x['name'] not in ('.', '..') and '/' not in x['name'] and '\\' not in x['name']
+        and x.get('type') in ('file', 'dir', 'symlink', 'submodule')
+        and ('path' not in x or x['path'] == x['name']) for x in root))
+    if root_valid:
+        root_valid = len({x['name'] for x in root}) == len(root)
     manifests = []
     manifest_sources = []
     topic_basis = {}
@@ -312,19 +318,22 @@ def audit_repo_seo(client, **kwargs):
             d, s = reader.get(prefix + '/contents/' + path, ref=commit)
             manifest_sources.append(len(reader.sources) - 1)
             text = _text(d)
-            if text is None or d.get('sha') != entry.get('sha'):
+            if text is None or d.get('sha') != entry.get('sha') or d.get('path') != path:
                 manifests.append('unknown')
                 continue
             s['blob_sha'] = d['sha']
             try:
                 data = json.loads(text) if path.endswith('.json') else tomllib.loads(text).get('project')
-                valid = isinstance(data, dict) and isinstance(data.get('name'), str) and bool(data['name'])
+                valid = isinstance(data, dict) and isinstance(data.get('name'), str) and bool(data['name'].strip())
                 desc = data.get('description') if isinstance(data, dict) else None
                 terms = data.get('keywords') if isinstance(data, dict) else None
                 if valid:
                     dynamic = data.get('dynamic', [])
-                    if not isinstance(dynamic, list):
-                        raise ValueError('invalid dynamic metadata')
+                    if (not isinstance(dynamic, list) or not all(isinstance(x, str) and x.strip() for x in dynamic)
+                            or ('description' in data and not isinstance(desc, str))
+                            or ('keywords' in data and (not isinstance(terms, list)
+                                or not all(isinstance(x, str) for x in terms)))):
+                        raise ValueError('invalid static metadata')
                     draft = _copy_draft(desc, credential) if 'description' not in dynamic else None
                     if draft:
                         result['suggestions'].append({
@@ -341,11 +350,11 @@ def audit_repo_seo(client, **kwargs):
                 # Dynamic descriptions/keywords are not missing: their build is not run.
                 if not valid or any(x in data.get('dynamic', []) for x in ('description', 'keywords')):
                     manifests.append('unknown')
-                elif isinstance(desc, str) and desc.strip() and isinstance(terms, list) and terms and all(isinstance(t, str) for t in terms):
+                elif isinstance(desc, str) and desc.strip() and isinstance(terms, list) and any(t.strip() for t in terms) and all(isinstance(t, str) for t in terms):
                     manifests.append('present')
                 else:
                     manifests.append('missing')
-            except (ValueError, TypeError, AttributeError):
+            except (ValueError, TypeError, AttributeError, RecursionError):
                 manifests.append('unknown')
     if topic_basis:
         result['suggestions'].append({'target': 'topics', 'candidates': list(topic_basis),
