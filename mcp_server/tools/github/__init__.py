@@ -246,5 +246,5 @@ __all__ = [
     "update_repo",
 ]
 
-# Public-author phase1; no Events/private workflow.
+# Public-author observations; public Events opt-in, no private workflow.
 from mcp_server.tools.github.author_analytics import analyze_github_author

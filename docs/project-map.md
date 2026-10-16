@@ -1,6 +1,6 @@
 # Карта проекта mcp-server
 
-Ревизия документации 12 · 2026-10-16. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
+Ревизия документации 13 · 2026-10-16. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
 
@@ -57,7 +57,7 @@ flowchart TD
 
 ## Новый backlog research / discoverability — 2026-10-16
 
-**Отдельный кандидат #99 / Draft #108:** [analyze_github_author phase1](github-author-analytics.md) — public profile, одна owned-repo page с zero-star/fork/archive и primary-language counts; Events/private ещё не реализованы, не deployment. **Остальной план, не runtime этой ветки:** #100 — repo analytics/similarity/batch; #101 — read-only HN/Reddit и проверка reuse/providers; #102 — research_idea; #103 — read-only discoverability audit; #104 — preview/catalog dry-run и отдельно согласованная публикация; #105 — один product pilot, readiness и feedback. Полные контракты, ссылки и порядок зависимостей — в [новом разделе ROADMAP](../ROADMAP.md#новый-backlog--github-analytics-research-и-discoverability-2026-10-16).
+**Отдельный кандидат #99 / Draft #108:** [analyze_github_author + opt-in Events](github-author-analytics.md) — public profile, одна owned-repo page с zero-star/fork/archive и primary-language counts; Events — только opt-in public page20, private не реализован, не deployment. **Остальной план, не runtime этой ветки:** #100 — repo analytics/similarity/batch; #101 — read-only HN/Reddit и проверка reuse/providers; #102 — research_idea; #103 — read-only discoverability audit; #104 — preview/catalog dry-run и отдельно согласованная публикация; #105 — один product pilot, readiness и feedback. Полные контракты, ссылки и порядок зависимостей — в [новом разделе ROADMAP](../ROADMAP.md#новый-backlog--github-analytics-research-и-discoverability-2026-10-16).
 
 GitHub/API primitives и adapters → композиции → проверка полезности → отдельное approval публикаций. Существующие P0/P1, #88/#89 и security gates не вытесняются; #77 задаёт cost budgets, #53 — доступ, #59 — reconciliation, #68 — Pages verification. Нет обещаний глобального охвата GitHub, прогноза реакции аудитории или гарантированного роста; другие проекты/production не меняются.
 

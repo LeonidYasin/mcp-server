@@ -1,7 +1,7 @@
-"""Bounded public-author observations, phase1. No activity or private workflow."""
+"""Bounded public-author observations; Events opt-in, no private workflow."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import re
 import time
@@ -15,8 +15,10 @@ API = 'https://api.github.com'
 USERNAME = re.compile(r'(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?')
 REPO = re.compile(r'[A-Za-z0-9_.-]{1,100}')
 BODY_CAP = 262144
-TOTAL_CAP = 524288
+TOTAL_CAP = 786432
 OUTPUT_CAP = 65536
+EVENT_PAGE_SIZE = 20
+EVENT_PAGE_CAP = 15
 
 
 def _now():
@@ -36,21 +38,24 @@ def _reject_constant(_):
 
 
 class _Reader:
-    def __init__(self, client):
+    def __init__(self, client, include_activity=False):
         self.client = client
         self.sources = []
         self.requests = self.bytes = 0
-        self.deadline = time.monotonic() + 10
+        self.max_requests = 3 if include_activity else 2
+        self.deadline_seconds = 15 if include_activity else 10
+        self.total_cap = min(TOTAL_CAP, BODY_CAP * self.max_requests)
+        self.deadline = time.monotonic() + self.deadline_seconds
         self.blocked = False
 
     def get(self, path, params=None):
         source = {'url': API + path, 'query': params or {}, 'fetched_at': _now(),
                   'http_status': None, 'state': 'unavailable', 'error': None}
         self.sources.append(source)
-        if self.blocked or self.bytes >= TOTAL_CAP or self.requests >= 2 or time.monotonic() >= self.deadline:
+        if self.blocked or self.bytes >= self.total_cap or self.requests >= self.max_requests or time.monotonic() >= self.deadline:
             source['error'] = ('upstream_refused_remaining_reads' if self.blocked else
-                               'total_response_budget' if self.bytes >= TOTAL_CAP else
-                               'request_budget' if self.requests >= 2 else 'time_budget')
+                               'total_response_budget' if self.bytes >= self.total_cap else
+                               'request_budget' if self.requests >= self.max_requests else 'time_budget')
             return None, None
         self.requests += 1
         response = None
@@ -86,7 +91,7 @@ class _Reader:
             for chunk in response.iter_bytes(chunk_size=8192):
                 size += len(chunk)
                 self.bytes += len(chunk)
-                if size > BODY_CAP or self.bytes > TOTAL_CAP:
+                if size > BODY_CAP or self.bytes > self.total_cap:
                     source['error'] = 'response_too_large'
                     return None, None
                 if time.monotonic() >= self.deadline:
@@ -130,10 +135,10 @@ def _date(value):
         return None
 
 
-def _continuation(link, path, query, raw_count, profile_id):
+def _continuation(link, path, query, raw_count, profile_id, *, suffix="repos", max_page=10000):
     """Parse evidence only. Never follow a Link URL, even if it passes validation."""
     page, size = query['page'], query['per_page']
-    allowed_paths = {path.lower(), '/user/' + str(profile_id) + '/repos'}
+    allowed_paths = {path.lower(), '/user/' + str(profile_id) + '/' + suffix}
     if not link:
         return (False, None, 'short_page_observed_exhaustion') if raw_count < size else (None, None, 'pagination_not_proven')
     try:
@@ -160,7 +165,7 @@ def _continuation(link, path, query, raw_count, profile_id):
                 'last' in relations and relations['last'] < page):
             raise ValueError('inconsistent pagination')
         if 'next' in relations:
-            return (True, relations['next'], 'next_page_observed') if relations['next'] <= 10000 else (True, None, 'page_cap')
+            return (True, relations['next'], 'next_page_observed') if relations['next'] <= max_page else (True, None, 'page_cap')
         if relations.get('last', page) > page:
             raise ValueError('missing next')
         return False, None, 'link_observed_exhaustion'
@@ -168,23 +173,124 @@ def _continuation(link, path, query, raw_count, profile_id):
         return None, None, 'pagination_unverifiable'
 
 
+# Raw event types/payload are not prose for a downstream agent to interpret.
+EVENT_TYPES = frozenset({
+    'CommitCommentEvent', 'CreateEvent', 'DeleteEvent', 'ForkEvent', 'GollumEvent',
+    'IssueCommentEvent', 'IssuesEvent', 'MemberEvent', 'PublicEvent', 'PullRequestEvent',
+    'PullRequestReviewEvent', 'PullRequestReviewCommentEvent', 'PullRequestReviewThreadEvent',
+    'PushEvent', 'ReleaseEvent', 'SponsorshipEvent', 'WatchEvent',
+})
+
+
+def _activity(reader, username, profile_id, days, page, repo_page, per_page, include_text, credential):
+    reference = datetime.fromisoformat(_now()).astimezone(timezone.utc)
+    start = reference - timedelta(days=days)
+    source = len(reader.sources)
+    path = '/users/' + quote(username, safe='') + '/events/public'
+    query = {'per_page': EVENT_PAGE_SIZE, 'page': page}
+    data, link = reader.get(path, query)
+    a = {'state': 'unverifiable', 'source': source, 'requested_days': days,
+         'requested_page': page, 'per_page': EVENT_PAGE_SIZE, 'reference_time': reference.isoformat(),
+         'window_start': start.isoformat(), 'matched_window_events': None, 'counts_by_type': None,
+         'repo_breakdown': None, 'has_more': None, 'next_request': None,
+         'complete_window': False, 'private_activity_known': False, 'commit_count': None,
+         'contribution_graph_known': False,
+         'provider_documentation': {'timeline_cap': 300, 'retention_days': 30,
+              'event_latency_seconds': [30, 21600], 'scope': 'dated_documentation_not_a_history_guarantee'}}
+    if not isinstance(data, list) or len(data) > EVENT_PAGE_SIZE:
+        a['error'] = reader.sources[source]['error'] or 'event_page_shape_unverifiable'
+        return a
+    seen, times, types, repos = set(), [], {}, {}
+    invalid = other_actor = future = duplicates = outside = matched = unknown = 0
+    for item in data:
+        if not isinstance(item, dict) or not isinstance(item.get('id'), str) or not re.fullmatch(r'[1-9][0-9]{0,31}', item['id']):
+            invalid += 1
+            continue
+        if item.get('public') is not True:
+            invalid += 1
+            continue
+        actor, repo, kind = item.get('actor'), item.get('repo'), item.get('type')
+        if not isinstance(actor, dict) or not _integer(actor.get('id'), 1):
+            invalid += 1
+            continue
+        if actor['id'] != profile_id:
+            other_actor += 1
+            continue
+        if (not isinstance(repo, dict) or not _integer(repo.get('id'), 1) or
+                not isinstance(repo.get('name'), str) or repo['name'].count('/') != 1):
+            invalid += 1
+            continue
+        owner, name = repo['name'].split('/')
+        if (not USERNAME.fullmatch(owner) or not REPO.fullmatch(name) or name in ('.', '..') or
+                credential and len(credential) >= 8 and credential in repo['name'] or
+                kind is not None and (not isinstance(kind, str) or not re.fullmatch(r'[A-Za-z][A-Za-z0-9]{0,63}', kind))):
+            invalid += 1
+            continue
+        created = _date(item.get('created_at'))
+        if created is None:
+            invalid += 1
+            continue
+        timestamp = datetime.fromisoformat(created)
+        if timestamp > reference:
+            future += 1
+            continue
+        if item['id'] in seen:
+            duplicates += 1
+            continue
+        seen.add(item['id'])
+        times.append(timestamp)
+        if timestamp < start:
+            outside += 1
+            continue
+        matched += 1
+        if kind not in EVENT_TYPES:
+            kind = 'OtherEvent'
+            unknown += 1
+        types[kind] = types.get(kind, 0) + 1
+        bucket = repos.setdefault(repo['id'], {'name': repo['name'], 'events': 0})
+        bucket['events'] += 1
+    ranked = sorted(repos.items(), key=lambda row: (-row[1]['events'], row[1]['name'].casefold(), row[1]['name'], row[0]))
+    more, next_page, reason = _continuation(link, path, query, len(data), profile_id, suffix='events/public', max_page=EVENT_PAGE_CAP)
+    a.update(state='observed', raw_received=len(data), valid_unique_events=len(seen),
+             matched_window_events=matched, invalid=invalid,
+             other_actor_excluded=other_actor, future_timestamps=future, duplicates=duplicates,
+             outside_window=outside, unknown_type_events=unknown,
+             counts_by_type=dict(sorted(types.items())),
+             repo_breakdown=[{'repo_id': rid, 'repo': bucket['name'], 'events': bucket['events']} for rid, bucket in ranked[:10]],
+             repo_label_scope='first_name_observed_on_page_not_current_name_verification',
+             repo_remainder_events=sum(bucket['events'] for _, bucket in ranked[10:]),
+             oldest_observed_time=min(times).isoformat() if times else None,
+             newest_observed_time=max(times).isoformat() if times else None,
+             has_more=more, stop_reason=reason,
+             partial=bool(invalid or other_actor or future or duplicates or unknown or more is None))
+    if next_page is not None:
+        a['next_request'] = {'username': username, 'per_page': per_page, 'repo_page': repo_page,
+            'include_text': include_text, 'include_activity': True, 'activity_days': days, 'event_page': next_page}
+    return a
+
+
 @mcp_tool(
     name='analyze_github_author',
-    description='Bounded public-author profile and ONE owned-repo page, including zero stars/forks/archives; primary-language counts, explicit coverage. Anonymous outbound. No events/private data or global scan.',
+    description='Bounded public profile + ONE owned-repo page, zero-star/fork/archive retained. Optional ONE public Events page, never full history or commit count. Anonymous outbound, no private data/global scan.',
     parameters={
         'username': {'type': 'string', 'maxLength': 39, 'pattern': '^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$'},
         'per_page': {'type': 'integer', 'minimum': 1, 'maximum': 20, 'description': 'Rows on one page, default20; no auto-pagination.'},
         'repo_page': {'type': 'integer', 'minimum': 1, 'maximum': 10000, 'description': 'Page, default1; next request explicit, not an atomic inventory.'},
         'include_text': {'type': 'boolean', 'description': 'Defaultfalse; bounded untrusted bio/company/location/name/description only. No email or external fetch.'},
+        'include_activity': {'type': 'boolean', 'description': 'Defaultfalse: no Events GET. True adds one public Events page only.'},
+        'activity_days': {'type': 'integer', 'minimum': 1, 'maximum': 30, 'description': 'Default30; local UTC filter, not a history guarantee.'},
+        'event_page': {'type': 'integer', 'minimum': 1, 'maximum': EVENT_PAGE_CAP, 'description': 'Default1; fixed20 events/page, at most15 explicitly requested pages; never a complete-history guarantee.'},
     }, required=['username'],
 )
 def analyze_github_author(client, **kwargs):
     username = kwargs.get('username')
     per_page, page, include_text = kwargs.get('per_page', 20), kwargs.get('repo_page', 1), kwargs.get('include_text', False)
-    result = {'schema_version': 1, 'runtime_phase': 'profile_repos_only', 'outcome': 'invalid_input',
+    include_activity = kwargs.get('include_activity', False)
+    days, event_page = kwargs.get('activity_days', 30), kwargs.get('event_page', 1)
+    result = {'schema_version': 1, 'runtime_phase': 'profile_repos_optional_public_events', 'outcome': 'invalid_input',
               'requested_username': None, 'profile': None, 'repos': None, 'languages': None,
-              'coverage': None, 'sources': [], 'limitations': [
-                  'Public observations only; no private, bot-alias/org workflow or Events implementation.',
+              'coverage': None, 'activity': None, 'sources': [], 'limitations': [
+                  'Public observations only; no private/bot-alias/org workflow. Events opt-in, not a full history or commit count.',
                   'Profile and repository pages are separate observations, not an atomic account inventory.',
                   'Zero-star/fork/archive rows retained; unknown data is not zero or an author-quality score.',
                   'Primary-language counts describe returned rows only, not code bytes or proficiency.',
@@ -194,28 +300,34 @@ def analyze_github_author(client, **kwargs):
     reader = None
 
     def done():
+        if reader is not None and include_activity is True and result['profile'] is not None:
+            result['activity'] = _activity(reader, username, result['profile']['id'], days, event_page, page, per_page, include_text, credential)
+            if result['activity']['state'] != 'observed' or result['activity']['partial']:
+                result['outcome'] = 'partial'
         if reader is not None:
-            result['budget'] = {'requests': reader.requests, 'max_requests': 2,
-                'response_bytes': reader.bytes, 'response_cap': BODY_CAP, 'total_cap': TOTAL_CAP,
-                'output_cap': OUTPUT_CAP, 'checked_deadline_seconds': 10, 'socket_timeout_seconds_max': 5}
+            result['budget'] = {'requests': reader.requests, 'max_requests': reader.max_requests,
+                'response_bytes': reader.bytes, 'response_cap': BODY_CAP, 'total_cap': reader.total_cap,
+                'output_cap': OUTPUT_CAP, 'checked_deadline_seconds': reader.deadline_seconds, 'socket_timeout_seconds_max': 5}
         text = _json(result)
         if len(text.encode()) <= OUTPUT_CAP:
             return text
-        result.update(outcome='partial', profile=None, repos=None, languages=None,
+        result.update(outcome='partial', profile=None, repos=None, languages=None, activity=None,
                       coverage={'has_more': None, 'next_request': None, 'complete_account_inventory': False},
                       error='output_budget')
         return _json(result)
 
-    if (set(kwargs) - {'username', 'per_page', 'repo_page', 'include_text'} or
+    if (set(kwargs) - {'username', 'per_page', 'repo_page', 'include_text', 'include_activity', 'activity_days', 'event_page'} or
             not isinstance(username, str) or not USERNAME.fullmatch(username) or
             type(per_page) is not int or not 1 <= per_page <= 20 or
-            type(page) is not int or not 1 <= page <= 10000 or type(include_text) is not bool):
+            type(page) is not int or not 1 <= page <= 10000 or type(include_text) is not bool or
+            type(include_activity) is not bool or type(days) is not int or not 1 <= days <= 30 or
+            type(event_page) is not int or not 1 <= event_page <= EVENT_PAGE_CAP):
         return done()
     result['requested_username'] = username
     if client is None or not hasattr(client, '_client'):
         result['outcome'] = 'unavailable'
         return done()
-    reader = _Reader(client)
+    reader = _Reader(client, include_activity)
     result['sources'] = reader.sources
     headers = getattr(client, '_headers', {})
     credential = str(headers.get('Authorization', '')).removeprefix('Bearer ')

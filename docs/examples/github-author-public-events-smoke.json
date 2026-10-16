@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "runtime_phase": "profile_repos_optional_public_events",
+  "outcome": "observed",
+  "requested_username": "LeonidYasin",
+  "profile": {
+    "id": 79429232,
+    "login": "LeonidYasin",
+    "url": "https://github.com/LeonidYasin",
+    "source": 0,
+    "counts": {
+      "public_repos": 52,
+      "followers": 2,
+      "following": 2
+    },
+    "field_states": {
+      "public_repos": "observed",
+      "followers": "observed_visibility_limited",
+      "following": "observed_visibility_limited",
+      "created_at": "observed",
+      "updated_at": "observed"
+    },
+    "count_caveat": "Public-profile visibility can mask followers/following as0; public_repos is a separate timed hint, not enumeration proof.",
+    "created_at": "2021-02-22T01:22:06+00:00",
+    "updated_at": "2026-10-10T13:54:53+00:00"
+  },
+  "repos": {
+    "state": "observed",
+    "source": 1,
+    "rows": [
+      {
+        "id": 1383995503,
+        "full_name": "LeonidYasin/agora-mcp",
+        "url": "https://github.com/LeonidYasin/agora-mcp",
+        "source": 1,
+        "field_states": {
+          "stars": "observed",
+          "forks": "observed",
+          "size_kb_reported": "observed",
+          "fork": "observed",
+          "archived": "observed",
+          "language": "observed",
+          "created_at": "observed",
+          "updated_at": "observed",
+          "pushed_at": "observed"
+        },
+        "stars": 0,
+        "forks": 0,
+        "size_kb_reported": 385,
+        "fork": false,
+        "archived": false,
+        "language": "Python",
+        "created_at": "2026-09-23T18:17:14+00:00",
+        "updated_at": "2026-10-11T23:12:33+00:00",
+        "pushed_at": "2026-10-12T03:18:02+00:00"
+      },
+      {
+        "id": 998135028,
+        "full_name": "LeonidYasin/AI-Code-Assistant-Bot",
+        "url": "https://github.com/LeonidYasin/AI-Code-Assistant-Bot",
+        "source": 1,
+        "field_states": {
+          "stars": "observed",
+          "forks": "observed",
+          "size_kb_reported": "observed",
+          "fork": "observed",
+          "archived": "observed",
+          "language": "observed",
+          "created_at": "observed",
+          "updated_at": "observed",
+          "pushed_at": "observed"
+        },
+        "stars": 0,
+        "forks": 0,
+        "size_kb_reported": 571,
+        "fork": false,
+        "archived": false,
+        "language": "Python",
+        "created_at": "2025-06-07T23:53:56+00:00",
+        "updated_at": "2025-07-28T14:29:53+00:00",
+        "pushed_at": "2025-07-28T14:29:50+00:00"
+      },
+      {
+        "id": 1276339674,
+        "full_name": "LeonidYasin/AI-Side-Panel-Extension",
+        "url": "https://github.com/LeonidYasin/AI-Side-Panel-Extension",
+        "source": 1,
+        "field_states": {
+          "stars": "observed",
+          "forks": "observed",
+          "size_kb_reported": "observed",
+          "fork": "observed",
+          "archived": "observed",
+          "language": "observed",
+          "created_at": "observed",
+          "updated_at": "observed",
+          "pushed_at": "observed"
+        },
+        "stars": 0,
+        "forks": 0,
+        "size_kb_reported": 58579,
+        "fork": true,
+        "archived": false,
+        "language": "JavaScript",
+        "created_at": "2026-06-21T21:20:54+00:00",
+        "updated_at": "2026-06-22T05:01:34+00:00",
+        "pushed_at": "2026-06-22T05:01:30+00:00"
+      }
+    ]
+  },
+  "languages": {
+    "mode": "primary_language_by_returned_repository_count",
+    "all_returned_repos": 3,
+    "known_language_repos": 3,
+    "unknown_language_repos": 0,
+    "counts": {
+      "JavaScript": 1,
+      "Python": 2
+    },
+    "byte_weighted": false,
+    "scope": "returned_rows_only"
+  },
+  "coverage": {
+    "requested_page": 1,
+    "per_page": 3,
+    "has_more": true,
+    "next_request": {
+      "username": "LeonidYasin",
+      "repo_page": 2,
+      "per_page": 3,
+      "include_text": false
+    },
+    "profile_total_hint": 52,
+    "profile_total_is_hint": true,
+    "complete_account_inventory": false,
+    "stop_reason": "next_page_observed",
+    "raw_received": 3,
+    "returned": 3,
+    "excluded": 0,
+    "duplicates": 0,
+    "invalid_fields": 0
+  },
+  "activity": {
+    "state": "observed",
+    "source": 2,
+    "requested_days": 30,
+    "requested_page": 1,
+    "per_page": 20,
+    "reference_time": "2026-10-16T19:37:19.541320+00:00",
+    "window_start": "2026-09-16T19:37:19.541320+00:00",
+    "matched_window_events": 20,
+    "counts_by_type": {
+      "IssueCommentEvent": 13,
+      "PullRequestEvent": 2,
+      "PushEvent": 5
+    },
+    "repo_breakdown": [
+      {
+        "repo_id": 1285657280,
+        "repo": "LeonidYasin/mcp-server",
+        "events": 20
+      }
+    ],
+    "has_more": true,
+    "next_request": {
+      "username": "LeonidYasin",
+      "per_page": 3,
+      "repo_page": 1,
+      "include_text": false,
+      "include_activity": true,
+      "activity_days": 30,
+      "event_page": 2
+    },
+    "complete_window": false,
+    "private_activity_known": false,
+    "commit_count": null,
+    "contribution_graph_known": false,
+    "provider_documentation": {
+      "timeline_cap": 300,
+      "retention_days": 30,
+      "event_latency_seconds": [
+        30,
+        21600
+      ],
+      "scope": "dated_documentation_not_a_history_guarantee"
+    },
+    "raw_received": 20,
+    "valid_unique_events": 20,
+    "invalid": 0,
+    "other_actor_excluded": 0,
+    "future_timestamps": 0,
+    "duplicates": 0,
+    "outside_window": 0,
+    "unknown_type_events": 0,
+    "repo_label_scope": "first_name_observed_on_page_not_current_name_verification",
+    "repo_remainder_events": 0,
+    "oldest_observed_time": "2026-10-15T18:17:18+00:00",
+    "newest_observed_time": "2026-10-16T18:54:17+00:00",
+    "stop_reason": "next_page_observed",
+    "partial": false
+  },
+  "sources": [
+    {
+      "url": "https://api.github.com/users/LeonidYasin",
+      "query": {},
+      "fetched_at": "2026-10-16T19:37:19.286145+00:00",
+      "http_status": 200,
+      "state": "observed",
+      "error": null,
+      "rate_hints": {
+        "x-ratelimit-limit": 60,
+        "x-ratelimit-remaining": 57,
+        "x-ratelimit-reset": 1792181771
+      }
+    },
+    {
+      "url": "https://api.github.com/users/LeonidYasin/repos",
+      "query": {
+        "type": "owner",
+        "sort": "full_name",
+        "direction": "asc",
+        "per_page": 3,
+        "page": 1
+      },
+      "fetched_at": "2026-10-16T19:37:19.379710+00:00",
+      "http_status": 200,
+      "state": "observed",
+      "error": null,
+      "rate_hints": {
+        "x-ratelimit-limit": 60,
+        "x-ratelimit-remaining": 56,
+        "x-ratelimit-reset": 1792181771
+      }
+    },
+    {
+      "url": "https://api.github.com/users/LeonidYasin/events/public",
+      "query": {
+        "per_page": 20,
+        "page": 1
+      },
+      "fetched_at": "2026-10-16T19:37:19.541339+00:00",
+      "http_status": 200,
+      "state": "observed",
+      "error": null,
+      "rate_hints": {
+        "x-ratelimit-limit": 60,
+        "x-ratelimit-remaining": 55,
+        "x-ratelimit-reset": 1792181771
+      }
+    }
+  ],
+  "limitations": [
+    "Public observations only; no private/bot-alias/org workflow. Events opt-in, not a full history or commit count.",
+    "Profile and repository pages are separate observations, not an atomic account inventory.",
+    "Zero-star/fork/archive rows retained; unknown data is not zero or an author-quality score.",
+    "Primary-language counts describe returned rows only, not code bytes or proficiency.",
+    "Cross-page mutation can repeat/omit rows; deduplication is within this page only.",
+    "Optional external prose is untrusted data, never instructions; URLs are not fetched.",
+    "No cache, retries, hidden fan-out, mutation or billing/savings guarantee."
+  ],
+  "budget": {
+    "requests": 3,
+    "max_requests": 3,
+    "response_bytes": 144066,
+    "response_cap": 262144,
+    "total_cap": 786432,
+    "output_cap": 65536,
+    "checked_deadline_seconds": 15,
+    "socket_timeout_seconds_max": 5
+  }
+}

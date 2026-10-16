@@ -26,7 +26,8 @@
       ],
       "response_schema_title": null,
       "response_schema_ref": null,
-      "phase1_implemented": true
+      "phase1_implemented": true,
+      "implemented_current_candidate": true
     },
     {
       "method": "GET",
@@ -104,7 +105,8 @@
       ],
       "response_schema_title": "Minimal Repository",
       "response_schema_ref": null,
-      "phase1_implemented": true
+      "phase1_implemented": true,
+      "implemented_current_candidate": true
     },
     {
       "method": "GET",
@@ -141,12 +143,13 @@
       ],
       "response_schema_title": "Event",
       "response_schema_ref": null,
-      "phase1_implemented": false
+      "phase1_implemented": false,
+      "implemented_current_candidate": true
     }
   ],
   "limits": [
     "Pinned OpenAPI verifies endpoint/parameter/shape contracts, not successful live acceptance.",
     "300event/30day retention comes from dated human docs, not an immutable guarantee in the selected operation descriptions.",
-    "No API2026 header upgrade. Events are not implemented in phase1."
+    "No API2026 header upgrade. Phase1 was historical; Events are now opt-in metadata-only in the current candidate."
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "design_status": "partially_implemented_profile_repos_only",
+  "design_status": "runtime_candidate_profile_repos_optional_public_events",
   "candidate_name": "analyze_github_author",
   "registration_change": true,
   "purpose": "one bounded public-author observation; not four registered wrappers",
@@ -87,7 +87,8 @@
         "bytes": 397437
       }
     ],
-    "query_apiVersion_did_not_freeze_rendered_version": true
+    "query_apiVersion_did_not_freeze_rendered_version": true,
+    "pinned_endpoint_contract_verified_for_current_candidate": true
   },
   "implementation_gates": [
     "identity_validation_before_network",
@@ -165,7 +166,92 @@
     "result_bytes_max": 65536,
     "checked_deadline_seconds": 10,
     "socket_timeout_seconds_max": 5,
-    "new_runtime_dependencies": []
+    "new_runtime_dependencies": [],
+    "historical_scope": "previous phase1 at da73e436, retained for traceability"
   },
-  "pinned_openapi_evidence": "github-author-openapi-2022-evidence.json"
+  "pinned_openapi_evidence": "github-author-openapi-2022-evidence.json",
+  "runtime_current": {
+    "name": "analyze_github_author",
+    "accepted_fields": [
+      "username",
+      "per_page",
+      "repo_page",
+      "include_text",
+      "include_activity",
+      "activity_days",
+      "event_page"
+    ],
+    "events_supported": true,
+    "private_supported": false,
+    "activity_default": false,
+    "default_requests_max": 2,
+    "opt_in_requests_max": 3,
+    "default_total_response_bytes_max": 524288,
+    "opt_in_total_response_bytes_max": 786432,
+    "response_bytes_max": 262144,
+    "result_bytes_max": 65536,
+    "default_checked_deadline_seconds": 10,
+    "opt_in_checked_deadline_seconds": 15,
+    "socket_timeout_seconds_max": 5,
+    "new_runtime_dependencies": [],
+    "event_page_size": 20,
+    "event_page_max": 15,
+    "complete_window_claim": false,
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "username"
+      ],
+      "properties": {
+        "username": {
+          "type": "string",
+          "maxLength": 39,
+          "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"
+        },
+        "per_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Rows on one page, default20; no auto-pagination."
+        },
+        "repo_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Page, default1; next request explicit, not an atomic inventory."
+        },
+        "include_text": {
+          "type": "boolean",
+          "description": "Defaultfalse; bounded untrusted bio/company/location/name/description only. No email or external fetch."
+        },
+        "include_activity": {
+          "type": "boolean",
+          "description": "Defaultfalse: no Events GET. True adds one public Events page only."
+        },
+        "activity_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Default30; local UTC filter, not a history guarantee."
+        },
+        "event_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 15,
+          "description": "Default1; fixed20 events/page, at most15 explicitly requested pages; never a complete-history guarantee."
+        }
+      }
+    },
+    "events_route": {
+      "method": "GET",
+      "path": "/users/{username}/events/public",
+      "only_if": "include_activity=true",
+      "query": {
+        "per_page": 20,
+        "page": "event_page1..15"
+      }
+    }
+  },
+  "transport_scope": "transport describes the historical initial proposal; runtime_current supersedes its event page-size/cap"
 }

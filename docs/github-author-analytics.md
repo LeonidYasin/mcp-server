@@ -1,10 +1,43 @@
-# GitHub author analytics — phase1 candidate (#99)
+# GitHub author analytics — optional public Events candidate (#99)
 
-**Phase1 implemented in Draft #108, not deployed:** `analyze_github_author` now collects a public profile and ONE owned-repository page, including zero-star/fork/archive rows, plus primary-language counts. Events, private workflows and the complete original proposal remain unimplemented. The tool is registered only in this candidate code; it is not available merely because this branch exists. This branch starts from main `0c12a3753efe749c4f16b751da569f4461d83a15`; it does not include Draft #107 or #91 and does not modify either other candidate branch or any deployed service. #99 stays open.
+**Implemented in Draft #108, not deployed:** one `analyze_github_author` collects a public profile and ONE owned-repository page, with optional ONE public Events page. Zero-star/fork/archive rows stay included. Private/org/bot-alias workflows and full #99 acceptance remain open. This branch starts from main0c12a375; #107/#91 code is not imported and their branches/services are unchanged. Default calls still use only2GETs; Events are explicitly opt-in.
 
 [Machine-readable proposal](examples/github-author-analytics-contract.json) · [Synthetic design examples and pending handler test matrix](examples/github-author-analytics-design-fixtures.json).
 
-## Current phase1 runtime contract
+## Current runtime: default profile/repos plus opt-in Events
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"analyze_github_author","arguments":{"username":"alice","per_page":20,"repo_page":1,"include_text":false,"include_activity":true,"activity_days":30,"event_page":1}}}
+```
+
+Accepted fields are username,per_page,repo_page,include_text,include_activity,activity_days,event_page. Wrong/unknown types or keys fail before network, including booleans passed as integers. include_activity=false is default; activity then is null and there is no Events GET. activity_days1–30 is a local inclusive UTC filter; event_page1–15 fetches exactly one page with fixed **20Events/page**. This is intentionally below the provider per-page maximum. No automatic traversal, no private endpoint, no raw payload/commit messages, no hidden per-repo requests.
+
+| Mode | GET max | Retained JSON/response | Total read budget | Checked deadline | Socket max | Result cap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Default | 2 | 256KiB | 512KiB | 10s | 5s | 64KiB |
+| Explicit Events opt-in | 3 | 256KiB | 768KiB | 15s | 5s | 64KiB |
+
+These are checked bounds, **not hard real-time cancellation**. A triggering8KiB chunk can cross a read limit and is rejected. Existing anonymous-outbound/dispatcher-auth separation, default auth/cookie/query exclusion, fixed origin, redirects/compression refusal, numeric rate hints and no retries/cache/writes stay unchanged. 401/403/429 stop future network reads. A repository500 can leave an independently successful activity section; repository403 blocks the planned Events read and records it unavailable without sending it. Identity failure stops before either list. Events failure/oversize/timeout preserves the profile/repos and gives state=unverifiable with null counts, not zero.
+
+### Events summary, never complete history or commit count
+
+Only public=true events for the verified numeric actor ID are eligible. Validate ID/type/repo identity and timezone-aware timestamps; dedup valid IDs within the page. Private/unverified/malformed entries are excluded without identifiers or a private-activity count. Future timestamps excluded; past entries outside the requested UTC window counted separately. Nullable/unknown well-formed event types map to fixed OtherEvent with unknown_type_events; arbitrary type prose is not echoed.
+
+Report raw_received, valid_unique_events, matched_window_events, invalid/other-actor/future/duplicate/outside counts, counts_by_type, oldest/newest valid observed time, reference/window start and source. Sum(type counts)=matched; valid_unique=matched+outside; raw dispositions reconcile. Repo breakdown is top10 by matched-event count with deterministic tie-breaks and a remainder; group by stable repo_id, keep the first observed name as an **untrusted historical label, not current-name verification**. Literal current-credential copies in labels are excluded. Payloads/URLs are never fetched or reflected. PushEvent remains an event count: commit_count=null, contribution_graph_known=false, private_activity_known=false and **complete_window=false always**, even for an empty/exhausted feed.
+
+The provider-documentation300events/30days/30s–6h observations are dated caveats, not a full-history guarantee; the operation/fields are checked in pinned2022-11-28 OpenAPI. Runtime header unchanged. A maximum15×20 explicit page span is a local cap, not proof that all available events or every event in the requested window can be enumerated. No activity/inactivity/quality judgement is inferred from empty or denied data.
+
+Link is evidence only: allow fixed GitHub origin plus the requested path or exact verified numeric-ID alias, matching page size/scope; reconstruct a next_request rather than following the URL. No-next/full-page/invalid Link can leave continuation unknown. At page15, next evidence beyond the local cap is disclosed, not fetched or called complete. Activity continuation explicitly reruns the composition (including profile/repo page); repo continuation omits activity by default. This is bounded, not a claim of the optimal/cheapest host workflow. Output overflow clears both results/continuations rather than silently advancing.
+
+### Events live evidence and the budget-driven page-size correction
+
+- [Initial opt-in partial](examples/github-author-events-initial-partial.json):3anonymous GETs returned200/200/200; the100-event page exceeded the unchanged256KiB response cap. Profile/3repo rows survived; activity was unverifiable/null, not empty. Raw Events payload was not returned or saved in this report.
+- Reduced the fixed Events page to20 instead of increasing byte/time bounds;5regressions failed before that change. [Corrected local smoke](examples/github-author-public-events-smoke.json):3anonymous GETs200/200/200;3repo rows and20matched public events, observed, has_more=true, complete_window=false. No next page was automatically requested. These were2separately labelled bounded invocations,6GETs total, not automatic retries. One dated author/page is not representative live acceptance of every case.
+- Tests for optional Events live in tests/test_author_activity.py; the old phase1 handler tests and18artifact checks remain distinct. Regression review also caught literal-credential reflection in a repo label and unstable grouping across rename; both fixed and tested. Original14synthetic examples remain synthetic.
+
+Current candidate registry114default/144all-enabled, no extra tool name/dependency/version bump; documentation revision13. These counts are not deployed snapshots. #99 and #77 stay open: maintainer review, actual host credits/billing/equal-coverage cost and broader acceptance remain pending. This local smoke is not a deployed MCP/private workflow test. The historical phase1/full-proposal sections below are retained for traceability and must not be read as the current schema.
+
+## Historical phase1 contract — da73e436, not the current full schema
 
 ```json
 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"analyze_github_author","arguments":{"username":"alice","repo_page":1,"per_page":20,"include_text":false}}}
@@ -36,9 +69,9 @@ Handler/HTTP tests now exist separately in tests/test_author_analytics.py. The o
 
 Across the three separately labelled local invocations:6GETs total, no retries within a call. This is one dated author/first-page smoke, not a representative sample or all-account inventory. Zero-star/fork/archive and failures have synthetic regression coverage; do not extrapolate the live3rows to every case. Runtime/HTTP suite and original artifact tests are separate; host credits/billing/equal-coverage cost remain pending #77.
 
-## Original complete proposal — not implemented as a whole
+## Original proposal — historical, not the current exact paging contract
 
-The sections below retain the broader reviewed design. Their3-request/15s budgets and Events parameters describe a **future complete proposal**, not the current2-request/10s phase1 schema above. The machine JSON separates proposed_complete_input_schema from runtime_phase1. Reconfirm any future additions with regression/HTTP/cost/live gates before expanding this contract.
+The sections below retain the initial reviewed design. The fixed100-events/page and event_page1–3 proposal was superseded by the measured20-events/page and event_page1–15 current contract above; default remains2GET/10s and opt-in3GET/15s. The machine JSON separates proposed_complete_input_schema from runtime_phase1. Reconfirm any future additions with regression/HTTP/cost/live gates before expanding this contract.
 
 ## Confirmed provider documentation, and a version caveat
 

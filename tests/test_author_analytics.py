@@ -94,7 +94,7 @@ def test_default_headers_cookies_auth_and_params_are_not_forwarded():
     {'username': ''}, {'username': '../x'}, {'username': 'a/b'}, {'username': 'a%2fb'},
     {'username': 'a--b'}, {'username': 'a' * 40}, {'username': 'bot[bot]'},
     {'per_page': True}, {'per_page': 0}, {'per_page': 21}, {'repo_page': False},
-    {'repo_page': 0}, {'repo_page': 10001}, {'include_text': 'true'}, {'include_activity': True},
+    {'repo_page': 0}, {'repo_page': 10001}, {'include_text': 'true'}, {'include_activity': 'true'},
     {'allow_private': True}, {'unrecognized': 1},
 ])
 def test_invalid_input_before_network(fake, args):

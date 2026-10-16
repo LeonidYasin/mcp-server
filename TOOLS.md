@@ -2,7 +2,7 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 12 · **Дата:** 2026-10-16 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
+> **Ревизия:** 13 · **Дата:** 2026-10-16 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
@@ -167,8 +167,8 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 
 ---
 
-_Ревизия 12 · 2026-10-16. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+_Ревизия 13 · 2026-10-16. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
 
-## Public-author phase1 — кандидат #99
+## Public-author + opt-in Events — кандидат #99
 
-`analyze_github_author` (`username, repo_page=1, per_page=20, include_text=false`) — один публичный профиль и одна owned-repo page, primary-language counts с явными denominator/coverage; 2GETmax, без private/Events/Search/скрытого fan-out. Исходящие запросы анонимные, dispatcher token gate сохранён. Реестр этого кандидата не deployment. [Контракт](docs/github-author-analytics.md).
+`analyze_github_author` (`username, repo_page=1, per_page=20, include_text=false, include_activity=false, activity_days=30, event_page=1`) — один публичный профиль и одна owned-repo page, primary-language counts с явными denominator/coverage; 2GETmax по умолчанию,3GETmax с opt-in public Events (фиксированная page20, event_page1–15); без private/Search/скрытого fan-out. Events ≠ commits/полная история, empty ≠ inactive. Исходящие запросы анонимные, dispatcher token gate сохранён. Реестр этого кандидата не deployment. [Контракт](docs/github-author-analytics.md).
