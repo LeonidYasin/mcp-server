@@ -84,7 +84,8 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 
 Candidate, not deployed: `get_repo_info` supports explicit `mode=public_evidence` for
 anonymous, commit-pinned selected excerpts and optional bounded fork comparison.
-Optional `file_selection=auto` chooses up to six files with explained path heuristics;
+Optional `file_selection=auto` chooses up to six files with explained path heuristics,
+using remaining document slots for diverse implementation-role hints (`auto_paths_v2`);
 default explicit selection remains available. Auto does not verify semantic relevance.
 Auto implementation excerpts may center on a callable-name hint (Python AST or basic
 Go/Scala/JS/TS/Rust lexical declarations and supported SDK-registration syntax hints);

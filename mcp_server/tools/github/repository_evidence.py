@@ -369,7 +369,7 @@ def observe(client, **kwargs):
     if selection == "auto":
         from mcp_server.tools.github.repository_file_selection import select_files
         compare_fork()
-        plan = select_files(blobs, result["fork_comparison"])
+        plan = select_files(blobs, result["fork_comparison"], result["repository"]["full_name"])
         result["file_selection"] = plan
         normalized = [{"path": item["path"], "start_line": 1, "max_lines": item["max_lines"],
                        "role_hint": item["role_hint"]} for item in plan["selected"]]

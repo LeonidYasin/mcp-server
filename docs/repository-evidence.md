@@ -39,15 +39,32 @@ blobs are excluded before planning. A truncated tree produces a partial selectio
 explicit gap, even when all chosen file reads succeed. No recognizable paths is a gap,
 not an empty repository or evidence that relevant implementation does not exist.
 
-`auto_paths_v1` chooses up to six files with fixed diversity slots:
-overview/README, runtime manifest, architecture document, license, two implementation files.
-Unfilled slots can use deployment config, additional manifests, implementation or overview
-documents. Root paths are preferred for documents/manifests; implementation paths prefer
-observed changed source paths (added before modified/renamed), then conventional
-engine/server/main/app/tools names. Added-file priority is an exploration heuristic,
-not a claim of importance, originality or correctness.
-Within equal priorities, depth and lexical order make selection deterministic.
-No minimum stars or popularity signal enters selection.
+`auto_paths_v2` chooses up to six files. It first reserves available overview/README,
+runtime manifest, architecture document and license slots, then fills **all remaining slots**
+with implementation candidates. If source candidates run out, deployment config, additional
+manifests and documents can fill the remaining budget. Root paths are preferred for documents.
+Observed changed source paths retain first priority (added before modified/renamed), even when
+this reduces role diversity. Added-file priority does not establish importance or originality.
+
+For otherwise equal change status, prefer unused recognized implementation role hints:
+dispatch, bootstrap, authorization, domain integration, configuration, then other source.
+An unrecognized role does not displace a repeated recognized role merely for diversity.
+Repeated roles prefer a previously unselected namespace/group. Conventional path/stem words,
+not code semantics, determine roles: e.g. `server`/`engine`, `main`/`index`, auth-related words,
+`servers/<group>/...` or `connectors/<group>/...`, and `config`/`settings`.
+Within a domain role, an exact group match against non-generic owner/repository name tokens
+is a weak preference. It does **not** establish the project's primary integration, authorship,
+originality or business value. No repository-specific exceptions or popularity signals are used.
+Known source roots, conventional stems, depth and lexical order break remaining ties.
+
+The plan reports per-file `implementation_role_hint`, `implementation_group_hint`,
+`identity_domain_match` and fixed reason, plus `identity_tokens_used`,
+`implementation_slots_after_documents` and `implementation_role_coverage_hint`
+(available/selected/not_selected, always `coverage_verified=false`). With four document slots,
+only two implementation files fit; with three, up to three fit. Hints depend on the observed
+eligible tree, not a verified inventory of all architectural roles. This version adds no
+traversal request or larger file budget. See the
+[monorepo regression sample](scenarios/repository-evidence-monorepo-sample.md).
 
 Conventional dependency/vendor/generated/test/example directories, lock files, common test
 names, Python `__init__`/`__main__` wrappers and minified/declaration files are excluded
@@ -161,8 +178,9 @@ Registration-shaped syntax has `kind`, `registration_line`, fixed reason
 attribute/decorator when within20lines of the declaration, otherwise center on the callable
 and explicitly expose whether the registration line was retained. The80line/6000character
 caps still apply. Rust/JS body endpoints remain null; Python body-end retention does not
-establish correctness. Current `auto_paths_v1` file ranking is unchanged: monorepo role
-diversity and direct-dependency input formats remain open work.
+establish correctness. File ranking now uses `auto_paths_v2` as described above.
+Direct-dependency input formats such as `requirements.in` remain open work; a selected
+configuration or authorization filename does not guarantee the relevant control is in its window.
 
 ## Evidence contract
 

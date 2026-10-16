@@ -438,10 +438,12 @@ def test_auto_diverse_roles_and_fixed_request_cap(corpus):
     result = auto(fake)
     assert result["state"] == "observed"
     plan = result["file_selection"]
-    assert plan["strategy"] == "auto_paths_v1" and plan["semantic_relevance_verified"] is False
+    assert plan["strategy"] == "auto_paths_v2" and plan["semantic_relevance_verified"] is False
     assert [f["path"] for f in result["files"]] == [
         "README.md", "pyproject.toml", "docs/architecture.md", "LICENSE",
         "src/engine.py", "src/server.py"]
+    assert plan["identity_tokens_used"] == ["alice", "tiny"]
+    assert plan["implementation_role_coverage_hint"]["coverage_verified"] is False
     assert len(plan["selected"]) == 6 and result["budget"]["requests"] == 9
     assert all(f["untrusted_source_text"] for f in result["files"])
     assert plan["selected"][-1]["changed_in_observed_comparison"] is None
@@ -535,7 +537,7 @@ def test_auto_dispatcher_without_evidence_files(corpus, monkeypatch):
             "name": "get_repo_info", "arguments": {
                 "owner": "alice", "repo": "tiny", "mode": "public_evidence", "file_selection": "auto"}}})
     result = json.loads(response.get_json()["result"]["content"][0]["text"])
-    assert result["file_selection"]["strategy"] == "auto_paths_v1" and len(result["files"]) == 6
+    assert result["file_selection"]["strategy"] == "auto_paths_v2" and len(result["files"]) == 6
 
 
 def test_auto_report_plan_is_not_false_evidence_on_output_overflow(corpus, monkeypatch):
