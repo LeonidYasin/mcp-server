@@ -1,0 +1,630 @@
+{
+  "kind": "design_examples_not_handler_outputs",
+  "reference_time": "2026-10-16T00:00:00+00:00",
+  "cases": [
+    {
+      "id": "zero_star_first_page",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "observed",
+        "profile": {
+          "id": 7,
+          "login": "synthetic-author",
+          "public_repos_reported": 3,
+          "count_scope": "public profile observation, not pagination proof"
+        },
+        "repos": [
+          {
+            "id": 1,
+            "full_name": "synthetic-author/zero",
+            "stars": 0,
+            "language": "Python",
+            "fork": false,
+            "archived": false,
+            "source": 1
+          },
+          {
+            "id": 2,
+            "full_name": "synthetic-author/forked",
+            "stars": 0,
+            "language": null,
+            "fork": true,
+            "archived": true,
+            "source": 1
+          }
+        ],
+        "coverage": {
+          "requested_page": 1,
+          "returned": 2,
+          "has_more": true,
+          "next_page": 2,
+          "listing_page_exhausted": false,
+          "complete_account_inventory": false,
+          "profile_total_is_hint": true
+        },
+        "languages": {
+          "mode": "primary_language_by_returned_repository_count",
+          "all_returned_repos": 2,
+          "known_language_repos": 1,
+          "unknown_language_repos": 1,
+          "counts": {
+            "Python": 1
+          },
+          "byte_weighted": false
+        },
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 200
+          },
+          {
+            "url": "https://api.github.com/users/synthetic-author/repos",
+            "fetched_at": "2026-10-16T00:00:01+00:00",
+            "http_status": 200,
+            "page": 1,
+            "query": {
+              "type": "owner",
+              "sort": "full_name",
+              "direction": "asc",
+              "per_page": 2,
+              "page": 1
+            }
+          }
+        ]
+      },
+      "proposed_request": {
+        "username": "synthetic-author",
+        "per_page": 2,
+        "repo_page": 1,
+        "include_activity": false
+      }
+    },
+    {
+      "id": "second_page",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "observed",
+        "profile": {
+          "id": 7,
+          "login": "synthetic-author",
+          "public_repos_reported": 3,
+          "count_scope": "public profile observation, not pagination proof"
+        },
+        "repos": [
+          {
+            "id": 3,
+            "full_name": "synthetic-author/other",
+            "stars": 4,
+            "language": "Rust",
+            "fork": false,
+            "archived": false,
+            "source": 1
+          }
+        ],
+        "coverage": {
+          "requested_page": 2,
+          "returned": 1,
+          "has_more": false,
+          "next_page": null,
+          "listing_page_exhausted": true,
+          "complete_account_inventory": false,
+          "profile_total_is_hint": true
+        },
+        "languages": {
+          "mode": "primary_language_by_returned_repository_count",
+          "all_returned_repos": 1,
+          "known_language_repos": 1,
+          "unknown_language_repos": 0,
+          "counts": {
+            "Rust": 1
+          },
+          "byte_weighted": false
+        },
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 200
+          },
+          {
+            "url": "https://api.github.com/users/synthetic-author/repos",
+            "fetched_at": "2026-10-16T00:00:01+00:00",
+            "http_status": 200,
+            "page": 2,
+            "query": {
+              "type": "owner",
+              "sort": "full_name",
+              "direction": "asc",
+              "per_page": 2,
+              "page": 2
+            }
+          }
+        ]
+      },
+      "proposed_request": {
+        "username": "synthetic-author",
+        "per_page": 2,
+        "repo_page": 2,
+        "include_activity": false
+      }
+    },
+    {
+      "id": "empty_public_listing",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "observed",
+        "profile": {
+          "id": 7,
+          "login": "synthetic-author",
+          "public_repos_reported": 0,
+          "count_scope": "public profile observation, not pagination proof"
+        },
+        "repos": [],
+        "coverage": {
+          "requested_page": 1,
+          "returned": 0,
+          "has_more": false,
+          "next_page": null,
+          "listing_page_exhausted": true,
+          "complete_account_inventory": false,
+          "profile_total_is_hint": true
+        },
+        "languages": {
+          "mode": "primary_language_by_returned_repository_count",
+          "all_returned_repos": 0,
+          "known_language_repos": 0,
+          "unknown_language_repos": 0,
+          "counts": {},
+          "byte_weighted": false
+        },
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 200
+          },
+          {
+            "url": "https://api.github.com/users/synthetic-author/repos",
+            "fetched_at": "2026-10-16T00:00:01+00:00",
+            "http_status": 200,
+            "page": 1,
+            "query": {
+              "type": "owner",
+              "sort": "full_name",
+              "direction": "asc",
+              "per_page": 2,
+              "page": 1
+            }
+          }
+        ]
+      },
+      "proposed_request": {
+        "username": "synthetic-author",
+        "per_page": 2,
+        "repo_page": 1,
+        "include_activity": false
+      }
+    },
+    {
+      "id": "missing_language_is_not_zero_bytes",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "observed",
+        "profile": {
+          "id": 7,
+          "login": "synthetic-author",
+          "public_repos_reported": 3,
+          "count_scope": "public profile observation, not pagination proof"
+        },
+        "repos": [
+          {
+            "id": 4,
+            "full_name": "synthetic-author/unclassified",
+            "stars": 0,
+            "language": null,
+            "fork": false,
+            "archived": false,
+            "source": 1
+          }
+        ],
+        "coverage": {
+          "requested_page": 1,
+          "returned": 1,
+          "has_more": false,
+          "next_page": null,
+          "listing_page_exhausted": true,
+          "complete_account_inventory": false,
+          "profile_total_is_hint": true
+        },
+        "languages": {
+          "mode": "primary_language_by_returned_repository_count",
+          "all_returned_repos": 1,
+          "known_language_repos": 0,
+          "unknown_language_repos": 1,
+          "counts": {},
+          "byte_weighted": false
+        },
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 200
+          },
+          {
+            "url": "https://api.github.com/users/synthetic-author/repos",
+            "fetched_at": "2026-10-16T00:00:01+00:00",
+            "http_status": 200,
+            "page": 1,
+            "query": {
+              "type": "owner",
+              "sort": "full_name",
+              "direction": "asc",
+              "per_page": 2,
+              "page": 1
+            }
+          }
+        ]
+      },
+      "proposed_request": {
+        "username": "synthetic-author",
+        "per_page": 2,
+        "repo_page": 1,
+        "include_activity": false
+      }
+    },
+    {
+      "id": "archived_and_forked_retained",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "observed",
+        "profile": {
+          "id": 7,
+          "login": "synthetic-author",
+          "public_repos_reported": 3,
+          "count_scope": "public profile observation, not pagination proof"
+        },
+        "repos": [
+          {
+            "id": 5,
+            "full_name": "synthetic-author/archived",
+            "stars": 0,
+            "language": "Python",
+            "fork": false,
+            "archived": true,
+            "source": 1
+          },
+          {
+            "id": 6,
+            "full_name": "synthetic-author/fork",
+            "stars": 0,
+            "language": "Python",
+            "fork": true,
+            "archived": false,
+            "source": 1
+          }
+        ],
+        "coverage": {
+          "requested_page": 1,
+          "returned": 2,
+          "has_more": false,
+          "next_page": null,
+          "listing_page_exhausted": true,
+          "complete_account_inventory": false,
+          "profile_total_is_hint": true
+        },
+        "languages": {
+          "mode": "primary_language_by_returned_repository_count",
+          "all_returned_repos": 2,
+          "known_language_repos": 2,
+          "unknown_language_repos": 0,
+          "counts": {
+            "Python": 2
+          },
+          "byte_weighted": false
+        },
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 200
+          },
+          {
+            "url": "https://api.github.com/users/synthetic-author/repos",
+            "fetched_at": "2026-10-16T00:00:01+00:00",
+            "http_status": 200,
+            "page": 1,
+            "query": {
+              "type": "owner",
+              "sort": "full_name",
+              "direction": "asc",
+              "per_page": 2,
+              "page": 1
+            }
+          }
+        ]
+      },
+      "proposed_request": {
+        "username": "synthetic-author",
+        "per_page": 2,
+        "repo_page": 1,
+        "include_activity": false
+      }
+    },
+    {
+      "id": "forbidden",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "unavailable",
+        "repos": null,
+        "coverage": null,
+        "languages": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 403,
+            "error": "http_refused"
+          }
+        ],
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "rate_limited",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "unavailable",
+        "repos": null,
+        "coverage": null,
+        "languages": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 429,
+            "error": "http_refused"
+          }
+        ],
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "not_found_visibility_ambiguous",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "unavailable",
+        "repos": null,
+        "coverage": null,
+        "languages": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 404,
+            "error": "unavailable_not_proven_deleted"
+          }
+        ],
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "renamed_redirect",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "unavailable",
+        "repos": null,
+        "coverage": null,
+        "languages": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/users/synthetic-author",
+            "fetched_at": "2026-10-16T00:00:00+00:00",
+            "http_status": 301,
+            "error": "redirect_rejected"
+          }
+        ],
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "repos_fail_after_profile",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "partial",
+        "repos": null,
+        "coverage": {
+          "has_more": null,
+          "next_page": null,
+          "complete_account_inventory": false
+        },
+        "languages": null,
+        "error": "upstream_partial_failure",
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "output_budget",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "partial",
+        "repos": null,
+        "coverage": {
+          "has_more": null,
+          "next_page": null,
+          "complete_account_inventory": false
+        },
+        "languages": null,
+        "error": "output_budget",
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "malformed_row",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "partial",
+        "repos": null,
+        "coverage": {
+          "has_more": null,
+          "next_page": null,
+          "complete_account_inventory": false
+        },
+        "languages": null,
+        "error": "invalid_identity_or_shape",
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "private_row",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "partial",
+        "repos": null,
+        "coverage": {
+          "has_more": null,
+          "next_page": null,
+          "complete_account_inventory": false
+        },
+        "languages": null,
+        "error": "unexpected_private_row",
+        "zero_repositories_claim": false
+      }
+    },
+    {
+      "id": "public_events_not_commits",
+      "synthetic": true,
+      "expected_report": {
+        "outcome": "observed",
+        "activity": {
+          "source": "https://api.github.com/users/synthetic-author/events/public",
+          "requested_days": 30,
+          "returned_unique_events": 2,
+          "matched_window_events": 2,
+          "counts_by_type": {
+            "PushEvent": 1,
+            "WatchEvent": 1
+          },
+          "complete_window": false,
+          "commit_count": null,
+          "provider_timeline_cap": 300,
+          "provider_retention_days": 30,
+          "private_activity_known": false,
+          "next_page": 2
+        }
+      }
+    }
+  ],
+  "pending_handler_test_matrix": [
+    "more_than_one_page",
+    "mutation_between_pages",
+    "same_page_duplicate_ids",
+    "cross_page_duplicate_disclaimer",
+    "empty_account",
+    "zero_stars_not_filtered",
+    "fork_archive_retained",
+    "missing_counter_vs_zero",
+    "boolean_counter_rejected",
+    "negative_counter_rejected",
+    "foreign_owner_id",
+    "unexpected_private_row",
+    "case_normalized_login",
+    "rename_redirect",
+    "enterprise_visibility_404",
+    "private_profile_masked_counts",
+    "403_stop",
+    "429_stop_and_sanitized_rate_headers",
+    "profile_success_repos_fail",
+    "events_fail_repos_preserved",
+    "malformed_link",
+    "external_link_not_followed",
+    "links_page_size_change_rejected",
+    "same_page_output_budget_no_cursor_advance",
+    "oversized_stream",
+    "time_budget",
+    "event_id_dedup",
+    "malformed_or_future_timestamps",
+    "utc_window_boundary",
+    "older_than_window_excluded",
+    "empty_events_not_inactive",
+    "PushEvent_not_commit_count",
+    "event_payload_never_returned",
+    "no_default_authorization_or_cookies",
+    "dispatcher_auth_gate_unchanged"
+  ],
+  "matrix_status": "historical examples and phase1 map retained; current_coverage_map records opt-in Events tests, not live/full acceptance",
+  "phase1_coverage_map": {
+    "more_than_one_page": "phase1_synthetic_handler_or_http_coverage",
+    "mutation_between_pages": "documented_limitation_not_proven_live",
+    "same_page_duplicate_ids": "phase1_synthetic_handler_or_http_coverage",
+    "cross_page_duplicate_disclaimer": "documented_limitation_not_proven_live",
+    "empty_account": "phase1_synthetic_handler_or_http_coverage",
+    "zero_stars_not_filtered": "phase1_synthetic_handler_or_http_coverage",
+    "fork_archive_retained": "phase1_synthetic_handler_or_http_coverage",
+    "missing_counter_vs_zero": "phase1_synthetic_handler_or_http_coverage",
+    "boolean_counter_rejected": "phase1_synthetic_handler_or_http_coverage",
+    "negative_counter_rejected": "phase1_synthetic_handler_or_http_coverage",
+    "foreign_owner_id": "phase1_synthetic_handler_or_http_coverage",
+    "unexpected_private_row": "phase1_synthetic_handler_or_http_coverage",
+    "case_normalized_login": "phase1_synthetic_handler_or_http_coverage",
+    "rename_redirect": "phase1_synthetic_handler_or_http_coverage",
+    "enterprise_visibility_404": "phase1_synthetic_handler_or_http_coverage",
+    "private_profile_masked_counts": "documented_limitation_not_proven_live",
+    "403_stop": "phase1_synthetic_handler_or_http_coverage",
+    "429_stop_and_sanitized_rate_headers": "phase1_synthetic_handler_or_http_coverage",
+    "profile_success_repos_fail": "phase1_synthetic_handler_or_http_coverage",
+    "events_fail_repos_preserved": "deferred_events_not_implemented",
+    "malformed_link": "phase1_synthetic_handler_or_http_coverage",
+    "external_link_not_followed": "phase1_synthetic_handler_or_http_coverage",
+    "links_page_size_change_rejected": "phase1_synthetic_handler_or_http_coverage",
+    "same_page_output_budget_no_cursor_advance": "phase1_synthetic_handler_or_http_coverage",
+    "oversized_stream": "phase1_synthetic_handler_or_http_coverage",
+    "time_budget": "phase1_synthetic_handler_or_http_coverage",
+    "event_id_dedup": "deferred_events_not_implemented",
+    "malformed_or_future_timestamps": "deferred_events_not_implemented",
+    "utc_window_boundary": "deferred_events_not_implemented",
+    "older_than_window_excluded": "deferred_events_not_implemented",
+    "empty_events_not_inactive": "deferred_events_not_implemented",
+    "PushEvent_not_commit_count": "deferred_events_not_implemented",
+    "event_payload_never_returned": "deferred_events_not_implemented",
+    "no_default_authorization_or_cookies": "phase1_synthetic_handler_or_http_coverage",
+    "dispatcher_auth_gate_unchanged": "phase1_synthetic_handler_or_http_coverage"
+  },
+  "current_coverage_map": {
+    "more_than_one_page": "phase1_synthetic_handler_or_http_coverage",
+    "mutation_between_pages": "documented_limitation_not_proven_live",
+    "same_page_duplicate_ids": "phase1_synthetic_handler_or_http_coverage",
+    "cross_page_duplicate_disclaimer": "documented_limitation_not_proven_live",
+    "empty_account": "phase1_synthetic_handler_or_http_coverage",
+    "zero_stars_not_filtered": "phase1_synthetic_handler_or_http_coverage",
+    "fork_archive_retained": "phase1_synthetic_handler_or_http_coverage",
+    "missing_counter_vs_zero": "phase1_synthetic_handler_or_http_coverage",
+    "boolean_counter_rejected": "phase1_synthetic_handler_or_http_coverage",
+    "negative_counter_rejected": "phase1_synthetic_handler_or_http_coverage",
+    "foreign_owner_id": "phase1_synthetic_handler_or_http_coverage",
+    "unexpected_private_row": "phase1_synthetic_handler_or_http_coverage",
+    "case_normalized_login": "phase1_synthetic_handler_or_http_coverage",
+    "rename_redirect": "phase1_synthetic_handler_or_http_coverage",
+    "enterprise_visibility_404": "phase1_synthetic_handler_or_http_coverage",
+    "private_profile_masked_counts": "documented_limitation_not_proven_live",
+    "403_stop": "phase1_synthetic_handler_or_http_coverage",
+    "429_stop_and_sanitized_rate_headers": "phase1_synthetic_handler_or_http_coverage",
+    "profile_success_repos_fail": "phase1_synthetic_handler_or_http_coverage",
+    "events_fail_repos_preserved": "phase2_synthetic_events_handler_or_http_coverage",
+    "malformed_link": "phase1_synthetic_handler_or_http_coverage",
+    "external_link_not_followed": "phase1_synthetic_handler_or_http_coverage",
+    "links_page_size_change_rejected": "phase1_synthetic_handler_or_http_coverage",
+    "same_page_output_budget_no_cursor_advance": "phase1_synthetic_handler_or_http_coverage",
+    "oversized_stream": "phase1_synthetic_handler_or_http_coverage",
+    "time_budget": "phase1_synthetic_handler_or_http_coverage",
+    "event_id_dedup": "phase2_synthetic_events_handler_or_http_coverage",
+    "malformed_or_future_timestamps": "phase2_synthetic_events_handler_or_http_coverage",
+    "utc_window_boundary": "phase2_synthetic_events_handler_or_http_coverage",
+    "older_than_window_excluded": "phase2_synthetic_events_handler_or_http_coverage",
+    "empty_events_not_inactive": "phase2_synthetic_events_handler_or_http_coverage",
+    "PushEvent_not_commit_count": "phase2_synthetic_events_handler_or_http_coverage",
+    "event_payload_never_returned": "phase2_synthetic_events_handler_or_http_coverage",
+    "no_default_authorization_or_cookies": "phase1_synthetic_handler_or_http_coverage",
+    "dispatcher_auth_gate_unchanged": "phase1_synthetic_handler_or_http_coverage"
+  }
+}

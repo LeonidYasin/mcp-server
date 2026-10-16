@@ -1,0 +1,265 @@
+{
+  "design_status": "runtime_candidate_profile_repos_optional_public_events",
+  "candidate_name": "analyze_github_author",
+  "registration_change": true,
+  "purpose": "one bounded public-author observation; not four registered wrappers",
+  "transport": {
+    "method": "GET",
+    "origin": "https://api.github.com",
+    "outbound_auth": "none",
+    "redirects": false,
+    "retries": 0,
+    "cache": false,
+    "routes": [
+      {
+        "path": "/users/{username}",
+        "required": true
+      },
+      {
+        "path": "/users/{username}/repos",
+        "required": true,
+        "query": {
+          "type": "owner",
+          "sort": "full_name",
+          "direction": "asc",
+          "per_page": "input.per_page",
+          "page": "input.repo_page"
+        }
+      },
+      {
+        "path": "/users/{username}/events/public",
+        "required": false,
+        "only_if": "include_activity",
+        "query": {
+          "per_page": 100,
+          "page": "input.event_page"
+        }
+      }
+    ],
+    "requests_max": 3,
+    "response_bytes_max": 262144,
+    "total_response_bytes_max": 786432,
+    "result_bytes_max": 65536,
+    "socket_timeout_seconds_max": 5,
+    "checked_deadline_seconds": 15,
+    "hard_realtime_cancellation": false,
+    "stop_future_requests_on": [
+      401,
+      403,
+      429
+    ]
+  },
+  "scope": {
+    "repositories": "owned public repositories only, no Search and no global scan",
+    "private_supported": false,
+    "zero_stars_included": true,
+    "forks_included": true,
+    "archived_included": true,
+    "automatic_pagination": false,
+    "language_mode": "primary_language_by_returned_repository_count",
+    "byte_weighted_languages": false,
+    "events_complete_window_claim": false,
+    "events_are_commit_count": false
+  },
+  "provider_documentation_observation": {
+    "reviewed_on": "2026-10-16",
+    "rendered_api_version": "2026-03-10",
+    "runtime_api_version_to_reconfirm": "2022-11-28",
+    "version_upgrade_authorized": false,
+    "events_timeline_cap": 300,
+    "events_retention_days": 30,
+    "event_latency_seconds_min": 30,
+    "event_latency_seconds_max": 21600,
+    "sources": [
+      {
+        "url": "https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#list-repositories-for-a-user",
+        "sha256": "eb222efb9e5e5ab414d51d0e8065ea4c5f144ac61ad2e5a3d234ba82a79f9dcf",
+        "bytes": 1409410
+      },
+      {
+        "url": "https://docs.github.com/en/rest/activity/events?apiVersion=2022-11-28#list-public-events-for-a-user",
+        "sha256": "bc84d4a2d5db3abcda7258dfae623713635285735c21a8d9365c44c335b19513",
+        "bytes": 1577468
+      },
+      {
+        "url": "https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-a-user",
+        "sha256": "26301931ac968e89b7edadfb47a260e105162ba2f4e3561c6be079ba0611a4b5",
+        "bytes": 397437
+      }
+    ],
+    "query_apiVersion_did_not_freeze_rendered_version": true,
+    "pinned_endpoint_contract_verified_for_current_candidate": true
+  },
+  "implementation_gates": [
+    "identity_validation_before_network",
+    "anonymous_outbound_even_with_dispatcher_token",
+    "no_link_or_profile_url_following",
+    "bounded_streaming_and_output",
+    "version_pinned_contract_revalidation",
+    "single_page_coverage_and_safe_continuation",
+    "no_private_rows_or_raw_event_payloads",
+    "mocked_handler_and_http_tests",
+    "cost_baseline_and_actual_host_measurement_separate",
+    "permitted_public_live_smoke",
+    "maintainer_review"
+  ],
+  "proposed_complete_input_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "username"
+    ],
+    "properties": {
+      "username": {
+        "type": "string",
+        "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+        "maxLength": 39
+      },
+      "per_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20,
+        "default": 20
+      },
+      "repo_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 1
+      },
+      "include_text": {
+        "type": "boolean",
+        "default": false
+      },
+      "include_activity": {
+        "type": "boolean",
+        "default": false
+      },
+      "activity_days": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 30,
+        "default": 30
+      },
+      "event_page": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3,
+        "default": 1
+      }
+    }
+  },
+  "runtime_phase1": {
+    "implemented": true,
+    "name": "analyze_github_author",
+    "accepted_fields": [
+      "username",
+      "per_page",
+      "repo_page",
+      "include_text"
+    ],
+    "events_supported": false,
+    "private_supported": false,
+    "requests_max": 2,
+    "response_bytes_max": 262144,
+    "total_response_bytes_max": 524288,
+    "result_bytes_max": 65536,
+    "checked_deadline_seconds": 10,
+    "socket_timeout_seconds_max": 5,
+    "new_runtime_dependencies": [],
+    "historical_scope": "previous phase1 at da73e436, retained for traceability"
+  },
+  "pinned_openapi_evidence": "github-author-openapi-2022-evidence.json",
+  "runtime_current": {
+    "name": "analyze_github_author",
+    "accepted_fields": [
+      "username",
+      "per_page",
+      "repo_page",
+      "include_text",
+      "include_activity",
+      "activity_days",
+      "event_page"
+    ],
+    "events_supported": true,
+    "private_supported": false,
+    "activity_default": false,
+    "default_requests_max": 2,
+    "opt_in_requests_max": 3,
+    "default_total_response_bytes_max": 524288,
+    "opt_in_total_response_bytes_max": 786432,
+    "response_bytes_max": 262144,
+    "result_bytes_max": 65536,
+    "default_checked_deadline_seconds": 10,
+    "opt_in_checked_deadline_seconds": 15,
+    "socket_timeout_seconds_max": 5,
+    "new_runtime_dependencies": [],
+    "event_page_size": 20,
+    "event_page_max": 15,
+    "complete_window_claim": false,
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "username"
+      ],
+      "properties": {
+        "username": {
+          "type": "string",
+          "maxLength": 39,
+          "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"
+        },
+        "per_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Rows on one page, default20; no auto-pagination."
+        },
+        "repo_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Page, default1; next request explicit, not an atomic inventory."
+        },
+        "include_text": {
+          "type": "boolean",
+          "description": "Defaultfalse; bounded untrusted bio/company/location/name/description only. No email or external fetch."
+        },
+        "include_activity": {
+          "type": "boolean",
+          "description": "Defaultfalse: no Events GET. True adds one public Events page only."
+        },
+        "activity_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Default30; local UTC filter, not a history guarantee."
+        },
+        "event_page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 15,
+          "description": "Default1; fixed20 events/page, at most15 explicitly requested pages; never a complete-history guarantee."
+        }
+      }
+    },
+    "events_route": {
+      "method": "GET",
+      "path": "/users/{username}/events/public",
+      "only_if": "include_activity=true",
+      "query": {
+        "per_page": 20,
+        "page": "event_page1..15"
+      }
+    },
+    "source_timestamps": {
+      "attempted_at": "local_utc_immediately_before_http_send_or_null",
+      "fetched_at": "local_utc_after_complete_bounded_http200_json_decode_within_deadline_or_null",
+      "skipped_reads_have_null_timestamps": true,
+      "fetched_at_is_not_provider_updated_at_or_identity_validation": true,
+      "wall_clock_is_not_duration_measurement": true,
+      "retained_smoke_reports_predate_timestamp_clarification": true
+    }
+  },
+  "transport_scope": "transport describes the historical initial proposal; runtime_current supersedes its event page-size/cap"
+}

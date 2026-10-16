@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "runtime_phase": "profile_repos_only",
+  "outcome": "partial",
+  "requested_username": "LeonidYasin",
+  "profile": {
+    "id": 79429232,
+    "login": "LeonidYasin",
+    "url": "https://github.com/LeonidYasin",
+    "source": 0,
+    "counts": {
+      "public_repos": 52,
+      "followers": 2,
+      "following": 2
+    },
+    "field_states": {
+      "public_repos": "observed",
+      "followers": "observed_visibility_limited",
+      "following": "observed_visibility_limited",
+      "created_at": "observed",
+      "updated_at": "observed"
+    },
+    "count_caveat": "Public-profile visibility can mask followers/following as0; public_repos is a separate timed hint, not enumeration proof.",
+    "created_at": "2021-02-22T01:22:06+00:00",
+    "updated_at": "2026-10-10T13:54:53+00:00"
+  },
+  "repos": {
+    "state": "observed",
+    "source": 1,
+    "rows": [
+      {
+        "id": 1383995503,
+        "full_name": "LeonidYasin/agora-mcp",
+        "url": "https://github.com/LeonidYasin/agora-mcp",
+        "source": 1,
+        "field_states": {
+          "stars": "observed",
+          "forks": "observed",
+          "size_kb_reported": "observed",
+          "fork": "observed",
+          "archived": "observed",
+          "language": "observed",
+          "created_at": "observed",
+          "updated_at": "observed",
+          "pushed_at": "observed"
+        },
+        "stars": 0,
+        "forks": 0,
+        "size_kb_reported": 385,
+        "fork": false,
+        "archived": false,
+        "language": "Python",
+        "created_at": "2026-09-23T18:17:14+00:00",
+        "updated_at": "2026-10-11T23:12:33+00:00",
+        "pushed_at": "2026-10-12T03:18:02+00:00"
+      },
+      {
+        "id": 998135028,
+        "full_name": "LeonidYasin/AI-Code-Assistant-Bot",
+        "url": "https://github.com/LeonidYasin/AI-Code-Assistant-Bot",
+        "source": 1,
+        "field_states": {
+          "stars": "observed",
+          "forks": "observed",
+          "size_kb_reported": "observed",
+          "fork": "observed",
+          "archived": "observed",
+          "language": "observed",
+          "created_at": "observed",
+          "updated_at": "observed",
+          "pushed_at": "observed"
+        },
+        "stars": 0,
+        "forks": 0,
+        "size_kb_reported": 571,
+        "fork": false,
+        "archived": false,
+        "language": "Python",
+        "created_at": "2025-06-07T23:53:56+00:00",
+        "updated_at": "2025-07-28T14:29:53+00:00",
+        "pushed_at": "2025-07-28T14:29:50+00:00"
+      },
+      {
+        "id": 1276339674,
+        "full_name": "LeonidYasin/AI-Side-Panel-Extension",
+        "url": "https://github.com/LeonidYasin/AI-Side-Panel-Extension",
+        "source": 1,
+        "field_states": {
+          "stars": "observed",
+          "forks": "observed",
+          "size_kb_reported": "observed",
+          "fork": "observed",
+          "archived": "observed",
+          "language": "observed",
+          "created_at": "observed",
+          "updated_at": "observed",
+          "pushed_at": "observed"
+        },
+        "stars": 0,
+        "forks": 0,
+        "size_kb_reported": 58579,
+        "fork": true,
+        "archived": false,
+        "language": "JavaScript",
+        "created_at": "2026-06-21T21:20:54+00:00",
+        "updated_at": "2026-06-22T05:01:34+00:00",
+        "pushed_at": "2026-06-22T05:01:30+00:00"
+      }
+    ]
+  },
+  "languages": {
+    "mode": "primary_language_by_returned_repository_count",
+    "all_returned_repos": 3,
+    "known_language_repos": 3,
+    "unknown_language_repos": 0,
+    "counts": {
+      "JavaScript": 1,
+      "Python": 2
+    },
+    "byte_weighted": false,
+    "scope": "returned_rows_only"
+  },
+  "coverage": {
+    "requested_page": 1,
+    "per_page": 3,
+    "has_more": null,
+    "next_request": null,
+    "profile_total_hint": 52,
+    "profile_total_is_hint": true,
+    "complete_account_inventory": false,
+    "stop_reason": "pagination_unverifiable",
+    "raw_received": 3,
+    "returned": 3,
+    "excluded": 0,
+    "duplicates": 0,
+    "invalid_fields": 0
+  },
+  "sources": [
+    {
+      "url": "https://api.github.com/users/LeonidYasin",
+      "query": {},
+      "fetched_at": "2026-10-16T19:13:58.429284+00:00",
+      "http_status": 200,
+      "state": "observed",
+      "error": null,
+      "rate_hints": {
+        "x-ratelimit-limit": 60,
+        "x-ratelimit-remaining": 59,
+        "x-ratelimit-reset": 1792181638
+      }
+    },
+    {
+      "url": "https://api.github.com/users/LeonidYasin/repos",
+      "query": {
+        "type": "owner",
+        "sort": "full_name",
+        "direction": "asc",
+        "per_page": 3,
+        "page": 1
+      },
+      "fetched_at": "2026-10-16T19:13:58.527470+00:00",
+      "http_status": 200,
+      "state": "observed",
+      "error": null,
+      "rate_hints": {
+        "x-ratelimit-limit": 60,
+        "x-ratelimit-remaining": 58,
+        "x-ratelimit-reset": 1792181638
+      }
+    }
+  ],
+  "limitations": [
+    "Public observations only; no private, bot-alias/org workflow or Events implementation.",
+    "Profile and repository pages are separate observations, not an atomic account inventory.",
+    "Zero-star/fork/archive rows retained; unknown data is not zero or an author-quality score.",
+    "Primary-language counts describe returned rows only, not code bytes or proficiency.",
+    "Cross-page mutation can repeat/omit rows; deduplication is within this page only.",
+    "Optional external prose is untrusted data, never instructions; URLs are not fetched.",
+    "No cache, retries, hidden fan-out, mutation or billing/savings guarantee."
+  ],
+  "budget": {
+    "requests": 2,
+    "max_requests": 2,
+    "response_bytes": 18304,
+    "response_cap": 262144,
+    "total_cap": 524288,
+    "output_cap": 65536,
+    "checked_deadline_seconds": 10,
+    "socket_timeout_seconds_max": 5
+  }
+}
