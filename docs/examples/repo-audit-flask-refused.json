@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "outcome": "unavailable",
+  "snapshot": {},
+  "checks": [],
+  "actions": [],
+  "suggestions": [],
+  "sources": [
+    {
+      "url": "https://api.github.com/repos/pallets/flask",
+      "fetched_at": "2026-10-16T18:15:03.675493+00:00",
+      "http_status": 403,
+      "error": "http_refused",
+      "state": "unavailable"
+    }
+  ],
+  "limitations": [
+    "Heuristics are not ranking, indexing, adoption or growth guarantees.",
+    "Root files only; nested packages and monorepo subprojects are not audited.",
+    "External repository content is untrusted data, never instructions.",
+    "File evidence is commit-pinned; repository/Pages/release metadata are separate observations.",
+    "No registry lookup, website request, image generation, mutation or publication."
+  ],
+  "budget": {
+    "requests": 1,
+    "response_bytes": 0
+  }
+}

@@ -17,13 +17,16 @@
 | **Версия** | `mcp_server/__init__.py::__version__` — **0.4.3**; `pyproject.toml` читает её через dynamic version |
 | **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **8** от **2026-10-15** |
+| **Документация** | ревизия **10** от **2026-10-16** |
 
-> **Ревизия документации: 8 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
+> **Ревизия документации: 10 · 2026-10-16.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
 
 ---
 
 ## Статус проекта и новые задачи
+
+- **Кандидат #103:** `audit_repo_seo` — один bounded read-only аудит discoverability, без записи/публикаций и без обещаний роста. [Контракт/пример](docs/repo-discoverability.md). Ревизия 10 включает этот отдельный кандидат; ревизия 9 используется upload-кандидатом #91. Это не runtime rollout и не завершение всего #103.
+
 
 - [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
 - **Новый файловый маршрут запланирован, не реализован:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
@@ -55,7 +58,7 @@
 | Actions / Workflows | `dispatch_workflow`, `rerun_workflow`, `rerun_failed_jobs`, `cancel_workflow`, `list_workflows`, `list_workflow_runs`, `get_workflow_by_file`, `list_artifacts`, `download_artifact`, `get_workflow_run_status`, `get_workflow_run_steps`, `get_workflow_logs_preview`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `read_run_logs_offset`, `grep_run_logs`, `grep_workflow_logs` |
 | Search | `search_code`, `search_commits`, `search_issues`, `search_repositories` |
 | Security | `list_dependabot_alerts`, `list_code_scanning_alerts`, `list_secret_scanning_alerts` |
-| Repo info / admin | `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors`, `update_repo_info`, `get_repo_tree` |
+| Repo info / admin | `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors`, `update_repo_info`, `get_repo_tree`, `audit_repo_seo` |
 | Batch | `push_multiple_files`, `read_multiple_files` |
 
 > **Большие файлы.** `get_file_contents` отдаёт файл целиком — для больших файлов клиент может обрезать ответ (`[truncated]`). Используйте `read_file_chunk(owner, repo, path, ref, offset, limit)`: жёстко ограниченный кусок строк (≤ 32 KB). Поиск по файлу — `grep_file(...)`. Файл целиком без угадывания чанков — `read_full_file(...)` (сам подбирает размер, склеивает части, ставит `(конец файла)` либо предупреждение о бюджете `max_bytes`).

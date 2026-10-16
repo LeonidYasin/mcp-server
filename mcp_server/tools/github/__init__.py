@@ -130,6 +130,8 @@ from mcp_server.tools.github.build_logs import get_ios_build_error
 # --- batch 17 additions (surgical file edit) ---
 from mcp_server.tools.github.file_edit_ops import replace_in_file
 
+from mcp_server.tools.github.repo_discoverability import audit_repo_seo
+
 # --- repo admin ---
 from mcp_server.tools.github.repo_admin import update_repo_info
 
@@ -208,6 +210,7 @@ __all__ = [
     "list_code_scanning_alerts",
     "list_secret_scanning_alerts",
     "get_repo_info",
+    "audit_repo_seo",
     "get_repo_topics",
     "get_repo_languages",
     "list_repo_contributors",
