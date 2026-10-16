@@ -39,7 +39,7 @@
 
 ## Кандидат #103 — read-only discoverability audit
 
-В отдельной feature-ветке реализован один `audit_repo_seo` с bounded public GET, explicit private opt-in, pinned root evidence, actions и честными unverifiable статусами. [Контракт](docs/repo-discoverability.md). Это первый ограниченный срез #103, не полный SEO-сервис: точные предлагаемые description/topics, оценка аналогов и публикации не реализованы. #103 не закрывать по наличию кода; review/CI, merge и deployment — отдельные gates. Другие #99–#105 остаются backlog. Датированный исходный план ниже сохранён как история.
+В отдельной feature-ветке реализован один `audit_repo_seo` с bounded public GET, explicit private opt-in, pinned root evidence, actions и честными unverifiable статусами. [Контракт](docs/repo-discoverability.md). Это первый ограниченный срез #103, не полный SEO-сервис: добавлены только source-derived review drafts статического description и allowlisted keywords; оценка аналогов, генерация marketing copy и публикации не реализованы. [Ограниченный offline cost experiment](docs/repo-audit-benchmark.md) не закрывает #77. #103 не закрывать по наличию кода; review/CI, merge и deployment — отдельные gates. Другие #99–#105 остаются backlog. Датированный исходный план ниже сохранён как история.
 
 ## Новый backlog — GitHub analytics, research и discoverability (2026-10-16)
 

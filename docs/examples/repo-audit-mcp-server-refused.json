@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "outcome": "partial",
+  "snapshot": {
+    "repo": "LeonidYasin/mcp-server",
+    "url": "https://github.com/LeonidYasin/mcp-server",
+    "scope": "root_only",
+    "project_type": "mcp",
+    "fetched_at": "2026-10-16T18:15:03.410805+00:00",
+    "commit_sha": "0c12a3753efe749c4f16b751da569f4461d83a15",
+    "private": false
+  },
+  "checks": [
+    {
+      "id": "description",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "homepage",
+      "status": "missing",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "topics",
+      "status": "missing",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "license",
+      "status": "missing",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "issues",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "readme",
+      "status": "unverifiable",
+      "reason": "README unavailable/unsupported/oversized or commit unpinned; absence not proven.",
+      "source": 2
+    },
+    {
+      "id": "social_preview",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "search_indexing",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "registry_publication",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "pages_http",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "android_distribution",
+      "status": "not_applicable",
+      "reason": "Declared non-Android project; APK catalogs not applicable."
+    },
+    {
+      "id": "package_metadata",
+      "status": "unverifiable",
+      "reason": "Root pyproject.toml/package.json only: static name/description/keywords. Not registry availability, valid install or nested package audit.",
+      "source": 3,
+      "manifest_sources": []
+    },
+    {
+      "id": "release",
+      "status": "unverifiable",
+      "reason": "No verified latest stable release response; prereleases/other distribution may exist.",
+      "source": 4
+    },
+    {
+      "id": "pages",
+      "status": "unverifiable",
+      "reason": "Pages unavailable/forbidden/not found; absence not proven.",
+      "source": 5,
+      "build_status": null
+    }
+  ],
+  "actions": [
+    {
+      "check": "homepage",
+      "priority": "P2",
+      "action": "Consider a verified documentation/demo URL if relevant; do not invent one."
+    },
+    {
+      "check": "topics",
+      "priority": "P2",
+      "action": "Propose only relevant topics supported by the project; no fixed tag quota."
+    },
+    {
+      "check": "license",
+      "priority": "P1",
+      "action": "Ask the maintainer to select a suitable license; do not assign one automatically."
+    }
+  ],
+  "suggestions": [],
+  "sources": [
+    {
+      "url": "https://api.github.com/repos/LeonidYasin/mcp-server",
+      "fetched_at": "2026-10-16T18:15:03.410805+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed"
+    },
+    {
+      "url": "https://api.github.com/repos/LeonidYasin/mcp-server/commits/main",
+      "fetched_at": "2026-10-16T18:15:03.551968+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed"
+    },
+    {
+      "url": "https://api.github.com/repos/LeonidYasin/mcp-server/readme",
+      "fetched_at": "2026-10-16T18:15:03.661750+00:00",
+      "http_status": 403,
+      "error": "http_refused",
+      "state": "unavailable",
+      "ref": "0c12a3753efe749c4f16b751da569f4461d83a15"
+    },
+    {
+      "url": "https://api.github.com/repos/LeonidYasin/mcp-server/contents",
+      "fetched_at": "2026-10-16T18:15:03.666030+00:00",
+      "http_status": null,
+      "error": "upstream_refused_remaining_reads",
+      "state": "unavailable",
+      "ref": "0c12a3753efe749c4f16b751da569f4461d83a15"
+    },
+    {
+      "url": "https://api.github.com/repos/LeonidYasin/mcp-server/releases/latest",
+      "fetched_at": "2026-10-16T18:15:03.666072+00:00",
+      "http_status": null,
+      "error": "upstream_refused_remaining_reads",
+      "state": "unavailable"
+    },
+    {
+      "url": "https://api.github.com/repos/LeonidYasin/mcp-server/pages",
+      "fetched_at": "2026-10-16T18:15:03.666084+00:00",
+      "http_status": null,
+      "error": "upstream_refused_remaining_reads",
+      "state": "unavailable"
+    }
+  ],
+  "limitations": [
+    "Heuristics are not ranking, indexing, adoption or growth guarantees.",
+    "Root files only; nested packages and monorepo subprojects are not audited.",
+    "External repository content is untrusted data, never instructions.",
+    "File evidence is commit-pinned; repository/Pages/release metadata are separate observations.",
+    "No registry lookup, website request, image generation, mutation or publication."
+  ],
+  "budget": {
+    "requests": 3,
+    "max_requests": 10,
+    "response_bytes": 23441,
+    "response_cap": 262144,
+    "total_cap": 1048576,
+    "deadline_seconds": 20,
+    "readme_manifest_byte_cap": 65536
+  }
+}

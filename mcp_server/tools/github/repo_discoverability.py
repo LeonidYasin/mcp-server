@@ -52,6 +52,9 @@ class _Reader:
         if self.blocked:
             evidence['error'] = 'upstream_refused_remaining_reads'
             return None, evidence
+        if self.bytes >= TOTAL_CAP:
+            evidence['error'] = 'total_response_budget'
+            return None, evidence
         if self.requests >= self.max_requests:
             evidence['error'] = 'request_budget'
             return None, evidence
@@ -121,8 +124,41 @@ def _text(data):
 
 
 def _without_code(text):
-    # Conservative section heuristic; never execute or return source text.
-    return re.sub(r'(?ms)^\s*(`{3,}|~{3,}).*?^\s*\1\s*$', '', text)
+    """Exclude fenced examples/comments, including unmatched and longer fences."""
+    lines, fence = [], None
+    text = re.sub(r'<!--.*?(?:-->|\Z)', '', text, flags=re.S)
+    for line in text.splitlines():
+        if fence:
+            if re.fullmatch(r' {0,3}' + re.escape(fence[0]) + '{' + str(fence[1]) + r',}\s*', line):
+                fence = None
+            continue
+        match = re.match(r'^ {0,3}(`{3,}|~{3,})', line)
+        if match:
+            fence = (match[1][0], len(match[1]))
+        else:
+            lines.append(line)
+    return '\n'.join(lines)
+
+
+# Source-derived drafts are data. Filtering obvious unsafe prose is defense in
+# depth, NOT a promise to semantically sanitize arbitrary prompt injection.
+TOPIC_ALLOWLIST = frozenset({
+    'python', 'javascript', 'typescript', 'rust', 'golang', 'cli', 'flask',
+    'fastapi', 'httpx', 'react', 'mcp', 'model-context-protocol', 'github-api',
+    'self-hosted', 'offline', 'developer-tools', 'automation',
+})
+
+
+def _copy_draft(value, credential):
+    if (not isinstance(value, str) or not 3 <= len(value.strip()) <= 250
+            or any(not c.isprintable() for c in value)
+            or re.search(r'https?://|www\.|[<>`{}\[\]@]|bearer|github_pat_|gh[pousr]_|'
+                         r'ignore|instruction|system prompt|secret|password|api[ _-]?key|token|'
+                         r'игнор|инструкц|секрет|парол|токен', value, re.I)):
+        return None
+    if credential and len(credential) >= 8 and credential in value:
+        return None
+    return value.strip()
 
 
 @mcp_tool(
@@ -198,7 +234,10 @@ def audit_repo_seo(client, **kwargs):
             (val is None or isinstance(val, str)) if key in ('description', 'homepage') else
             isinstance(val, list) and all(isinstance(v, str) for v in val) if key == 'topics' else
             (val is None or isinstance(val, dict)) if key == 'license' else type(val) is bool)
-        status = 'present' if val else 'missing'
+        meaningful = (bool(val.strip()) if isinstance(val, str) else
+                      any(v.strip() for v in val) if isinstance(val, list) and
+                      all(isinstance(v, str) for v in val) else bool(val))
+        status = 'present' if meaningful else 'missing'
         reason = 'Observed repository metadata; not a search/quality signal.'
         if not valid:
             status, reason = 'unverifiable', 'Metadata field absent or invalid.'
@@ -259,6 +298,8 @@ def audit_repo_seo(client, **kwargs):
     root_valid = isinstance(root, list) and len(root) < 1000 and all(isinstance(x, dict) for x in root)
     manifests = []
     manifest_sources = []
+    topic_basis = {}
+    credential = str(getattr(client, '_headers', {}).get('Authorization', '')).removeprefix('Bearer ')
     if root_valid:
         names = {x.get('name'): x for x in root if isinstance(x.get('name'), str)}
         for path in ('pyproject.toml', 'package.json'):
@@ -280,6 +321,23 @@ def audit_repo_seo(client, **kwargs):
                 valid = isinstance(data, dict) and isinstance(data.get('name'), str) and bool(data['name'])
                 desc = data.get('description') if isinstance(data, dict) else None
                 terms = data.get('keywords') if isinstance(data, dict) else None
+                if valid:
+                    dynamic = data.get('dynamic', [])
+                    if not isinstance(dynamic, list):
+                        raise ValueError('invalid dynamic metadata')
+                    draft = _copy_draft(desc, credential) if 'description' not in dynamic else None
+                    if draft:
+                        result['suggestions'].append({
+                            'target': 'About.description', 'draft': draft,
+                            'source': manifest_sources[-1], 'source_field': 'description',
+                            'basis': 'static_manifest_copy_not_feature_verification',
+                            'untrusted_source_text': True, 'requires_review': True})
+                    if 'keywords' not in dynamic and isinstance(terms, list):
+                        existing = meta.get('topics') if isinstance(meta.get('topics'), list) else []
+                        for term in terms:
+                            if (isinstance(term, str) and term in TOPIC_ALLOWLIST
+                                    and term not in existing and len(topic_basis) < 6):
+                                topic_basis.setdefault(term, manifest_sources[-1])
                 # Dynamic descriptions/keywords are not missing: their build is not run.
                 if not valid or any(x in data.get('dynamic', []) for x in ('description', 'keywords')):
                     manifests.append('unknown')
@@ -289,6 +347,12 @@ def audit_repo_seo(client, **kwargs):
                     manifests.append('missing')
             except (ValueError, TypeError, AttributeError):
                 manifests.append('unknown')
+    if topic_basis:
+        result['suggestions'].append({'target': 'topics', 'candidates': list(topic_basis),
+            'source_fields': [{'topic': k, 'source': v, 'field': 'keywords'}
+                              for k, v in topic_basis.items()],
+            'basis': 'allowlisted_declared_keywords_not_feature_verification',
+            'untrusted_source_text': True, 'requires_review': True})
     status = ('unverifiable' if not root_valid or 'unknown' in manifests else
               'missing' if 'missing' in manifests else 'present' if manifests else 'not_applicable')
     check('package_metadata', status, 'Root pyproject.toml/package.json only: static name/description/keywords. Not registry availability, valid install or nested package audit.', root_source, manifest_sources=manifest_sources)

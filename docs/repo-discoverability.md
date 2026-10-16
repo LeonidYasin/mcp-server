@@ -26,19 +26,19 @@ The JSON text inside MCP content has schema_version=1, outcome, snapshot, checks
 ## What is checked
 
 - Description/homepage/topics/license identity and disabled Issues from repository metadata. Null/unrecognized SPDX is not a legal conclusion; no license is selected automatically.
-- Preferred README at pinned ref. UTF-8, base64 and declared byte size are validated. Heading heuristics cover problem/why, quick start, limitations and examples/image markup (Markdown and basic Setext/RST headings). Source prose/commands/links are never executed, followed, or echoed as instructions.
+- Preferred README at pinned ref. UTF-8, base64 and declared byte size are validated. Heading heuristics cover problem/why, quick start, limitations and examples/image markup (Markdown and basic Setext/RST headings). Source prose/commands/links are never executed or followed. Bounded static package descriptions can be copied as explicitly untrusted, review-only About drafts (see below).
 - Up to two root `pyproject.toml` / `package.json` manifests. Static name/description/keywords only, no build, install, dynamic metadata resolution, package registry query or dependency execution. Symlinks/submodules/invalid TOML/JSON are not traversed. Monorepo/nested metadata remains outside scope.
 - Latest stable release metadata (not arbitrary prereleases or proof of verified/installable assets).
 - Pages GET configuration only when not already reported disabled. Built/building/errored are configuration/build observations, **not HTTP reachability**. The audit never requests a homepage/custom domain or enables Pages (#68).
 - Social preview, search-engine indexing and registry publication remain unverifiable; a README image, `has_pages`, tag, or language is not a substitute.
 
-Actions and the optional placeholder README suggestion require maintainer review. Actual description/topic copy, image generation, competitor comparison and publishing workflows remain follow-ups (#100/#104). There is no automatic write, PR, publication, paid service, crawler or external contact. Other projects' settings are unchanged.
+Actions and all suggestions require maintainer review. About.description drafts copy a bounded (3–250 characters), printable static manifest description with exact source index/field, not inferred features. Obvious secrets, URLs, markup and instruction-like strings are rejected as defense in depth; this is not a semantic prompt-injection sanitizer. Each copy is marked untrusted_source_text=true and requires_review=true. Topic candidates are at most six distinct allowlisted, explicitly declared static keywords, excluding current topics; no keywords are invented from language, project_type or arbitrary README prose. Dynamic/invalid/unknown metadata may yield no drafts. No draft claims package publication or verified functionality. Image generation, competitor comparison and publishing workflows remain follow-ups (#100/#104). There is no automatic write, PR, publication, paid service, crawler or external contact. Other projects' settings are unchanged.
 
 ## Hard bounds and safety
 
-At most 10 fixed-host GETs (max_requests 2–10), one attempt each; per-response JSON <=256 KiB, total response budget 1 MiB, README/manifest <=64 KiB decoded, per-request timeout <=5s within a 20s observation deadline checked between chunks/requests. Socket blocking can overrun the deadline by up to the active read timeout; this is not hard real-time cancellation. Content-Encoding other than identity is rejected to avoid decompression expansion. Redirects are rejected even back to GitHub (renamed repo requires an explicit new identity).
+At most 10 fixed-host GETs (max_requests 2–10), one attempt each; per-response retained JSON <=256 KiB, total response budget 1 MiB (the triggering 8 KiB chunk can cross a read limit and is rejected; further reads stop after total-budget exhaustion), README/manifest <=64 KiB decoded, per-request timeout <=5s within a 20s observation deadline checked between chunks/requests. Socket blocking can overrun the deadline by up to the active read timeout; this is not hard real-time cancellation. Content-Encoding other than identity is rejected to avoid decompression expansion. Redirects are rejected even back to GitHub (renamed repo requires an explicit new identity).
 
-403/401/429 stop remaining network reads; no retry/rate-limit evasion. HTTP failure bodies, arbitrary external URLs and repository prose are not returned; error codes are fixed/redacted. No persistent credential, response cache or cross-owner storage. Unknown/missing data is not converted to zero stars or a judgement that a project is dead. Budget is not an authorization boundary or a promise that every MCP host saves tokens.
+403/401/429 stop remaining network reads; no retry/rate-limit evasion. HTTP failure bodies and arbitrary external URLs are not returned; static package description copies are separately marked untrusted review data; error codes are fixed/redacted. No persistent credential, response cache or cross-owner storage. Unknown/missing data is not converted to zero stars or a judgement that a project is dead. Budget is not an authorization boundary or a promise that every MCP host saves tokens.
 
 ## Validation
 
@@ -46,9 +46,19 @@ At most 10 fixed-host GETs (max_requests 2–10), one attempt each; per-response
 
 GitHub API references: [repository README](https://docs.github.com/en/rest/repos/contents#get-a-repository-readme), [root contents](https://docs.github.com/en/rest/repos/contents#get-repository-content), [Pages configuration](https://docs.github.com/en/rest/pages/pages#get-a-github-pages-site). Provider behavior/permissions may change; refusal remains unknown, not guessed.
 
-## Public live smoke evidence (candidate only)
+## Public live smoke evidence (candidate only; dated observations)
 
 - [mcp-server report](examples/repo-audit-mcp-server.json): 7 anonymous GETs, pinned `0c12a3753efe749c4f16b751da569f4461d83a15`, completed observation pass. Pages unavailable via anonymous API remains unverifiable, not absent.
 - [Flask library report](examples/repo-audit-flask.json): 6 anonymous GETs, pinned `d086db856be187255b8ec61ef409357393020f32`, completed observation pass. README section signals are heuristics, not claims that Flask lacks usage documentation.
 
-Initial mcp-server smoke returned partial because README exceeded the first 32 KiB design cap; that honest result led to a reviewed increase to 64 KiB, with unchanged 256 KiB response / 1 MiB total limits. The repeated public smoke above used the current cap. No private audit, external website request, package install from audited repos or deployed MCP test occurred. Reports are dated observations, not permanent evaluations.
+Initial mcp-server smoke returned partial because README exceeded the first 32 KiB design cap; that honest result led to a reviewed increase to 64 KiB, with unchanged 256 KiB response / 1 MiB total limits. The earlier successful smoke above used the current cap and the initial PR implementation; it is historical evidence, not a successful rerun of the follow-up code.
+
+The follow-up rerun was refused by the anonymous GitHub API: [mcp-server refusal report](examples/repo-audit-mcp-server-refused.json) is partial after 3 GETs (403 followed by stopped reads); [Flask refusal report](examples/repo-audit-flask-refused.json) is unavailable after 1 GET (403). No retry, authenticated fallback or successful live acceptance is claimed. Source-backed draft behavior in this follow-up is covered by deterministic tests, not these denied live reads.
+
+No private audit, external website request, package install from audited repos or deployed MCP test occurred. Reports are dated observations, not permanent evaluations.
+
+## Quality and cost follow-up
+
+Regression review found/fixed whitespace-only metadata, code-fence/comment false signals and further requests after total-byte budget exhaustion. Nested/longer/unclosed fences and HTML comments no longer provide README heading signals. Absence of a heading still does not prove absence of functionality or linked documentation.
+
+[Offline token-accounting experiment](repo-audit-benchmark.md) includes full catalog, args, results, parallel/sequential response-round bounds and a batched legacy alternative. It is not actual host billing or an equal-evidence savings claim; #77 stays open. The formatter does not replace missing or denied evidence with invented drafts.

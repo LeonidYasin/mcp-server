@@ -1,0 +1,212 @@
+{
+  "method": "offline_fixture_mcp_visible_accounting_v1",
+  "tokenizer": "cl100k_base",
+  "input_cases": [
+    {
+      "case": "synthetic-small",
+      "kind": "synthetic",
+      "provenance": "Synthetic metadata/routes in both cases; second case only README/pyproject bytes from public LeonidYasin/mcp-server commit0c12a375. No claim of live API measurement.",
+      "readme_sha256": "5a631c85e821ed35dc1a030c3e4c554c5f7fd8c5fba450224b82af1408c09884",
+      "manifest_sha256": "420f135f57f583ec20f6fd0b449959be2bcf8e715438a132ca4075cac0ae95fd"
+    },
+    {
+      "case": "public-readme-snapshot",
+      "kind": "hybrid_fixture",
+      "provenance": "Synthetic metadata/routes in both cases; second case only README/pyproject bytes from public LeonidYasin/mcp-server commit0c12a375. No claim of live API measurement.",
+      "readme_sha256": "5c96792b031f583be7b596473a382c8ef1471fb1c987d0732eee60688ed2a8fc",
+      "manifest_sha256": "3883d24811583c90ba006db403d4697c05cfc18db77a1eb989decfd5c49e8da4"
+    }
+  ],
+  "schema_definition": {
+    "utf8_bytes": 819,
+    "tokens_cl100k_base": 169
+  },
+  "catalog_before_count": 113,
+  "catalog_candidate_count": 114,
+  "catalog_before": {
+    "utf8_bytes": 66536,
+    "tokens_cl100k_base": 15500
+  },
+  "catalog_candidate": {
+    "utf8_bytes": 67356,
+    "tokens_cl100k_base": 15668
+  },
+  "rows": [
+    {
+      "case": "synthetic-small",
+      "scenario": "legacy_shared_subset",
+      "schema": {
+        "utf8_bytes": 67356,
+        "tokens_cl100k_base": 15668
+      },
+      "args": {
+        "utf8_bytes": 782,
+        "tokens_cl100k_base": 210
+      },
+      "results": {
+        "utf8_bytes": 1638,
+        "tokens_cl100k_base": 537
+      },
+      "mcp_visible_total": {
+        "utf8_bytes": 69776,
+        "tokens_cl100k_base": 16415
+      },
+      "tool_calls": 5,
+      "response_rounds": {
+        "parallel_lower_bound": 1,
+        "sequential_upper_bound": 5
+      },
+      "mock_http_requests": 5
+    },
+    {
+      "case": "synthetic-small",
+      "scenario": "legacy_batched_subset",
+      "schema": {
+        "utf8_bytes": 67356,
+        "tokens_cl100k_base": 15668
+      },
+      "args": {
+        "utf8_bytes": 602,
+        "tokens_cl100k_base": 164
+      },
+      "results": {
+        "utf8_bytes": 1647,
+        "tokens_cl100k_base": 543
+      },
+      "mcp_visible_total": {
+        "utf8_bytes": 69605,
+        "tokens_cl100k_base": 16375
+      },
+      "tool_calls": 4,
+      "response_rounds": {
+        "parallel_lower_bound": 1,
+        "sequential_upper_bound": 4
+      },
+      "mock_http_requests": 5
+    },
+    {
+      "case": "synthetic-small",
+      "scenario": "audit_full_scope",
+      "schema": {
+        "utf8_bytes": 67356,
+        "tokens_cl100k_base": 15668
+      },
+      "args": {
+        "utf8_bytes": 148,
+        "tokens_cl100k_base": 45
+      },
+      "results": {
+        "utf8_bytes": 6168,
+        "tokens_cl100k_base": 1425
+      },
+      "mcp_visible_total": {
+        "utf8_bytes": 73672,
+        "tokens_cl100k_base": 17138
+      },
+      "tool_calls": 1,
+      "response_rounds": {
+        "parallel_lower_bound": 1,
+        "sequential_upper_bound": 1
+      },
+      "mock_http_requests": 6
+    },
+    {
+      "case": "public-readme-snapshot",
+      "scenario": "legacy_shared_subset",
+      "schema": {
+        "utf8_bytes": 67356,
+        "tokens_cl100k_base": 15668
+      },
+      "args": {
+        "utf8_bytes": 782,
+        "tokens_cl100k_base": 210
+      },
+      "results": {
+        "utf8_bytes": 37274,
+        "tokens_cl100k_base": 10311
+      },
+      "mcp_visible_total": {
+        "utf8_bytes": 105412,
+        "tokens_cl100k_base": 26189
+      },
+      "tool_calls": 5,
+      "response_rounds": {
+        "parallel_lower_bound": 1,
+        "sequential_upper_bound": 5
+      },
+      "mock_http_requests": 5
+    },
+    {
+      "case": "public-readme-snapshot",
+      "scenario": "legacy_batched_subset",
+      "schema": {
+        "utf8_bytes": 67356,
+        "tokens_cl100k_base": 15668
+      },
+      "args": {
+        "utf8_bytes": 602,
+        "tokens_cl100k_base": 164
+      },
+      "results": {
+        "utf8_bytes": 37285,
+        "tokens_cl100k_base": 10318
+      },
+      "mcp_visible_total": {
+        "utf8_bytes": 105243,
+        "tokens_cl100k_base": 26150
+      },
+      "tool_calls": 4,
+      "response_rounds": {
+        "parallel_lower_bound": 1,
+        "sequential_upper_bound": 4
+      },
+      "mock_http_requests": 5
+    },
+    {
+      "case": "public-readme-snapshot",
+      "scenario": "audit_full_scope",
+      "schema": {
+        "utf8_bytes": 67356,
+        "tokens_cl100k_base": 15668
+      },
+      "args": {
+        "utf8_bytes": 148,
+        "tokens_cl100k_base": 45
+      },
+      "results": {
+        "utf8_bytes": 6577,
+        "tokens_cl100k_base": 1490
+      },
+      "mcp_visible_total": {
+        "utf8_bytes": 74081,
+        "tokens_cl100k_base": 17203
+      },
+      "tool_calls": 1,
+      "response_rounds": {
+        "parallel_lower_bound": 1,
+        "sequential_upper_bound": 1
+      },
+      "mock_http_requests": 6
+    }
+  ],
+  "comparison_plan": [
+    {
+      "grain": "one fixed fixture and scenario",
+      "unit": "cl100k_base tokens / UTF-8 bytes",
+      "population": "2 chosen fixtures, same candidate full catalog in both scenarios",
+      "disposition": "table",
+      "reason": "Software regression artifact, non-equivalent coverage; no headline savings ratio or audience-facing chart."
+    }
+  ],
+  "limitations": [
+    "Both scenarios include the same full candidate catalog exactly once. Actual host caching/discovery behavior is unknown.",
+    "Legacy 5-call and batched 4-call subsets lack license/Issues/Pages/root completeness/pinned snapshot resolution and generated audit actions; NOT equivalent evidence.",
+    "Pinned refs are supplied to baseline calls for free; ref-discovery cost is excluded. No claim that the baseline is optimal.",
+    "Fixtures are not a representative repository sample. Mock HTTP counts are not live latency measurements.",
+    "Parallel lower bound differs from sequential upper bound; five calls need not mean five model turns.",
+    "Visible schemas+JSON-RPC args+normalized results only; system/chat/reasoning/follow-up prose/host wrapping excluded.",
+    "Token counts are not Notion credits, actual model tokenizer, billed usage or proof of end-to-end monetary savings.",
+    "Exact report synthesis equivalence, deployed/private workflow cost and host accounting remain pending #77."
+  ],
+  "input_file_sha256": "90a96fd46187491a5e30264d7711fe6195e529e7ca712b402e30670b137d2869"
+}
