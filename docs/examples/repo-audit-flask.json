@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "outcome": "completed",
+  "snapshot": {
+    "repo": "pallets/flask",
+    "url": "https://github.com/pallets/flask",
+    "scope": "root_only",
+    "project_type": "library",
+    "fetched_at": "2026-10-16T17:57:16.512775+00:00",
+    "commit_sha": "d086db856be187255b8ec61ef409357393020f32",
+    "private": false
+  },
+  "checks": [
+    {
+      "id": "description",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "homepage",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "topics",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "license",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "issues",
+      "status": "present",
+      "reason": "Observed repository metadata; not a search/quality signal.",
+      "source": 0
+    },
+    {
+      "id": "readme",
+      "status": "present",
+      "reason": "UTF-8 README observed at pinned commit.",
+      "source": 2
+    },
+    {
+      "id": "readme_why",
+      "status": "missing",
+      "reason": "Heading/markup heuristic only; linked documents, quality and working commands not verified.",
+      "source": 2
+    },
+    {
+      "id": "readme_quick_start",
+      "status": "missing",
+      "reason": "Heading/markup heuristic only; linked documents, quality and working commands not verified.",
+      "source": 2
+    },
+    {
+      "id": "readme_limitations",
+      "status": "missing",
+      "reason": "Heading/markup heuristic only; linked documents, quality and working commands not verified.",
+      "source": 2
+    },
+    {
+      "id": "readme_demo",
+      "status": "present",
+      "reason": "Heading/markup heuristic only; linked documents, quality and working commands not verified.",
+      "source": 2
+    },
+    {
+      "id": "social_preview",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "search_indexing",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "registry_publication",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "pages_http",
+      "status": "unverifiable",
+      "reason": "Not established by these GitHub API observations; no external requests made."
+    },
+    {
+      "id": "android_distribution",
+      "status": "not_applicable",
+      "reason": "Declared non-Android project; APK catalogs not applicable."
+    },
+    {
+      "id": "package_metadata",
+      "status": "missing",
+      "reason": "Root pyproject.toml/package.json only: static name/description/keywords. Not registry availability, valid install or nested package audit.",
+      "source": 3,
+      "manifest_sources": [
+        4
+      ]
+    },
+    {
+      "id": "release",
+      "status": "present",
+      "reason": "Latest stable release observed; installable assets, signatures and package publication NOT verified.",
+      "source": 5
+    },
+    {
+      "id": "pages",
+      "status": "missing",
+      "reason": "Repository metadata reports has_pages=false; no configuration change.",
+      "source": 0
+    }
+  ],
+  "actions": [
+    {
+      "check": "readme_why",
+      "priority": "P2",
+      "action": "Review README structure for why; use accurate project-specific content, not keyword stuffing."
+    },
+    {
+      "check": "readme_quick_start",
+      "priority": "P1",
+      "action": "Review README structure for quick_start; use accurate project-specific content, not keyword stuffing."
+    },
+    {
+      "check": "readme_limitations",
+      "priority": "P2",
+      "action": "Review README structure for limitations; use accurate project-specific content, not keyword stuffing."
+    },
+    {
+      "check": "package_metadata",
+      "priority": "P2",
+      "action": "Review static root package description/keywords against actual capabilities; do not invent registry publication or installation commands."
+    }
+  ],
+  "suggestions": [
+    {
+      "target": "README",
+      "draft": "## Why\n[Describe the concrete problem and how this project differs from existing solutions.]",
+      "requires_review": true
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://api.github.com/repos/pallets/flask",
+      "fetched_at": "2026-10-16T17:57:16.512775+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed"
+    },
+    {
+      "url": "https://api.github.com/repos/pallets/flask/commits/main",
+      "fetched_at": "2026-10-16T17:57:16.646745+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed"
+    },
+    {
+      "url": "https://api.github.com/repos/pallets/flask/readme",
+      "fetched_at": "2026-10-16T17:57:16.776292+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed",
+      "ref": "d086db856be187255b8ec61ef409357393020f32",
+      "blob_sha": "64f56cac4f9d60020a39b9c2f803b1846796cf6d"
+    },
+    {
+      "url": "https://api.github.com/repos/pallets/flask/contents",
+      "fetched_at": "2026-10-16T17:57:16.877855+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed",
+      "ref": "d086db856be187255b8ec61ef409357393020f32"
+    },
+    {
+      "url": "https://api.github.com/repos/pallets/flask/contents/pyproject.toml",
+      "fetched_at": "2026-10-16T17:57:16.990862+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed",
+      "ref": "d086db856be187255b8ec61ef409357393020f32",
+      "blob_sha": "05a59c47391fcd289e3e3f4d4f011367b73e13a8"
+    },
+    {
+      "url": "https://api.github.com/repos/pallets/flask/releases/latest",
+      "fetched_at": "2026-10-16T17:57:17.105229+00:00",
+      "http_status": 200,
+      "error": null,
+      "state": "observed"
+    }
+  ],
+  "limitations": [
+    "Heuristics are not ranking, indexing, adoption or growth guarantees.",
+    "Root files only; nested packages and monorepo subprojects are not audited.",
+    "External repository content is untrusted data, never instructions.",
+    "File evidence is commit-pinned; repository/Pages/release metadata are separate observations.",
+    "No registry lookup, website request, image generation, mutation or publication."
+  ],
+  "budget": {
+    "requests": 6,
+    "max_requests": 10,
+    "response_bytes": 42536,
+    "response_cap": 262144,
+    "total_cap": 1048576,
+    "deadline_seconds": 20,
+    "readme_manifest_byte_cap": 65536
+  }
+}
