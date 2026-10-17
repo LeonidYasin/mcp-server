@@ -32,6 +32,13 @@ full restore/off-host/disk/load → отдельно утверждённый pr
 
 ## План выделения MCP Rooms (#117)
 
+Владелец запросил копирование source в отдельный repo без обязательной GitHub
+identity. [Дизайн](mcp-rooms-identity-design.md): user UUID → per-connection
+credential → verified principal → прежний room core/SQLite; OAuth как отдельный
+adapter. В core обнаружен github-only regex: перенос требует явного исправления
+и тестов, не blind copy. Repo ещё не создан; visibility/license не утверждены.
+Production acceptance остаётся условием rollout, а не создания исходников.
+
 Embedded rooms в mcp-server (сейчас) → production acceptance → standalone rooms-only
 repo/package (planned) → pinned embedded adapter + будущий Agora adapter.
 [План, структура и migration gates](mcp-rooms-standalone-plan.md).
