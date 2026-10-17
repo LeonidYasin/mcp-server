@@ -82,6 +82,12 @@ passed from a clean extracted sdist (import origin verified). Registry remains11
 144all-enabled. New tests cover warnings without network or silent query expansion;
 these prove contract behavior, not semantic judgment.
 
+The first publication's Python3.11 CI exposed a test-fixture f-string using Python3.12+
+quote reuse, which local Python3.13 accepted. The fixture was rewritten with an intermediate
+URL variable for Python3.10+ compatibility; runtime query behavior is unchanged. Local
+syntax checks on the four changed Python files use Python3.10 grammar, in addition to tests.
+The initial failed CI run is not a successful matrix result; use the corrected HEAD's checks.
+
 Before calling this generally high-quality, retain a labeled set of different repository
 ideas, source-supported positives and hard negatives; assess missed positives and review
 candidate mechanisms, not names/keywords/stars. For each source repo: extract the actual

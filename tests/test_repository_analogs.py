@@ -464,7 +464,8 @@ def test_invalid_new_controls_fail_before_network(fake,kw):
 def search_page_with_next(n,req):
     page=int(req.url.params['page']); size=int(req.url.params['per_page'])
     ids=[(page-1)*size+i+1 for i in range(size)]
-    return httpx.Response(200,headers={'Link':f'<{req.url.copy_merge_params({'page':page+1})}>; rel="next"'},
+    next_url=req.url.copy_merge_params({'page':page+1})
+    return httpx.Response(200,headers={'Link':f'<{next_url}>; rel="next"'},
         json={'items':[row(i,f'alice/project{i}') for i in ids],
               'total_count':1000,'incomplete_results':False})
 
