@@ -141,7 +141,12 @@ def select_files(blobs, comparison=None, repository_identity=None, focus_path_te
         # Unknown roles do not displace a second recognized role just for diversity.
         diversity = 2 if role == "other" else int(role in used_implementation_roles)
         source_root = path.split("/", 1)[0].lower()
-        return (change_class, 0 if focused[path] else 1,
+        # A project/namespace token can occur in every path (e.g. Skill_Exchange).
+        # Prefer a caller token in the basename to directory-only matches without
+        # discarding directory hints or changing observed-change precedence.
+        basename_focus = _focus_matches(path.rsplit("/", 1)[-1], focus)
+        focus_strength = 0 if basename_focus else 1 if focused[path] else 2
+        return (change_class, focus_strength,
                 diversity, int((role, group) in used_implementation_groups),
                 IMPLEMENTATION_ROLES.index(role), 0 if identity_match else 1,
                 0 if source_root in ("src", "lib", "app", "internal", "cmd", "pkg") or "/" not in path else 1,
