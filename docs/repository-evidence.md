@@ -318,3 +318,8 @@ makes no further sibling/parent GETs. Already verified files are retained and un
 reads get `observed_rate_budget` gaps. A bare403 without a quota signal remains scoped to
 that refused read (e.g. permission-denied fork comparison); no automatic auth/retry is added.
 This is checked stopping, not quota prediction or hard cancellation of an in-flight request.
+
+
+## Oversized REST commit metadata — compact Git pin recovery
+
+When the REST commit response exceeds the existing body cap, the reader may resolve the **known default branch** through an exact refs/heads pointer and obtain its commit/tree via the compact Git commit API. An explicit full SHA can go directly to Git commit metadata after the size refusal. Other refs/tags are not guessed. Identity/type/tree, remaining shared budgets and rate-stop state remain mandatory; no redirects, auth fallback, retry of the failed endpoint or cap increase. `revision.resolution_strategy` and source indices preserve the failed observation and compact recovery. No fallback for HTTP403/404/429, time limits or exhausted total bytes. [Quality audit](scenarios/analog-quality-audit.md).

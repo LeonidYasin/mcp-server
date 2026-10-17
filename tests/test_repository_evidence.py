@@ -748,3 +748,98 @@ def test_path_focus_read_budget_does_not_increase(corpus):
     assert result['budget']['requests'] <= 9 and len(result['files']) == 6
     assert result['file_selection']['focus_path_terms_used'] == ['main', 'auth']
     assert not result['file_selection']['semantic_relevance_verified']
+
+
+def compact_commit_fixture(req):
+    if '/git/ref/heads/' in req.url.path:
+        return httpx.Response(200,json={'ref':'refs/heads/main','object':{'type':'commit','sha':HEAD}})
+    if '/git/commits/' in req.url.path:
+        return httpx.Response(200,json={'sha':HEAD,'tree':{'sha':TREE}})
+    if '/commits/' in req.url.path:
+        return httpx.Response(200,content=b'x'*(module.BODY_CAP+1))
+    return None
+
+
+def test_oversized_commit_recovers_known_default_branch_without_raising_budgets(fake):
+    fake.override=compact_commit_fixture
+    r=run(fake)
+    assert r['state']=='observed' and r['revision']['sha']==HEAD
+    assert r['revision']['resolution_strategy']=='compact_git_commit_after_oversized_rest_commit'
+    assert r['sources'][1]['error']=='body_budget' and r['budget']['requests']==6
+    assert r['budget']['max_requests']==12 and r['budget']['per_response_cap_bytes']==module.BODY_CAP
+    assert r['files'][0]['url'].endswith(HEAD+'/README.md#L1-L3')
+    assert all(not {'authorization','cookie','x-secret'} & set(q.headers) for q in fake.calls)
+
+
+def test_oversized_exact_sha_uses_compact_commit_without_mutable_ref_lookup(fake):
+    fake.override=compact_commit_fixture
+    r=run(fake,ref=HEAD)
+    assert r['state']=='observed' and r['budget']['requests']==5
+    assert r['revision']['branch_ref_source'] is None
+    assert not any('/git/ref/' in q.url.path for q in fake.calls)
+
+
+@pytest.mark.parametrize('ref',['v1.0','feature/unknown','refs/tags/main'])
+def test_oversized_ambiguous_or_tag_ref_not_reinterpreted_as_branch(fake,ref):
+    fake.override=compact_commit_fixture
+    r=run(fake,ref=ref)
+    assert r['state']=='unavailable' and r['error']=='body_budget'
+    assert len(fake.calls)==2
+
+
+@pytest.mark.parametrize('status',[301,403,404,429,500])
+def test_commit_http_refusal_never_triggers_compact_fallback(fake,status):
+    fake.override=lambda q:httpx.Response(status,text=SECRET) if '/commits/' in q.url.path else None
+    r=run(fake)
+    assert r['state']=='unavailable' and len(fake.calls)==2
+    assert SECRET not in json.dumps(r)
+
+
+@pytest.mark.parametrize('bad',[
+    {'ref':'refs/tags/main','object':{'type':'commit','sha':HEAD}},
+    {'ref':'refs/heads/main','object':{'type':'tag','sha':HEAD}},
+    {'ref':'refs/heads/main','object':{'type':'commit','sha':'not-sha'}},
+    {'ref':'refs/heads/other','object':{'type':'commit','sha':HEAD}},
+])
+def test_compact_branch_pointer_requires_exact_ref_commit_type_sha(fake,bad):
+    fake.override=lambda q:httpx.Response(200,json=bad) if '/git/ref/heads/' in q.url.path else compact_commit_fixture(q)
+    r=run(fake)
+    assert r['state']=='unavailable' and r['error']=='branch_commit_unverified'
+    assert len(fake.calls)==3
+
+
+@pytest.mark.parametrize('compact,error',[
+    ({'sha':BASE,'tree':{'sha':TREE}},'commit_mismatch'),
+    ({'sha':HEAD,'tree':{}},'commit_tree_unverified'),
+])
+def test_compact_commit_identity_and_tree_checked(fake,compact,error):
+    fake.override=lambda q:httpx.Response(200,json=compact) if '/git/commits/' in q.url.path else compact_commit_fixture(q)
+    r=run(fake)
+    assert r['state']=='unavailable' and r['error']==error and not r['files']
+
+
+def test_oversized_commit_with_zero_rate_hint_does_not_issue_recovery_get(fake):
+    def handler(q):
+        if '/commits/' in q.url.path:
+            return httpx.Response(200,headers={'x-ratelimit-remaining':'0'},content=b'x'*(module.BODY_CAP+1))
+        return None
+    fake.override=handler
+    r=run(fake)
+    assert r['state']=='unavailable' and len(fake.calls)==2
+
+
+def test_total_budget_exhaustion_does_not_reset_for_recovery(fake,monkeypatch):
+    monkeypatch.setattr(module,'TOTAL_CAP',module.BODY_CAP)
+    fake.override=compact_commit_fixture
+    r=run(fake)
+    assert r['state']=='unavailable' and len(fake.calls)==2
+
+
+def test_compact_response_oversize_no_recursive_fallback(fake):
+    def handler(q):
+        if '/git/commits/' in q.url.path:
+            return httpx.Response(200,content=b'x'*(module.BODY_CAP+1))
+        return compact_commit_fixture(q)
+    fake.override=handler
+    r=run(fake)
+    assert r['state']=='unavailable' and r['error']=='body_budget' and len(fake.calls)==4

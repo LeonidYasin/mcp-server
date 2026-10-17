@@ -13,13 +13,16 @@ implemented semantic similarity model or an exhaustive GitHub index.
 ### An idea in ordinary language
 
 1. Agent identifies the **problem** and **mechanism**; stack names alone are insufficient.
-2. Agent supplies 2–4 public search formulations, including at least one of each facet.
+2. Agent supplies 2–8 public search formulations, including at least one of each facet.
+   Include explicit README scope for both core facets; default repository text scope can
+   miss concepts described only in README. Inspect `query_coverage` before starting.
    Use alternate terminology/languages as additional formulations when useful. No fixed
    product dictionary or TableBot-specific branching exists in the implementation.
 3. Server searches each formulation in three explicit lanes: broad including forks,
    zero-star including forks, and forks only. No minimum star filter or popularity rank.
 4. Server merges stable repository IDs, records all matching probe indices and returns
-   a round-robin candidate pool. This is retrieval order, NOT similarity ranking.
+   a round-robin candidate pool by default, or explicit `facet_coverage` order.
+   Neither ordering is similarity ranking.
 5. Agent inspects promising candidates using the returned `evidence_request`, or opts into
    bounded automatic evidence for the first one/two candidates. Automatic order is not
    semantic selection. Initial auto excerpts can miss the relevant implementation.
@@ -51,8 +54,8 @@ for a plan; that gate is unchanged. Public outbound requests do **not** carry th
 Legacy `search_repositories` behavior is unchanged; its explicit `mode=public` is now present
 alongside evidence in this tree. Existing draft branches/remotes have not been merged/deployed.
 
-`queries`: 2–4 distinct formulations; each object has `{facet,terms}` plus optional `search_in`. `facet` is
-`problem` or `mechanism`, both required across the list. `terms` <=120characters, 1–12
+`queries`: 2–8 distinct formulations; each object has `{facet,terms}` plus optional `search_in`. `facet` is
+`problem` or `mechanism` (both required across the list), optionally `workflow`/`domain`. Distinct formulations can cover synonyms, a different language, user need and an alternative mechanism; no idea-specific dictionary is hardcoded. `terms` <=120characters, 1–12
 words/quoted phrases; Unicode letters/digits, spaces, `_-.+` and balanced double quotes.
 No qualifiers, URL, backslash, negative token or AND/OR/NOT operator: the server controls
 scope. Phrase/token search is not translation, paraphrase expansion or code search.
@@ -62,7 +65,13 @@ not all-code search or a guarantee of relevance. The same terms with a different
 a separate allowed formulation. For arbitrary qualifiers/code follow-up, use explicit `search_repositories(mode=public)`/`search_code`;
 legacy Code Search requires credentials and is NOT made anonymous by this tool.
 
-Defaults: `limit_per_probe=5` (1–10), `max_candidates=30` (1–40), `evidence_limit=0` (0–2),
+`query_coverage` reports explicit README formulation indices and core facets missing this
+scope, with an advisory even in zero-network plans. It never silently changes queries.
+No advisory is **not** a quality pass: synonyms, languages, conceptual relevance and known
+positive/negative controls still require analyst review. A known relevant control absent
+from retrieval is an unresolved miss, not evidence that it stopped being relevant.
+
+Defaults: `limit_per_probe=5` (1–30), `max_candidates=30` (1–100), `evidence_limit=0` (0–2),
 `plan_only=false`, `max_search_requests=12` (1–12), `start_probe=0` (within the current plan). Unknown args, bool-as-integer, duplicate formulations, invalid identity,
 control characters and literal current credential reflection are rejected before network.
 Queries append `is:public fork:true`, plus `stars:0` in zero-star lanes; fork-only lanes
@@ -107,7 +116,7 @@ quality; personal accounts do not prove solo authorship; forks do not prove a ne
 
 ## Bounds / failure policy
 
-2–4 formulations ×3lanes =6–12Search GETs, exactly one page each. No auto-next/retry,
+2–8 formulations ×3lanes =6–24 planned probes. At most12 Search GETs are executed per call (default budget12), one explicitly selected page per probe. More formulations require explicit continuation; the per-call network budget is NOT doubled. No auto-next/retry,
 credential fallback, redirect, caller URL, disk write or code execution. Read budgets are
 inherited: Search1MiB/GET, 8second checked deadline, <=5second socket timeout; optional
 0–2evidence observations, each <=12GET/2MiB/30second checked deadline. Workflow checks a
@@ -143,7 +152,7 @@ An unavailable probe remains the next probe, not skipped as if it succeeded. Exp
 Numeric rate hints are observations, not a guarantee of quota availability at the next call.
 
 `plan_fingerprint` is SHA-256 of the canonical ordered plan, not an API snapshot checksum.
-Terms, facets, text scope, exclusion and page size affect it; batch size/start do not.
+Terms, facets, text scope, exclusion, page size and explicit `probe_pages` affect it; batch size/start do not. Server-generated continuation arguments include `expected_plan_fingerprint`; a mismatch is rejected before any network call. This protects plan scope, not authenticity or historical read completion.
 The caller must compare it before combining batches by stable ID, preserving per-batch
 provenance and identity conflicts. It is not an authenticated continuation token or a
 server-enforced history of prior reads. New Search results may change between batches.
@@ -153,7 +162,7 @@ from `next_probe_request`; neither is automatically followed.
 
 Candidate-cap omissions or output overflow clear `next_probe_request` and set
 `continuation_blocked_reason`: do not advance beyond omitted candidate payloads. Revisit
-that batch with a smaller per-probe page/larger candidate cap when appropriate.
+that batch with a smaller per-probe page/larger candidate cap when appropriate. `recovery_request` provides a safe explicit replay from the SAME start, one probe and no evidence; it does not skip omitted data. No recovery request is executed automatically.
 
 ## Question-directed source selection
 
@@ -180,3 +189,22 @@ not a SQL semantic parser. Existing `.gs` support remains JavaScript-like and un
 
 [Four-case acceptance, noise and same-SHA focus comparison](scenarios/idea-analog-acceptance.md)
 records the latest live checks and explicitly incomplete semantic acceptance.
+
+
+## Recall-quality follow-up: explicit pages and accountable ordering
+
+`probe_pages` maps canonical probe-index strings to positive page integers. The selected page must remain inside GitHub Search's1000-accessible-result window, derived from limit_per_probe. No caller URL is accepted. Successful provider-validated next-page metadata is converted into **`next_page_requests`** with the full executable tool arguments, one selected probe, evidence disabled and a fingerprint of the NEW exact page plan. It never guesses pagination from total_count or follows Link URLs.
+
+`probe_only=true` observes only start_probe. A successful page follow-up has no sibling `next_probe_request`; it may return the next page of that same probe. A refused page is retained for an explicit decision, never skipped or retried. Candidate/output omissions clear forward-page requests and return an explicit smaller replay instead.
+
+`coverage_gaps` lists more-pages-available, pagination-unknown, provider-incomplete/unknown,1000-result-window and zero-hits-not-absence flags for observed probes. It is not a numerical recall estimate. At most1000 indexed results per exact query are accessible; narrow by problem/terminology deliberately, rather than claiming that first-page completion covered GitHub. No result proves absence of analogs.
+
+`candidate_order=retrieval` preserves existing round-robin order. Optional **facet_coverage** places candidates found by both problem+mechanism first, then by number of distinct formulations/facets, then stable retrieval position. `matched_query_indices` counts formulations once across broad/zero-star/fork lanes, so one repeated query is not three independent arguments. `selection_basis` exposes the exact basis. Stars are not used, and `similarity=not_assessed` stays unchanged: a project matching multiple formulations can still be unrelated.
+
+The agent must compare actual problems, implemented mechanisms and negative controls at pinned source lines. Do not sell retrieval overlap, GitHub stars, README claims or an analyst guess as semantic equivalence, product quality or market demand. For a private source, public query formulations must be explicitly approved and contain no private identifiers/secrets; no automatic private-source analysis was added.
+
+## Large-commit pin recovery
+
+A real Agora source-profile request failed before file selection because REST commits/main included more than256KiB of diffs. On that specific response-size failure only, the evidence reader can resolve the known default branch via git/ref/heads and read the exact Git commit/tree via git/commits/SHA. An explicit full SHA needs no mutable branch lookup. Exact ref/type/SHA/tree are checked; arbitrary ref/tag is never reinterpreted as a branch. Original failure and recovery-source indices remain visible. Total response bytes,12GET limit, deadlines and rate-stop state are not reset or raised. HTTP/auth/rate/time refusals do not trigger this recovery.
+
+See [quality audit and Agora evaluation](scenarios/analog-quality-audit.md). These source changes are candidate-local, not permission to merge/deploy or execute Python/shell on VPS.

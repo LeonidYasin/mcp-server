@@ -140,8 +140,8 @@ def test_round_robin_and_match_provenance_survive_candidate_cap(fake):
     {'queries': [QUERIES[0], {'facet': 'mechanism', 'terms': 'x', 'hidden': 'extra'}]},
     {'queries': [QUERIES[0], {'facet': ['mechanism'], 'terms': 'x'}]},
     {'source_repository': '../secret'}, {'source_repository': 'https://github.com/alice/tiny'},
-    {'limit_per_probe': True}, {'limit_per_probe': 11}, {'max_candidates': 0},
-    {'max_candidates': 41}, {'evidence_limit': True}, {'evidence_limit': 3},
+    {'limit_per_probe': True}, {'limit_per_probe': 31}, {'max_candidates': 0},
+    {'max_candidates': 101}, {'evidence_limit': True}, {'evidence_limit': 3},
     {'plan_only': 1}, {'unknown': True},
 ])
 def test_invalid_inputs_zero_requests_no_echo(fake, kw):
@@ -407,3 +407,214 @@ def test_evidence_path_focus_is_explicit_not_a_hidden_search_term(fake):
 def test_invalid_analog_path_focus_rejected_without_network(fake, focus):
     r = run(fake, focus_path_terms=focus)
     assert r['state'] == 'invalid_input' and not fake.calls
+
+# Quality follow-up: query diversity, explicit pages, safe resume, honest ordering.
+def test_eight_formulations_cover_alternate_terms_without_more_per_call_gets(fake):
+    queries = [
+        {'facet':'problem','terms':'"supply demand" matching'},
+        {'facet':'mechanism','terms':'"offer" "want" matching'},
+        {'facet':'workflow','terms':'needs offers exchange'},
+        {'facet':'domain','terms':'barter marketplace'},
+        {'facet':'problem','terms':'взаимопомощь обмен'},
+        {'facet':'mechanism','terms':'semantic matchmaking'},
+        {'facet':'problem','terms':'resource discovery'},
+        {'facet':'mechanism','terms':'complementary intent matching'},
+    ]
+    r=run(fake,queries=queries,max_search_requests=12)
+    assert len(r['plan'])==24 and len(fake.calls)==12
+    assert r['next_probe_request']['start_probe']==12
+    assert {p['facet'] for p in r['plan']}=={'problem','mechanism','workflow','domain'}
+    assert all(p['arguments']['page']==1 for p in r['plan'])
+    assert r['coverage']['analogs_complete'] is False
+
+
+def test_more_than_eight_formulations_refused(fake):
+    queries=[{'facet':'problem' if i else 'mechanism','terms':f'concept {i}'} for i in range(9)]
+    assert run(fake,queries=queries)['state']=='invalid_input' and not fake.calls
+
+
+def test_resume_expected_fingerprint_enforced_before_network(fake):
+    r=run(fake,plan_only=True)
+    follow=r['next_probe_request']
+    assert follow['expected_plan_fingerprint']==r['plan_fingerprint']
+    follow['source_repository']='alice/changed'
+    r2=json.loads(find_repository_analogs(fake,**follow))
+    assert r2['error']=='plan_fingerprint_mismatch' and not fake.calls
+
+
+def test_expected_fingerprint_remains_stable_across_search_batches(fake):
+    a=run(fake,max_search_requests=2)
+    b=json.loads(find_repository_analogs(fake,**a['next_probe_request']))
+    assert a['plan_fingerprint']==b['plan_fingerprint']
+    assert b['next_probe_request']['expected_plan_fingerprint']==b['plan_fingerprint']
+
+
+@pytest.mark.parametrize('kw',[
+    {'expected_plan_fingerprint':False},{'expected_plan_fingerprint':'x'*64},
+    {'probe_pages':None},{'probe_pages':[]},{'probe_pages':{'00':2}},
+    {'probe_pages':{'-1':2}},{'probe_pages':{'6':2}},{'probe_pages':{'0':True}},
+    {'probe_pages':{'0':0}},{'probe_pages':{'0':1.2}},{'probe_pages':{'0':201}},
+    {'probe_pages':{'0'*5000:1}},{'probe_pages':{'١':2}},
+    {'probe_only':1},{'candidate_order':None},{'candidate_order':'stars'},
+])
+def test_invalid_new_controls_fail_before_network(fake,kw):
+    assert run(fake,**kw)['state']=='invalid_input' and not fake.calls
+
+
+def search_page_with_next(n,req):
+    page=int(req.url.params['page']); size=int(req.url.params['per_page'])
+    ids=[(page-1)*size+i+1 for i in range(size)]
+    return httpx.Response(200,headers={'Link':f'<{req.url.copy_merge_params({'page':page+1})}>; rel="next"'},
+        json={'items':[row(i,f'alice/project{i}') for i in ids],
+              'total_count':1000,'incomplete_results':False})
+
+
+def test_page_followup_is_executable_scope_guarded_and_does_not_visit_siblings(fake):
+    fake.search=search_page_with_next
+    a=run(fake,limit_per_probe=2,max_search_requests=1)
+    assert len(a['next_page_requests'])==1 and a['coverage_gaps'][0]['reasons']==['more_pages_available']
+    args=a['next_page_requests'][0]['arguments']
+    assert args['probe_pages']=={'0':2} and args['probe_only'] is True
+    assert args['expected_plan_fingerprint']!=a['plan_fingerprint']
+    b=json.loads(find_repository_analogs(fake,**args))
+    assert len(fake.calls)==2 and b['probes'][0]['index']==0
+    assert b['plan'][0]['arguments']['page']==2
+    assert [c['id'] for c in a['candidates']]==[1,2]
+    assert [c['id'] for c in b['candidates']]==[3,4]
+    assert b['next_probe_request'] is None
+    assert b['stop_reason']=='selected_probe_observed'
+    assert b['next_page_requests'][0]['arguments']['probe_pages']=={'0':3}
+    assert b['coverage']['analogs_complete'] is False
+
+
+def test_explicit_page_stays_within_provider_window(fake):
+    fake.search=search_page_with_next
+    r=run(fake,limit_per_probe=10,probe_pages={'0':100},probe_only=True)
+    assert len(fake.calls)==1 and fake.calls[0].url.params['page']=='100'
+    assert r['next_page_requests']==[]
+    assert r['probes'][0]['coverage']['stop_reason']=='search_window_cap'
+    assert r['coverage']['global_complete'] is False
+
+
+def test_missing_or_invalid_pagination_not_guessed_from_large_total(fake):
+    fake.search=lambda n,req:httpx.Response(200,json={'items':[row()], 'total_count':500,'incomplete_results':False})
+    r=run(fake,probe_only=True)
+    assert not r['next_page_requests']
+    assert r['coverage_gaps'][0]['reasons']==['pagination_unknown']
+
+
+def test_forged_link_never_followed_or_exported_as_safe_page(fake):
+    fake.search=lambda n,req:httpx.Response(200,headers={'Link':'<https://evil.test/>; rel="next"'},
+        json={'items':[row()],'total_count':500,'incomplete_results':False})
+    r=run(fake,probe_only=True)
+    assert not r['next_page_requests'] and len(fake.calls)==1
+    assert 'evil.test' not in json.dumps(r)
+
+
+def test_page_followup_retains_failed_page_after_refusal(fake):
+    fake.search=search_page_with_next
+    a=run(fake,probe_only=True)
+    fake.search=lambda n,req:httpx.Response(429,text=SECRET)
+    b=json.loads(find_repository_analogs(fake,**a['next_page_requests'][0]['arguments']))
+    assert b['next_probe_request']['probe_pages']=={'0':2}
+    assert b['next_probe_request']['start_probe']==0 and len(fake.calls)==2
+    assert b['batch']['completed_probe_indices']==[] and SECRET not in json.dumps(b)
+
+
+def test_more_candidates_and_larger_pages_are_bounded(fake):
+    fake.search=lambda n,req:httpx.Response(200,json={
+        'items':[row(n*100+i,f'alice/proj{n}-{i}') for i in range(30)],
+        'total_count':30,'incomplete_results':False})
+    r=run(fake,limit_per_probe=30,max_candidates=100)
+    assert r['counts']['unique_observed']==180 and len(r['candidates'])==100
+    assert r['counts']['omitted_by_candidate_cap']==80
+    assert r['continuation_blocked_reason']=='candidate_cap' and r['next_page_requests']==[]
+
+
+def test_facet_order_is_explained_ignores_stars_and_counts_formulations_not_lanes(fake):
+    def search(n,req):
+        # First query: popular adjacent and tiny source-related. Second: only tiny.
+        rows=[row(1,'alice/popular',stargazers_count=99999),row(2,'alice/tiny',stargazers_count=0)] if req.url.params['q'].startswith('telegram workflow') else [row(2,'alice/tiny',stargazers_count=0)]
+        return httpx.Response(200,json={'items':rows,'total_count':len(rows),'incomplete_results':False})
+    fake.search=search
+    original=run(fake)
+    assert original['candidates'][0]['id']==1
+    ranked=run(fake,candidate_order='facet_coverage')
+    c=ranked['candidates'][0]
+    assert c['id']==2 and c['stars']==0 and set(c['matched_query_indices'])=={0,1}
+    assert c['selection_basis']=={'order':'facet_coverage','core_facets_both_matched':True,
+        'distinct_formulations':2,'semantic_similarity_verified':False}
+    assert ranked['candidates'][1]['selection_basis']['distinct_formulations']==1
+    assert all(c['similarity']=='not_assessed' for c in ranked['candidates'])
+
+
+def test_zero_hits_incomplete_and_window_gaps_are_explicit(fake):
+    fake.search=lambda n,req:httpx.Response(200,json={'items':[],'total_count':2001 if n==1 else 0,
+        'incomplete_results':True if n==1 else False})
+    r=run(fake,max_search_requests=2)
+    assert 'provider_1000_result_window' in r['coverage_gaps'][0]['reasons']
+    assert 'provider_incomplete_or_unknown' in r['coverage_gaps'][0]['reasons']
+    assert 'zero_hits_not_absence_proof' in r['coverage_gaps'][1]['reasons']
+    assert not r['coverage']['analogs_complete']
+
+
+def test_candidate_omission_can_be_recovered_without_skipping_search_pages(fake):
+    fake.search=lambda n,req:httpx.Response(200,json={
+        'items':[row(i,f'alice/item{i}') for i in range(1,6)], 'total_count':5,'incomplete_results':False})
+    a=run(fake,max_candidates=1)
+    assert a['continuation_blocked_reason']=='candidate_cap'
+    assert a['next_probe_request'] is None and a['next_page_requests']==[]
+    assert a['recovery_request']['start_probe']==0
+    b=json.loads(find_repository_analogs(fake,**a['recovery_request']))
+    assert len(b['candidates'])==5 and b['counts']['omitted_by_candidate_cap']==0
+    assert b['plan_fingerprint']==a['plan_fingerprint']
+    assert b['next_probe_request']['start_probe']==1
+
+
+def test_changed_page_or_limit_rejects_continuation_fingerprint(fake):
+    a=run(fake,plan_only=True)
+    for changes in [{'probe_pages':{'0':2}},{'limit_per_probe':20}]:
+        r=json.loads(find_repository_analogs(fake,**{**a['next_probe_request'],**changes}))
+        assert r['error']=='plan_fingerprint_mismatch'
+    assert not fake.calls
+
+
+def test_plan_warns_about_default_core_scope_without_network(fake):
+    r = run(fake, plan_only=True)
+    coverage = r['query_coverage']
+    assert coverage['readme_formulation_indices'] == []
+    assert coverage['core_facets_without_readme_scope'] == ['problem', 'mechanism']
+    assert coverage['advisories'][0]['code'] == 'core_facet_without_readme_scope'
+    assert coverage['synonyms_languages_assessed'] is False
+    assert coverage['semantic_coverage_verified'] is False
+    assert not fake.calls
+
+
+@pytest.mark.parametrize('scope', ['readme', 'name_description_readme'])
+def test_readme_advisory_tracks_each_core_facet_not_optional_facet(fake, scope):
+    queries = [
+        {'facet': 'problem', 'terms': 'complementary needs', 'search_in': scope},
+        {'facet': 'mechanism', 'terms': 'intent matching'},
+        {'facet': 'domain', 'terms': 'community exchange', 'search_in': scope},
+    ]
+    a = run(fake, queries=queries, plan_only=True)
+    assert a['query_coverage']['readme_formulation_indices'] == [0, 2]
+    assert a['query_coverage']['core_facets_without_readme_scope'] == ['mechanism']
+    queries[1]['search_in'] = scope
+    b = run(fake, queries=queries, plan_only=True)
+    assert b['query_coverage']['advisories'] == []
+    assert b['query_coverage']['semantic_coverage_verified'] is False
+    assert not fake.calls
+
+
+def test_advisory_does_not_silently_expand_search_scope(fake):
+    r = run(fake, max_search_requests=1)
+    assert r['query_coverage']['advisories']
+    assert 'in:readme' not in fake.calls[0].url.params['q']
+    assert r['state'] == 'partial' and len(fake.calls) == 1
+
+
+def test_invalid_query_has_no_scope_advisory_or_network(fake):
+    r = run(fake, queries=[{'facet': 'problem', 'terms': SECRET}])
+    assert r['query_coverage'] is None and not fake.calls
+    assert SECRET not in json.dumps(r)

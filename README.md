@@ -1,5 +1,7 @@
 # MCP GitHub Server
 
+> **Analog-search quality candidate (PR #112):** 2–8 formulations, safe explicit page continuations with fingerprint validation, README-scope advisories, accountable facet-coverage ordering and large-commit source-pin recovery. No exhaustive-GitHub or commercial-demand claim. [Audit and acceptance](docs/scenarios/analog-quality-audit.md). Tests run in the agent sandbox only; no VPS execution/deployment is authorized.
+
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
 [![tools](https://img.shields.io/badge/tools-runtime_registry-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)

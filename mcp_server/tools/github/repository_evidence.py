@@ -155,8 +155,38 @@ def _metadata(reader, full):
             "source": source}
 
 
-def _pin(reader, full, ref):
-    data, source = reader.get("/repos/" + full + "/commits/" + quote(ref, safe=""))
+def _pin(reader, full, ref, default_branch=None):
+    try:
+        data, source = reader.get("/repos/" + full + "/commits/" + quote(ref, safe=""))
+    except Refused as exc:
+        # REST commit responses include diffs and may exceed the response cap.
+        # Only that specific size failure permits compact metadata recovery;
+        # never guess branch vs tag, retry a refusal, reset budgets or add auth.
+        if (str(exc) != "body_budget" or reader.halted_reason
+                or reader.result["budget"]["response_bytes"] >= TOTAL_CAP
+                or not (SHA.fullmatch(ref) or ref == default_branch)):
+            raise
+        failed_source = len(reader.result["sources"]) - 1
+        ref_source = None
+        if SHA.fullmatch(ref):
+            resolved = ref
+        else:
+            pointer, ref_source = reader.get("/repos/" + full + "/git/ref/heads/" + quote(ref, safe=""))
+            obj = pointer.get("object")
+            if (pointer.get("ref") != "refs/heads/" + ref or not isinstance(obj, dict)
+                    or obj.get("type") != "commit" or not isinstance(obj.get("sha"), str)
+                    or not SHA.fullmatch(obj["sha"])):
+                raise Refused("branch_commit_unverified")
+            resolved = obj["sha"]
+        compact, source = reader.get("/repos/" + full + "/git/commits/" + resolved)
+        tree = compact.get("tree")
+        if compact.get("sha") != resolved:
+            raise Refused("commit_mismatch")
+        if not isinstance(tree, dict) or not isinstance(tree.get("sha"), str) or not SHA.fullmatch(tree["sha"]):
+            raise Refused("commit_tree_unverified")
+        return {"requested_ref": ref, "sha": resolved, "tree_sha": tree["sha"], "source": source,
+                "resolution_strategy": "compact_git_commit_after_oversized_rest_commit",
+                "oversized_commit_source": failed_source, "branch_ref_source": ref_source}
     sha = data.get("sha")
     if not isinstance(sha, str) or not SHA.fullmatch(sha):
         raise Refused("commit_unverified")
@@ -323,7 +353,7 @@ def _file(reader, full, sha, spec, expected_blob, role_hint=None):
 
 def _compare(reader, full, head, parent):
     parent_meta = _metadata(reader, parent)
-    base = _pin(reader, parent, parent_meta["default_branch"])
+    base = _pin(reader, parent, parent_meta["default_branch"], parent_meta["default_branch"])
     data, source = reader.get("/repos/" + full + "/compare/" + base["sha"] + "..." + head,
                               {"per_page": 1, "page": 1})
     files = data.get("files")
@@ -416,7 +446,7 @@ def observe(client, **kwargs):
     reader = Reader(client, result, credential)
     try:
         result["repository"] = _metadata(reader, full)
-        result["revision"] = _pin(reader, full, ref or result["repository"]["default_branch"])
+        result["revision"] = _pin(reader, full, ref or result["repository"]["default_branch"], result["repository"]["default_branch"])
         blobs, result["selection_tree"] = _selected_tree(reader, full,
             result["revision"]["tree_sha"], normalized if selection == "explicit" else None)
     except Refused as exc:

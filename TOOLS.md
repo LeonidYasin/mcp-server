@@ -1,5 +1,7 @@
 # TOOLS — полный каталог инструментов mcp-server
 
+> **Analog-search quality candidate (PR #112):** 2–8 formulations, safe explicit page continuations with fingerprint validation, README-scope advisories, accountable facet-coverage ordering and large-commit source-pin recovery. No exhaustive-GitHub or commercial-demand claim. [Audit and acceptance](docs/scenarios/analog-quality-audit.md). Tests run in the agent sandbox only; no VPS execution/deployment is authorized.
+
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
 > **Ревизия:** 8 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
