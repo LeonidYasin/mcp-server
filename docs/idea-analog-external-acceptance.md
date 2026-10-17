@@ -1,5 +1,24 @@
 # External idea-analog acceptance: TEST runtime 20d2675
 
+## Follow-up: 65ddae1 installed; recovery check stopped at quota (13:51 UTC)
+
+The operator subsequently supplied checksum OK and `TEST_ROLLOUT_PASS` for runtime `65ddae12bfaf6d117bb8f472ba396016db36610a`, previous `20d26756b87f78f28d9c3f5ea8a14b3fd1de36b7`, 120 tools, protected services unchanged. Backup remains private on VPS. The historical observation below describes the earlier runtime; the path-walk fix is now installed in TEST, not production.
+
+The exact previously failing external request was repeated: `get_repo_info(owner=LeonidYasin, repo=ConstruBot, mode=public_evidence, ref=ee3d69e0f6c721207ab66ceef2d830a316d80d52, file_selection=explicit, evidence_files=[{path:backend/app/main.py,start_line:21,max_lines:20}])`.
+
+Observed sequence at 2026-10-17 13:51:55–13:51:56 UTC:
+
+1. Public metadata: HTTP 200, quota remaining 3.
+2. Pinned revision: HTTP 200, remaining 2; tree `9d70d269d661d1ed4018c7300ad6c5ecea51c75a`.
+3. Recursive tree: HTTP 200, refused `body_budget` at the unchanged 262144-byte per-response limit, remaining 1.
+4. Non-recursive pinned root tree: HTTP 200, remaining 0. This confirms the deployed fallback was reached; no further child-tree or Contents GET was issued.
+
+Final result: `state=unavailable`, `error=observed_rate_budget`, `files=[]`, 4 requests, 329254 cumulative response bytes, fixed 12-request ceiling. The fallback implementation is demonstrably running, but the file/range and full traversal are NOT accepted yet. The observed zero quota was honored without retries or authenticated fallback. GitHub reported reset epoch `1792246571` (2026-10-17 14:16:11 UTC).
+
+Next action: after reset, explicitly repeat the same pinned request and verify `state=observed`, `explicit_path_walk_v1`, the linked root/backend/app tree provenance, blob integrity, and the requested lines 21–40. Reset time is provider guidance, not a reservation of quota. No new deployment or root command is required for that retry. The agent did not run Python/shell tools on VPS during this check, and did not schedule a background retry.
+
+---
+
 Observation window: 2026-10-17, 13:27–13:34 UTC. This is a bounded external MCP test, not a global GitHub census, semantic benchmark, novelty verdict or revenue assessment.
 
 ## Deployment versus candidate
