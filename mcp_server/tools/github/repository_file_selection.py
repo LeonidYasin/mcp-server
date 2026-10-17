@@ -9,10 +9,17 @@ IGNORED = frozenset({
 MANIFESTS = (
     "pyproject.toml", "go.mod", "cargo.toml", "package.json", "pom.xml",
     "build.gradle.kts", "build.gradle", "requirements.txt", "composer.json",
-    "gemfile", "mix.exs", "pubspec.yaml",
+    "gemfile", "mix.exs", "pubspec.yaml", "action.yml", "action.yaml",
 )
 CODE = frozenset({".py", ".go", ".rs", ".ts", ".tsx", ".js", ".jsx", ".java",
-                  ".scala", ".c", ".cpp", ".h", ".cs", ".rb", ".ex", ".kt", ".swift", ".php"})
+                  ".mjs", ".cjs", ".mts", ".cts",
+                  ".scala", ".gs", ".sql", ".c", ".cpp", ".h", ".cs", ".rb", ".ex", ".kt", ".swift", ".php"})
+FOCUS_PATH_TERMS_SCHEMA = {
+    "type": "array", "minItems": 1, "maxItems": 8,
+    "description": "Optional auto-selection only: explicit ASCII path-token prefixes (3–32 alphanumerics), "
+                   "e.g. match/embed/calculate. Path hints, not semantic relevance or file-content search; no extra GETs.",
+    "items": {"type": "string", "minLength": 3, "maxLength": 32, "pattern": "^[A-Za-z0-9]{3,32}$"},
+}
 ENTRYPOINTS = ("engine", "server", "main", "app", "tools", "query_executor", "client")
 IMPLEMENTATION_ROLES = ("dispatch", "bootstrap", "authorization", "domain", "configuration", "other")
 DOMAIN_DIRS = frozenset({"servers", "integrations", "connectors", "adapters", "providers", "plugins"})
@@ -20,6 +27,20 @@ AUTH_WORDS = frozenset({"auth", "authentication", "authorization", "oauth", "per
                         "credentials", "credential", "security"})
 IDENTITY_STOP = frozenset({"mcp", "server", "servers", "sdk", "api", "app", "demo",
                            "org", "team", "company", "src", "lib"})
+
+def normalize_focus_path_terms(value):
+    if (not isinstance(value, list) or not 1 <= len(value) <= 8 or
+            any(not isinstance(term, str) or not re.fullmatch(r"[A-Za-z0-9]{3,32}", term)
+                for term in value)):
+        return None
+    terms = [term.lower() for term in value]
+    return terms if len(set(terms)) == len(terms) else None
+
+
+def _focus_matches(path, terms):
+    words = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", path)
+    tokens = re.split(r"[^a-z0-9]+", words.lower())
+    return [term for term in terms if any(token.startswith(term) for token in tokens)]
 
 
 def _identity_tokens(identity):
@@ -71,12 +92,12 @@ def _role(path):
         return "deployment"
     if (any(name.endswith(ext) for ext in CODE) and
             not re.search(r"(^test[_-]|[_-]test\.|\.test\.|\.spec\.|^conftest\.|^__(?:init|main)__\.|\.min\.)", name) and
-            not name.endswith((".d.ts", "_generated.go", ".g.cs"))):
+            not name.endswith((".d.ts", ".d.mts", ".d.cts", "_generated.go", ".g.cs"))):
         return "implementation"
     return None
 
 
-def select_files(blobs, comparison=None, repository_identity=None):
+def select_files(blobs, comparison=None, repository_identity=None, focus_path_terms=None):
     """Return up to six diverse, explained choices from verified regular paths.
 
     Caller validates paths/blob modes and excludes known oversized files first.
@@ -94,8 +115,10 @@ def select_files(blobs, comparison=None, repository_identity=None):
         if role is not None:
             candidates[path] = role
     identity_tokens = _identity_tokens(repository_identity)
+    focus = normalize_focus_path_terms(focus_path_terms) or []
     hints = {path: _implementation_hint(path, identity_tokens)
              for path, role in candidates.items() if role == "implementation"}
+    focused = {path: _focus_matches(path, focus) for path in hints}
 
     def rank(path):
         role = candidates[path]
@@ -118,7 +141,8 @@ def select_files(blobs, comparison=None, repository_identity=None):
         # Unknown roles do not displace a second recognized role just for diversity.
         diversity = 2 if role == "other" else int(role in used_implementation_roles)
         source_root = path.split("/", 1)[0].lower()
-        return (change_class, diversity, int((role, group) in used_implementation_groups),
+        return (change_class, 0 if focused[path] else 1,
+                diversity, int((role, group) in used_implementation_groups),
                 IMPLEMENTATION_ROLES.index(role), 0 if identity_match else 1,
                 0 if source_root in ("src", "lib", "app", "internal", "cmd", "pkg") or "/" not in path else 1,
                 0 if role == "authorization" and stem in ("auth", "factory", "authorization", "permissions") else 1,
@@ -139,6 +163,7 @@ def select_files(blobs, comparison=None, repository_identity=None):
                        if role == "implementation" and path in added else
                        "changed_source_path_in_observed_comparison"
                        if role == "implementation" and is_changed else
+                       "caller_focus_path_prefix_hint" if role == "implementation" and focused[path] else
                        "identity_domain_path_hint" if role == "implementation" and hints[path][2] else
                        "diverse_implementation_role_hint" if role == "implementation" else
                        "conventional_" + role + "_path"),
@@ -148,7 +173,8 @@ def select_files(blobs, comparison=None, repository_identity=None):
         if role == "implementation":
             implementation_role, group, identity_match = hints[path]
             item.update(implementation_role_hint=implementation_role,
-                        implementation_group_hint=group, identity_domain_match=identity_match)
+                        implementation_group_hint=group, identity_domain_match=identity_match,
+                        focus_path_matches=focused[path])
             used_implementation_roles.add(implementation_role)
             used_implementation_groups.add((implementation_role, group))
         chosen.append(item)
@@ -180,8 +206,10 @@ def select_files(blobs, comparison=None, repository_identity=None):
         },
         "implementation_slots_after_documents": implementation_slots_after_documents,
         "identity_tokens_used": sorted(identity_tokens),
+        "focus_path_terms_used": focus,
         "limitations": [
             "Names/paths are hints, not proof of file contents or implementation quality.",
+            "Caller focus is a lexical path-token prefix preference after observed change class, not content/semantic search.",
             "At most80 LF-delimited lines per file; callable-name hints may miss relevant logic. Explicit ranges remain available.",
             "Vendored/generated/test/example path conventions are excluded heuristically, not perfectly.",
             "Monorepos, unconventional names and incomplete trees/comparisons can hide relevant files.",
