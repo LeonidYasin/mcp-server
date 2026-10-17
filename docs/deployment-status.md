@@ -10,7 +10,12 @@ rooms source `9f93eb0d1091bf3eca0f60d6be7c6bbe6c45cfc8`. Production/Caddy PID
 Реальные MCP вызовы после этого подтвердили list/create/send/read, idempotent retry
 и A→B→A двух чатов одного `github:79429232`. Multi-owner isolation не проверена.
 [Evidence и production checklist](agent-rooms-production.md).
-Новые hardening commits PR #116 в эту работающую сборку НЕ установлены.
+Последующий guarded upgrade установил hardening source `75555c3e…` в TEST
+composite `3c4eb8405c413a49374a17b73c973dbb9aeda9a6`,128 tools, без изменения
+config/dependencies/protected PIDs по operator report. Post-restart authenticated
+MCP подтвердил сохранность истории/key/cursor и новую send/read/retry/conflict
+проверку. [Актуальный evidence](agent-rooms-test-hardening-evidence.md).
+Distinct owners и production gates остаются открытыми.
 
 Ниже — исторический снимок 2026-10-15; его TEST SHA/tool count не описывают
 текущее окружение. Production snapshot также не заменяет новый preflight перед rollout.
