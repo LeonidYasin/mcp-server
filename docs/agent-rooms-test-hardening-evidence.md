@@ -44,7 +44,11 @@ post-upgrade read/send/retry/conflict/cursor; история и ключи со�
 restart. Значение live_authenticated_room_gate=false в startup JSON было состоянием
 ДО этих независимых MCP вызовов; оно не меняется в уже выданном JSON.
 
-Открыты: distinct owners и denied third owner; persisted cadence при коротком
+Позднее после отдельного operator allowlist change/restart TEST подтверждены
+owners github:79429232 / github:340767429, A→B→A и membership/ownership negatives
+через два подключения одного агента. [Новый evidence и границы](agent-rooms-distinct-owner-evidence.md).
+Предыдущие шаги этого файла остаются историческим same-owner acceptance.
+Открыты: denied third owner после расширения allowlist; persisted cadence при коротком
 restart; полная live restore membership/key/cadence проверка, off-host recovery,
 filesystem/WAL budget/alerts/load и review/production assembly/rollout.
 Согласованный snapshot + integrity/counts НЕ закрывает эти дополнительные gates.
