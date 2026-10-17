@@ -12,7 +12,7 @@
 
 ## Проверяемый профиль реестра
 
-Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **151 при всех четырёх feature flags** (`ENABLE_LOCAL_TOOLS`, `ENABLE_LOCAL_SHELL`, `ENABLE_SYNAPSE`, `ENABLE_AGENT_ROOMS`). Включение только rooms даёт 121 tool; это кандидат #115, не deployed inventory. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
