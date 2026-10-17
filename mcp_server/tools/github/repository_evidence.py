@@ -53,9 +53,12 @@ class Reader:
     def __init__(self, client, result, credential):
         self.client, self.result, self.credential = client, result, credential
         self.deadline = time.monotonic() + 30
+        self.halted_reason = None
 
     def get(self, path, params=None):
         budget = self.result["budget"]
+        if self.halted_reason:
+            raise Refused(self.halted_reason)
         if (budget["requests"] >= MAX_REQUESTS or budget["response_bytes"] >= TOTAL_CAP
                 or time.monotonic() >= self.deadline):
             raise Refused("budget_exhausted")
@@ -82,6 +85,11 @@ class Reader:
                     hints[key] = int(value)
             if hints:
                 source["rate_hints"] = hints
+            if (hints.get("x-ratelimit-remaining") == 0 or response.status_code == 429 or
+                    (response.status_code == 403 and "retry-after" in hints)):
+                # Preserve this observation, but don't issue sibling file/parent GETs
+                # after an explicit quota signal. No automatic sleep or retry.
+                self.halted_reason = "observed_rate_budget"
             if response.status_code != 200:
                 raise Refused("redirect_rejected" if 300 <= response.status_code < 400 else "http_refused")
             if response.headers.get("content-encoding", "identity").lower() not in ("", "identity"):
@@ -319,9 +327,13 @@ def observe(client, **kwargs):
     full = str(kwargs.get("owner", "")) + "/" + str(kwargs.get("repo", ""))
     specs, ref, compare = kwargs.get("evidence_files"), kwargs.get("ref"), kwargs.get("compare_parent", False)
     selection = kwargs.get("file_selection", "explicit")
+    from mcp_server.tools.github.repository_file_selection import normalize_focus_path_terms
+    focus = normalize_focus_path_terms(kwargs["focus_path_terms"]) if "focus_path_terms" in kwargs else []
     valid = (isinstance(kwargs.get("owner"), str) and isinstance(kwargs.get("repo"), str) and
-             set(kwargs) <= {"owner", "repo", "evidence_files", "ref", "compare_parent", "file_selection"} and
+             set(kwargs) <= {"owner", "repo", "evidence_files", "ref", "compare_parent", "file_selection",
+                            "focus_path_terms"} and
              _identity(full) and type(compare) is bool and selection in ("explicit", "auto") and
+             focus is not None and ("focus_path_terms" not in kwargs or selection == "auto") and
              ((selection == "explicit" and isinstance(specs, list) and 1 <= len(specs) <= 6) or
               (selection == "auto" and "evidence_files" not in kwargs)))
     if ref is not None:
@@ -369,7 +381,7 @@ def observe(client, **kwargs):
     if selection == "auto":
         from mcp_server.tools.github.repository_file_selection import select_files
         compare_fork()
-        plan = select_files(blobs, result["fork_comparison"], result["repository"]["full_name"])
+        plan = select_files(blobs, result["fork_comparison"], result["repository"]["full_name"], focus)
         result["file_selection"] = plan
         normalized = [{"path": item["path"], "start_line": 1, "max_lines": item["max_lines"],
                        "role_hint": item["role_hint"]} for item in plan["selected"]]
