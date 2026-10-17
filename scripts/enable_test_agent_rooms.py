@@ -237,6 +237,7 @@ def main():
                 pass
             time.sleep(1)
         require(ready and prop(UNIT, 'ActiveState') == 'active', 'New TEST health failed.')
+        storage_probe(prop(UNIT, 'MainPID'))
         require(all(prop(unit, 'MainPID') == pid for unit, pid in protected.items()), 'Protected PID changed; investigate.')
         print(json.dumps({'result': 'TEST ROOMS REGISTERED', 'old_sha': OLD, 'composite_sha': composite,
             'rooms_source_sha': SOURCE, 'tools_before': len(previous['tools']), 'tools_after': len(current['tools']),
