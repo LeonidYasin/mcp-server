@@ -48,6 +48,36 @@ production readiness новой hardening-ревизии или backup дейс�
   Это storage gate, не authenticated MCP gate. Этот root-скрипт запускает только
   оператор после отдельного согласования; агент его не исполняет.
 
+## Обновление уже установленного TEST: отдельный guarded script
+
+`scripts/upgrade_test_agent_rooms.py` предназначен ТОЛЬКО для clean observed
+composite `a323a67f13ecb175a91e8f9726c76c11497483af` и 128 tools.
+Первый enable_test_agent_rooms.py нельзя повторно запускать поверх этого TEST.
+Upgrade использует immutable hardening source `48a029f2867df399e473dad927dec165d91fa518`
+и отдельно проверенный по Git blob helper; root orchestration выполняет оператор,
+все Git/tests/SQLite operations — service user. Агент script не запускал.
+
+Порядок: проверить service/config/PIDs/storage namespace/disk reserve → создать
+candidate из текущего TEST с overlay только девяти room paths → full pytest →
+consistent snapshot и копия для restore-integrity check → повторный preflight →
+переключить только TEST → прежние 128 tools + новый SHA + storage namespace probe.
+Config/env, allowlist, существующая БД и зависимости не заменяются. Production,
+Caddy и Agora не targeted. При сбое после переключения — guarded code rollback;
+данные/config не откатываются к snapshot автоматически, новые сообщения не стираются.
+
+Helper нужен как отдельный файл: `--helper <ABSOLUTE_PRIVATE_HELPER_PATH>`;
+при wrong owner/permissions/blob upgrade прекращается до использования helper.
+Оба файла скачиваются по закреплённым commit URLs и проверяются до запуска.
+Private root log/state/code rollback сохраняются в /root; private snapshot/restore
+копии — в отдельном каталоге service user под /home/mcp-test/data. Snapshot содержит
+owner IDs и сообщения; не публиковать, retention/off-host отдельно согласовать.
+
+Успешный итог `TEST ROOMS HARDENING INSTALLED` означает только перечисленные
+operator gates. `live_authenticated_room_gate=false` и `distinct_owner_gate=false`
+остаются до MCP-проверки после установки. Snapshot counts/integrity НЕ закрывают
+полный live restore drill membership/key/cadence, off-host recovery или SLA/load.
+Этот script НЕ универсальный production installer и не переносит комнаты в новый repo.
+
 ## Gates до production
 
 1. **CI exact SHA**: Python 3.10–3.13, полный pytest, docs/inventory, build wheel/sdist.
