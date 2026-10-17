@@ -11,8 +11,13 @@ rooms allowlist НЕ ограничивает остальные инструм�
 protected PIDs unchanged, namespace storage и snapshot-restore integrity passed.
 Затем независимые authenticated MCP вызовы подтвердили сохранность старой истории,
 key/cursor и новую send/read/retry/conflict проверку. [Evidence и границы](agent-rooms-test-hardening-evidence.md).
-Distinct-owner, short-restart cadence, полный live restore/off-host/disk/load и
-production rollout остаются открытыми. Ниже первоначальный baseline — исторический.
+Последующая live проверка через два подключения подтвердила разных numeric owners,
+A→B→A, retry и membership/ownership negatives: [distinct-owner evidence](agent-rooms-distinct-owner-evidence.md).
+Один агент управлял двумя credentials; не выдавать за новый автономный cross-chat тест.
+Denied third owner после расширения allowlist, short-restart cadence, полный live
+restore/off-host/disk/load и production rollout остаются открытыми.
+Пункт 4 ниже — полный критерий: часть two-owner PASS, third-owner пока pending.
+Ниже первоначальный baseline — исторический.
 
 ## Первоначальный TEST baseline (до hardening)
 
