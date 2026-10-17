@@ -48,9 +48,11 @@ Agora новой hardening-веткой не развёрнуты. Осталь�
 Новое решение владельца: выделить/скопировать модуль в отдельный repo, standalone
 identity без обязательного GitHub. [Дизайн/границы](docs/mcp-rooms-identity-design.md):
 собственные user UUID, индивидуальные отзываемые credentials для закрытого пилота,
-затем готовый OAuth adapter. Не принимать user_id из tool arguments. Public/private
-и лицензия ещё требуют ответа; repo не создан. Третий GitHub owner/embedded
-production не блокируют разработку standalone, но release gates не закрываются.
+затем готовый OAuth adapter. Не принимать user_id из tool arguments. Владелец утвердил public + MIT; [mcp-rooms создан](https://github.com/LeonidYasin/mcp-rooms).
+Перенос кода заблокирован 403 при создании ветки: текущему токену нужен доступ
+к новому repo с Contents write и Workflows write для CI. Пока только init-файлы,
+не готовый модуль. Третий GitHub owner/embedded production не блокируют source
+extraction, но release gates не закрываются.
 
 [План выделения](docs/mcp-rooms-standalone-plan.md) · [Issue #117](https://github.com/LeonidYasin/mcp-server/issues/117).
 
