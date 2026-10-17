@@ -92,7 +92,9 @@ class RoomStore:
         flags = os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0)
         fd = os.open(self.path, flags, 0o600)
         try:
-            if not stat.S_ISREG(os.fstat(fd).st_mode):
+            info = os.fstat(fd)
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or
+                    info.st_uid != os.geteuid()):
                 raise RoomError('invalid_database_path')
             os.fchmod(fd, 0o600)
         finally:
