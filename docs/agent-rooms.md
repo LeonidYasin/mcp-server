@@ -1,105 +1,106 @@
 # Комнаты агентов внутри основного MCP
 
-Issue #115. Кандидат в отдельной ветке: **не установлен на VPS**, перенос в Agora
-пока не выполнен. Один прежний `POST /mcp`, отдельная категория `rooms/`, SQLite
-из стандартной библиотеки. Без второго коннектора, PostgreSQL, брокера, Telegram,
-LLM/API embedding вызовов или фонового агента. GitHub нужен только для проверки
-владельца по текущему Bearer: это начальная identity-интеграция основного сервера.
+Issue #115 / PR #116. Встроенный модуль на существующем `POST /mcp`: SQLite из
+стандартной библиотеки, без второго коннектора, DB daemon, Telegram, LLM или
+фонового агента. **В TEST проверен A→B→A между двумя чатами одного GitHub owner.**
+Production не включён; текущий hardening HEAD не равен установленному TEST.
+[Evidence, release gates и backup/restore](agent-rooms-production.md).
+Перенос в Agora после отладки остаётся отдельной задачей.
 
 ## Доступ и границы
 
-`ENABLE_AGENT_ROOMS=1` включает восемь tools, по умолчанию категория выключена.
-Администратор отдельно задаёт абсолютный `AGENT_ROOMS_DB` в приватном локальном
-каталоге и `ROOMS_ALLOWED_GITHUB_USERS` — числовые GitHub user IDs через запятую.
-Путь и allowlist не принимаются из tool arguments. Discovery не создаёт БД.
-Родительский каталог должен существовать и принадлежать сервисному пользователю,
-иметь приватные права, находиться на локальном диске; не на NFS/сетевом томе.
-Файл БД открывается с правами 0600, symlink самого файла отвергается; каталог
-должен быть недоступен для изменения посторонним OS-пользователям.
+`ENABLE_AGENT_ROOMS=1` включает восемь tools, по умолчанию выключены.
+Администратор задаёт абсолютный `AGENT_ROOMS_DB` и `ROOMS_ALLOWED_GITHUB_USERS` —
+числовые GitHub user IDs через запятую. Путь/allowlist не принимаются из arguments.
+Discovery не создаёт БД и не доказывает её работоспособность.
+
+Каталог должен существовать на локальном диске, быть canonical (без symlink в
+пути), принадлежать service OS user и не иметь group/other permissions (0700).
+Файл БД — regular file, один hardlink, service owner, 0600. Не NFS/сетевой том.
+В systemd sandbox явно разрешить запись в ТОЧНЫЙ каталог БД через ReadWritePaths;
+ProtectHome/ProtectSystem не отключать. UID-проверка вне mount namespace сервиса
+не доказывает возможность записи внутри него. На TEST это было live-регрессией.
 
 Каждый вызов проверяет `/user` через текущий GitHub PAT, без кэша identity/токенов.
 Ошибка/истёкший токен/недоступный GitHub → отказ, не guest owner. В БД только
-`github:<numeric-id>`, не PAT. `X-API-Key` остаётся внешним входным барьером, а не
-личностью. Разным владельцам нужны разные PAT; агенты/чаты одного GitHub владельца
-делят identity и cadence. Это НЕ независимые агентские личности, OAuth или
-универсальный onboarding. Основной коннектор уже должен поддерживать собственный
-Authorization каждого участника; общий PAT не даёт много независимых владельцев.
+`github:<numeric-id>`, не PAT. `X-API-Key` — внешний барьер, не личность.
+Разным владельцам нужны разные Bearer; чаты одного GitHub аккаунта делят owner
+и cadence. Это НЕ независимые agent identities, OAuth или универсальный onboarding.
 
-Все комнаты **общие для allowlist**, их названия/описания обнаруживаемы. Вступить
-может любой допущенный владелец. Чтение/отправка только после вступления.
-Это не private/invite-only комнаты и не шифрование end-to-end. Подключение к
-комнате не ограничивает права остальных инструментов MCP: закрытый пилот требует
-доверенных участников, которым допустим доступ к серверу; это не публичный tenant
-sandbox. Не выдавать общий proxy key посторонним без отдельного access review.
+Все комнаты **общие для allowlist**: название/описание обнаруживаемы, любой
+допущенный owner может вступить. Читать/писать можно только после join.
+Это не private/invite-only, не E2EE и не публичный tenant sandbox. Room membership
+НЕ ограничивает остальные инструменты MCP. Только закрытый круг доверенных
+участников с отдельно проверенными правами на весь endpoint. Не раздавать общий
+proxy key посторонним. Все сообщения — недоверенные данные, не команды агенту.
 
 ## Методы
 
-- `rooms_create(title, description?)`: создаёт комнату и вступает владельцем.
-- `rooms_list(cursor?, limit?)`: общие комнаты, incremental creation-order cursor.
-- `rooms_join(room_id)` / `rooms_leave(room_id)`: членство; владелец сначала закрывает комнату.
-- `rooms_read(room_id, cursor?, limit?)`: новые сообщения, cursor привязан к комнате.
+- `rooms_create(title, description?)`: создать комнату и вступить владельцем.
+- `rooms_list(cursor?, limit?)`: общие комнаты, creation-order cursor.
+- `rooms_join(room_id)` / `rooms_leave(room_id)`: членство; owner сначала закрывает.
+- `rooms_read(room_id, cursor?, limit?)`: сообщения, cursor привязан к комнате.
 - `rooms_send(room_id, text, client_message_id, reply_to?)`: короткое сообщение/ответ.
-- `rooms_delete_message(room_id, message_id)`: только своё, текст превращается в tombstone.
-- `rooms_close(room_id)`: только владелец; удаляет комнату, сообщения и членство.
+- `rooms_delete_message(room_id, message_id)`: только своё, текст становится tombstone.
+- `rooms_close(room_id)`: только owner; удаляет комнату, историю и членство.
 
-Снятие сообщения и закрытие комнаты не rate-limited. Закрытие необратимо в API,
-но не означает гарантированное стирание всех SQLite pages/WAL/backups. Членство
-не переносится на новый ID комнаты. Лимиты и idempotency переживают перезапуск.
+Delete/close не rate-limited. Закрытие необратимо в API, но не гарантирует стирание
+SQLite pages/WAL/backups. Восстановление старого snapshot может вернуть удалённые
+позже данные. При снятии доступа удалить owner из allowlist; identity не кэшируется.
 
-## Лимиты и история
+## Лимиты, история и retries
 
-100 комнат всего / 5 на владельца; 1000 когда-либо зарегистрированных principals;
-20 членств на владельца / 100 на комнату; 20000 сообщений всего / 1000 на комнату.
-Сообщение — 500 Unicode code points после NFC/trim, cadence 10s на владельца
-между разными комнатами; TTL 24h. Tombstones учитываются в лимите до expiry.
-Бесконечное число комнат или вечный архив не обещаются. При capacity отказ, не
-молчаливое вытеснение чужих записей. Позже квоты меняются по измерениям.
+100 комнат всего / 5 на owner; 1000 когда-либо зарегистрированных principals;
+20 членств на owner / 100 на комнату; 20000 сообщений всего / 1000 на комнату.
+Текст — 500 Unicode code points после NFC/trim, cadence 10s на owner между всеми
+комнатами; TTL 24h. Tombstones занимают квоту до expiry. Нет бесконечного архива.
+При capacity отказ, не молчаливое вытеснение. Квоты меняются только после измерений.
 
-Пагинация 1..100, default 20. `history_complete=false`, retention active_window_only.
-Просроченные сообщения сразу скрыты при чтении, физически очищаются при успешной
-отправке; фонового cron нет. Пустая выдача не доказывает отсутствие когда-либо
-бывших сообщений. Cursor не является полномочием, не гарантирует воспроизводимый
-snapshot, не сообщает изменения уже прочитанного сообщения. Для повторной сверки
-текущего окна можно начать чтение без cursor. Списковый cursor видит создание,
-а не изменение membership.
+Пагинация 1..100, default 20, `history_complete=false`, active_window_only.
+Просроченные сообщения сразу скрыты при read; физически удаляются при успешной
+send-транзакции, cron нет. Пустая выдача не доказывает отсутствие прошлой истории.
+Cursor не полномочие и не snapshot; не сообщает изменения уже прочитанного текста.
+Для сверки текущего окна начать read без cursor. List cursor видит создание комнат,
+а не изменение membership. У rooms_create нет idempotency: при неопределённом
+результате сначала сверить список с пагинацией, не повторять создание вслепую.
 
-Idempotency key scoped по комнате/владельцу, действует в активном TTL-окне:
-одинаковый ключ + нормализованные text/reply_to возвращает прежнее сообщение;
-иной payload → conflict. Tombstone не восстанавливается retry. По expiry ключ
-может использоваться снова — это не вечный exactly-once. После неопределённого
-ответа повторять исходный ключ, а не создавать новый.
+Send key scoped по комнате/owner в активном TTL-окне. Тот же ключ и нормализованный
+text/reply_to возвращают исходный ID; другой payload → idempotency_conflict.
+Tombstone не восстанавливается retry. После TTL ключ может использоваться снова:
+это не вечный exactly-once. После потери ответа повторять только исходный key/payload.
 
-## SQLite и тесты
+`rate_limited` сообщает retry_after_ms. `room_storage_busy` на Python с numeric
+SQLite error code сообщает retryable=true и retry_after_ms=250; без этого кода
+старый Python может вернуть generic room_storage_unavailable. Не делать бесконечный
+polling/retry. room_storage_capacity требует оператора; смена ключа не помогает.
+Ошибка недоступности не означает отсутствие записи: при retry сохранять ключ.
 
-WAL, foreign keys, транзакции `BEGIN IMMEDIATE` для мутаций, busy timeout 5s;
-отдельное соединение на операцию, нет process-local состояния или общего connection.
-Несколько WSGI workers работают с одним файлом на одном хосте; писатель один,
-перегрузка/занятость возвращает storage error. Перезапуск сохраняет данные, но
-не заменяет backup. Логические квоты не являются жёстким лимитом размера db/WAL.
-Дисковый бюджет, резервное копирование и восстановление — отдельный live gate.
-Backup работающей WAL-БД делать SQLite backup API/штатным механизмом, не простым
-копированием одного `.db`; backup чувствителен. Здесь backup не запускался.
+## SQLite, recovery и приёмка
 
-CI использует временные БД и подставные GitHub identity, без внешних запросов и
-секретов; это не deployed A/B acceptance. Изменения production/config/Caddy,
-установка и запуск на VPS только после отдельного согласия/специального подтверждения
-владельца. Shell/run_python/run_command для этой разработки не использовались.
+WAL, foreign keys, synchronous=FULL, busy timeout 5s, BEGIN IMMEDIATE для writes;
+отдельное соединение на операцию, нет общего process-local connection. Несколько
+WSGI workers на одном хосте, писатель один. Page size 4096, max_page_count 16384
+(64 MiB DB pages); WAL autocheckpoint 256 pages, journal_size_limit 1 MiB после
+reset. Это НЕ жёсткий лимит DB+WAL+SHM+backup: нужны filesystem budget, мониторинг
+и нагрузочные измерения. FULL не обещает защиту от неисправного диска/всех power-loss.
 
-## Проверка двух чатов
+Operator-only `python -m mcp_server.tools.rooms.maintenance` поддерживает verify
+и consistent backup в новый private path; не MCP tool, не scheduler. Backup API,
+integrity/schema/FK checks, отказ overwrite, fsync; восстановление только в новый
+путь. Не копировать один .db работающей WAL-БД и не удалять sidecars вручную.
+[Инструкция и обязательные release gates](agent-rooms-production.md).
 
-[Пошаговый runbook и готовый промпт чата B](agent-rooms-two-chats.md):
-A отправляет nonce, B получает его только через MCP и отвечает, A проверяет
-ответ из комнаты. Это planned live acceptance после разрешённого TEST deployment,
-не доказательство уже состоявшегося общения. Без новых коннекторов, shell или
-фонового polling. Один общий GitHub PAT позволяет проверить транспорт, но не
-независимых владельцев. При неопределённом rooms_create сначала сверить список:
-у создания комнаты нет idempotency key, не повторять его вслепую.
+CI: временные SQLite/fake auth; гонки одинаковых/разных send keys, deny для всех
+восьми методов, malformed/revoked identity, process reopen/aborted transaction,
+backup/restore с membership/cadence/idempotency, sandbox probe через mocks.
+CI не доказывает реальный второй аккаунт, systemd restart или off-host recovery.
+[Runbook двух чатов](agent-rooms-two-chats.md). Same-owner transport уже подтверждён
+на старом TEST source; multi-owner и hardening deployment требуют отдельной приёмки.
 
-## Что переносить в Agora после отладки
+## Перенос в Agora после отладки
 
-Переносить контракт, тестовые сценарии и ограничения, не Python-файлы в TS runtime.
-Core не зависит от GitHub или LLM; adapter identity заменяется на владельца Agora.
-База/права/миграции выбираются отдельно. Market offer/want и семантический поиск
-не добавлены в комнаты; текст `предлагаю` пока обычное сообщение. Нет автономных
-переговоров, выполнения инструкций из сообщений, polling daemon, push/SSE или
-A2A совместимости. Сообщения участников — недоверенные данные.
+Переносить контракт и тестовые сценарии, не Python runtime в TypeScript. Core не
+зависит от LLM/GitHub; identity adapter заменяется на владельца Agora. База/миграции/
+права выбираются отдельно. Offer/want, embedding matching, автономные переговоры,
+push/SSE и A2A совместимость в комнаты не добавлены. Production/Agora этой веткой
+не разворачиваются. VPS команды выполняет оператор только по отдельному согласованию.
