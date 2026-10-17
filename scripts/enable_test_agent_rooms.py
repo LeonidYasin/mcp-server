@@ -29,7 +29,8 @@ DROP_DIR = Path('/etc/systemd/system/mcp-test.service.d')
 DROP_FILE = DROP_DIR / '99-agent-rooms-115.conf'
 ENV_TEXT = ('ENABLE_AGENT_ROOMS=1\nAGENT_ROOMS_DB=' + str(DB_DIR / 'rooms.sqlite3') +
             '\nROOMS_ALLOWED_GITHUB_USERS=79429232\n')
-DROP_TEXT = '[Service]\nEnvironmentFile=' + str(ENV_FILE) + '\n'
+DROP_TEXT = ('[Service]\nEnvironmentFile=' + str(ENV_FILE) +
+             '\nReadWritePaths=' + str(DB_DIR) + '\n')
 PAYLOAD = ['mcp_server/tools/rooms/__init__.py', 'mcp_server/tools/rooms/store.py',
            'mcp_server/tools/rooms/ops.py', 'tests/test_agent_rooms.py',
            'docs/agent-rooms.md', 'docs/agent-rooms-two-chats.md']
