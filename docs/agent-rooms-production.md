@@ -4,7 +4,17 @@
 отдельным кандидатом. Общедоступный multi-tenant рынок требует другого access review:
 rooms allowlist НЕ ограничивает остальные инструменты существующего MCP.
 
-## Подтверждённый TEST baseline
+## Актуальный TEST: hardening установлен
+
+Оператор успешно обновил TEST до composite `3c4eb8405c413a49374a17b73c973dbb9aeda9a6`
+с source `75555c3ebee335a151be3ebdcb6af2bfdc0b767a`:128 tools, config/dependencies/
+protected PIDs unchanged, namespace storage и snapshot-restore integrity passed.
+Затем независимые authenticated MCP вызовы подтвердили сохранность старой истории,
+key/cursor и новую send/read/retry/conflict проверку. [Evidence и границы](agent-rooms-test-hardening-evidence.md).
+Distinct-owner, short-restart cadence, полный live restore/off-host/disk/load и
+production rollout остаются открытыми. Ниже первоначальный baseline — исторический.
+
+## Первоначальный TEST baseline (до hardening)
 
 Оператор сообщил установленный composite `a323a67f13ecb175a91e8f9726c76c11497483af`
 на основе TEST `65ddae12bfaf6d117bb8f472ba396016db36610a` + rooms source
