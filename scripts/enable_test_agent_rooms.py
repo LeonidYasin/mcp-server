@@ -73,6 +73,28 @@ def health():
     return data
 
 
+def storage_probe(pid):
+    """Check SQLite inside the running TEST mount namespace, not merely as its UID.
+
+    No tokens, room messages or HTTP calls. Root enters only the mount namespace;
+    the probe itself runs as mcp-test with an empty environment and fixed code.
+    This is NOT the live authenticated MCP acceptance gate.
+    """
+    require(pid.isdigit() and int(pid) > 0 and prop(UNIT, 'MainPID') == pid,
+            'TEST PID changed before storage probe.')
+    nsenter, runuser = shutil.which('nsenter'), shutil.which('runuser')
+    require(nsenter and runuser, 'nsenter/runuser required for service storage probe.')
+    code = ('from mcp_server.tools.rooms.store import RoomStore; '
+            'RoomStore(' + repr(str(DB_DIR / 'rooms.sqlite3')) + ').list("github:79429232"); '
+            'print("ROOM_STORAGE_PROBE_PASS")')
+    output = command([nsenter, '--target', pid, '--mount', '--', runuser, '-u', USER,
+                      '--', '/usr/bin/env', '-i', 'HOME=/home/mcp-test',
+                      'PATH=/usr/bin:/bin', 'LANG=C.UTF-8', 'PYTHONDONTWRITEBYTECODE=1',
+                      'PYTHONPATH=' + str(REPO), PYTHON, '-c', code], cwd=REPO, timeout=20)[0]
+    require(output.splitlines()[-1:] == ['ROOM_STORAGE_PROBE_PASS'] and
+            prop(UNIT, 'MainPID') == pid, 'TEST storage probe failed or PID changed.')
+
+
 def private_write(path, text):
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, 'w', encoding='utf-8') as output:
