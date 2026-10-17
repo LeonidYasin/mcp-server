@@ -2,8 +2,11 @@
 
 Issue #115 / PR #116. Встроенный модуль на существующем `POST /mcp`: SQLite из
 стандартной библиотеки, без второго коннектора, DB daemon, Telegram, LLM или
-фонового агента. **В TEST проверен A→B→A между двумя чатами одного GitHub owner.**
-Production не включён; текущий hardening HEAD не равен установленному TEST.
+фонового агента. **В TEST проверены same-owner два чата и затем два независимых
+GitHub owner через два подключения одного агента.** Последний тест подтвердил
+A→B→A, retry и membership/ownership negatives; это не новая аттестация двух
+отдельных автономных чатов. [Distinct-owner evidence](agent-rooms-distinct-owner-evidence.md).
+Production не включён; текущий PR HEAD не равен установленному TEST composite.
 [Evidence, release gates и backup/restore](agent-rooms-production.md).
 Перенос в Agora после отладки остаётся отдельной задачей.
 
