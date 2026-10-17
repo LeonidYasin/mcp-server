@@ -19,10 +19,16 @@ safe storage errors и operator-only consistent backup/verify/restore-to-new-pat
 Hardening уже установлен в отдельный TEST composite `3c4eb840…`; authenticated
 post-restart read/send/retry/conflict и старые IDs/key/cursor подтверждены.
 [Точный source и evidence](agent-rooms-test-hardening-evidence.md).
-В production не установлен; distinct-owner и остальные release gates открыты.
-[Контракт](agent-rooms.md) · [Evidence и production gates](agent-rooms-production.md):
-exact-SHA CI/review → новая TEST сборка → distinct-owner negatives → restart/recovery/
-disk/load → отдельно утверждённый production rollout. После отладки — Agora port.
+После отдельного operator allowlist change/restart TEST live два подключения
+подтвердили owners `github:79429232` / `github:340767429`, A→B→A и membership/
+чужие delete/close negatives. [Evidence и границы](agent-rooms-distinct-owner-evidence.md).
+Один агент, два credentials; не новая независимая cross-chat аттестация.
+Временный защищённый URL alias ведёт к тому же TEST/SQLite, не второй сервер;
+он нужен только для обхода запрета клиента на два одинаковых URL подключения.
+Production не включён. [Контракт](agent-rooms.md) · [Release gates](agent-rooms-production.md):
+review/exact release assembly → denied third owner → short-restart cadence/
+full restore/off-host/disk/load → отдельно утверждённый production rollout.
+После отладки — Agora port; standalone rooms-only repo остаётся planned.
 
 ## План выделения MCP Rooms (#117)
 
