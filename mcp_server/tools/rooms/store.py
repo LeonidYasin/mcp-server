@@ -83,7 +83,7 @@ class RoomStore:
     MAX_PAGES = 16384
 
     def __init__(self, path, clock=None, limits=Limits()):
-        self.path = Path(path)
+        self.path = private_path(path)
         self.clock = clock or (lambda: int(time.time() * 1000))
         self.limits = limits
         if not self.path.is_absolute() or not self.path.parent.is_dir() or self.path.is_symlink():
