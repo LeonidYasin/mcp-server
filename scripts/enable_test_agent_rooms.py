@@ -33,7 +33,9 @@ DROP_TEXT = ('[Service]\nEnvironmentFile=' + str(ENV_FILE) +
              '\nReadWritePaths=' + str(DB_DIR) + '\n')
 PAYLOAD = ['mcp_server/tools/rooms/__init__.py', 'mcp_server/tools/rooms/store.py',
            'mcp_server/tools/rooms/ops.py', 'tests/test_agent_rooms.py',
-           'docs/agent-rooms.md', 'docs/agent-rooms-two-chats.md']
+           'docs/agent-rooms.md', 'docs/agent-rooms-two-chats.md',
+           'mcp_server/tools/rooms/maintenance.py', 'tests/test_agent_rooms_production.py',
+           'docs/agent-rooms-production.md']
 ROOMS = {'rooms_create', 'rooms_list', 'rooms_join', 'rooms_leave', 'rooms_read',
          'rooms_send', 'rooms_delete_message', 'rooms_close'}
 LOG = None
