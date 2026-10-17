@@ -15,7 +15,7 @@ SPEC.loader.exec_module(MODULE)
 def test_import_safe_and_exact_observed_base():
     ast.parse(PATH.read_text(encoding='utf-8'))
     assert MODULE.BASE == 'a323a67f13ecb175a91e8f9726c76c11497483af'
-    assert MODULE.SOURCE == '48a029f2867df399e473dad927dec165d91fa518'
+    assert MODULE.SOURCE == '75555c3ebee335a151be3ebdcb6af2bfdc0b767a'
     assert MODULE.HELPER_BLOB == 'a61d2d133cbd9b74a93ad33ba246173470480379'
     source = PATH.read_text(encoding='utf-8')
     assert 'pip install' not in source and 'daemon-reload' not in source
