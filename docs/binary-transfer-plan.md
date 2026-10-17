@@ -1,6 +1,8 @@
 # План бинарного маршрута: #88 → #89
 
-Ревизия документации 8 · 2026-10-15. **Статус: требования и дизайн-гейты, не реализованный API.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). Оба issue open; после triage добавлены [feasibility #88](https://github.com/LeonidYasin/mcp-server/issues/88#issuecomment-6200183545) и [зависимости #89](https://github.com/LeonidYasin/mcp-server/issues/89#issuecomment-6200184998). [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
+Ревизия документации 9 · 2026-10-15. **Статус: read-only Release lookup/assets-list кандидат реализован; bytes E2E и остальной #89 pending.** Источники: [issue #88](https://github.com/LeonidYasin/mcp-server/issues/88), [issue #89](https://github.com/LeonidYasin/mcp-server/issues/89). Оба issue open; после triage добавлены [feasibility #88](https://github.com/LeonidYasin/mcp-server/issues/88#issuecomment-6200183545) и [зависимости #89](https://github.com/LeonidYasin/mcp-server/issues/89#issuecomment-6200184998). [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Tools](../TOOLS.md) · [Sandbox](../SANDBOX.md).
 
 ## Что есть и чего пока нет
 

@@ -1,22 +1,24 @@
 # TOOLS — полный каталог инструментов mcp-server
 
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](docs/release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 8 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
+> **Ревизия:** 9 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
 ---
 
-[Снимок окружений на 2026-10-15](docs/deployment-status.md): production 113 tools на `b78b209…`; TEST 119 на кандидате #87, shell/process только TEST. Это не меняет inventory профилей ниже; #88/#89 proposed API не зарегистрированы.
+[Снимок окружений на 2026-10-15](docs/deployment-status.md): production 113 tools на `b78b209…`; TEST 119 на кандидате #87, shell/process только TEST. Это не меняет inventory профилей ниже; upload API #88 не включён в эту ветку; два read-only метода #89 доступны только на данном кандидате, не на production.
 
 ## Проверяемый профиль реестра
 
-Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **115 default**, **145 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
-| github | 90 | 90 |
+| github | 92 | 92 |
 | build | 2 | 2 |
 | utils / meta / web | 15 / 2 / 4 | 15 / 2 / 4 |
 | localfs / localgit | 0 / 0 | 4 / 6 |
@@ -29,7 +31,7 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 
 ## Планируемые файловые API — не зарегистрированы
 
-[#88](https://github.com/LeonidYasin/mcp-server/issues/88) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89): client upload → scoped staging `file_id` → Release asset → Actions → verified bytes. `begin_file_upload` / `append_file_chunk` / `finish_file_upload` — лишь один из вариантов дизайна, как и будущие `list_release_assets`, `upload_release_asset`, `download_release_asset`; не вызывать их как готовые tools. Основной транспорт выбирается после проверки реального клиента. [План](docs/binary-transfer-plan.md) · [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
+[#88](https://github.com/LeonidYasin/mcp-server/issues/88) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89): client upload → scoped staging `file_id` → Release asset → Actions → verified bytes. `begin_file_upload` / `append_file_chunk` / `finish_file_upload` — лишь один из вариантов дизайна, как и будущие `upload_release_asset`, `download_release_asset`; не вызывать их как готовые tools. Основной транспорт выбирается после проверки реального клиента. [План](docs/binary-transfer-plan.md) · [Карта](docs/project-map.md) · [Roadmap](ROADMAP.md).
 
 ---
 
@@ -66,9 +68,9 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 `add_labels`
 
 ### Releases / Tags
-`list_releases`, `create_release`, `get_latest_release`, `list_tags`, `create_tag`, `delete_tag`
+`list_releases`, `create_release`, `get_latest_release`, `get_release`, `list_release_assets`, `list_tags`, `create_tag`, `delete_tag`
 
-В main нет полного Release assets upload/list/download lifecycle. #64 — tags/releases; новый #89 — assets и Actions после #88. Это **план**, не доступные методы. Не путать Release assets с `download_artifact` (Actions artifacts). [Зависимости и acceptance](docs/binary-transfer-plan.md).
+В main нет полного Release assets upload/list/download lifecycle. #64 — tags/releases; новый #89 — assets и Actions после #88. `get_release`/`list_release_assets` — read-only кандидат; upload/download assets всё ещё план. Не путать Release assets с `download_artifact` (Actions artifacts). [Зависимости и acceptance](docs/binary-transfer-plan.md).
 
 ### Gists (4)
 `create_gist`, `list_gists`, `get_gist`, `update_gist`
@@ -169,4 +171,4 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 
 ---
 
-_Ревизия 8 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+_Ревизия 9 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._

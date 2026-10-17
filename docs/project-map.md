@@ -1,6 +1,8 @@
 # Карта проекта mcp-server
 
-Ревизия документации 8 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
+Ревизия документации 9 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
 
@@ -50,7 +52,7 @@ flowchart TD
 | Artifact ownership | PR #87 Draft; HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI success, TEST checkout совпадает | Authenticated deployed artifact acceptance pending. Не выводить attempt по имени, времени или общему SHA |
 | Diagnostics / fix | #85 убрал ложный success по пустым логам, unsafe auto-fix отключён | #58 compiler-specific диагностика; #86 repo-specific reviewed branch/PR workflow |
 | Binary ingress | Малый synthetic client→TEST probe прошёл; универсального upload/staging API нет; legacy binary-file API требует UTF-8 | **#88**, выбрать основной transport и реализовать bytes/hash/ownership/quota/cleanup; [ограничения probe](binary-transfer-plan.md#предварительная-feasibility--2026-10-15) |
-| Release lifecycle / assets | list/create/latest release и отдельные tag tools есть; полного assets цикла нет | #64 lifecycle; **#89 зависит от #88**, общий release lookup/IDs, без дублирующих API |
+| Release lifecycle / assets | Добавлены read-only get_release/list_release_assets; list/create/latest и tag tools сохранены; asset bytes не реализованы | #64 lifecycle; **#89 зависит от #88**, общий release lookup/IDs, без дублирующих API |
 | Надёжность / стоимость | Текущие safety contracts сохраняются | #53 access diagnostics; #59 post-effect reconciliation; #77 end-to-end token audit |
 | Admin / secrets / сайт | Существующие repo admin tools не равны полному lifecycle Pages | #66 secure secrets boundary; #68 verified features/Pages, configured ≠ deployed ≠ HTTP verified |
 | Synapse / экосистема | Существующие feature-gated категории; отдельные связанные проекты | Item/embedding roadmap и таблица экосистемы сохранены в ROADMAP; не смешивать с binary transport |

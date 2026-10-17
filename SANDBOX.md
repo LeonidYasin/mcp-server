@@ -1,6 +1,8 @@
 # SANDBOX.md — изолированный запуск MCP с доступом к локальным файлам
 
-Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 8 · 2026-10-15.
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](docs/release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
+Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 9 · 2026-10-15.
 
 Цель — минимизировать права и явно задать OS-изоляцию. **Сам пакет не гарантирует, что агент видит только одну папку.** Cwd/path guards не заменяют sandbox, защиту секретов, сетевую policy и ограничения ресурсов.
 

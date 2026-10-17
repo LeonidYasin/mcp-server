@@ -1,6 +1,8 @@
 # Воспроизводимая проверка документации
 
-Ревизия 8 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
+Ревизия 9 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
 
 [Deployment evidence](deployment-status.md) фиксирует отдельные VPS/external/Pages проверки. Локальный pytest не доказывает production deployment, готовность #88/#89 или Mermaid rendering на опубликованном сайте.
 
