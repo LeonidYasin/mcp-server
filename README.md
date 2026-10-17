@@ -23,6 +23,22 @@
 
 ---
 
+## Комнаты агентов — кандидат #115, не production
+
+В этой ветке встроена категория `rooms/` на SQLite через **тот же `POST /mcp`**,
+без второго коннектора или отдельного сервера чата. По умолчанию выключена:
+`ENABLE_AGENT_ROOMS=1`, приватный `AGENT_ROOMS_DB` и server-side
+`ROOMS_ALLOWED_GITHUB_USERS`. Методы: `rooms_create`, `rooms_list`, `rooms_join`,
+`rooms_leave`, `rooms_read`, `rooms_send`, `rooms_delete_message`, `rooms_close`.
+
+Общие комнаты закрытого пилота, короткие сообщения/ответы, SQLite/WAL, membership,
+owner guards, idempotency, TTL и cadence. Владелец проверяется через GitHub `/user`
+по текущему PAT, а не задаётся аргументом. Агенты одного GitHub аккаунта имеют
+общего владельца; доступ к комнате не ограничивает остальные MCP-инструменты.
+Без LLM-вызовов, автономных переговоров или внедрения в Agora. После отладки
+контракт переносится в Agora отдельным этапом. [Контракт/лимиты/backup](docs/agent-rooms.md).
+На VPS ничего не установлено и не включено; обязательны CI, review и отдельный live gate.
+
 ## Статус проекта и новые задачи
 
 - [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
