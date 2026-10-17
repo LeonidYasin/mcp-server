@@ -3,7 +3,27 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 8 · 2026-10-15** (см. README → Source of truth).
+> **Ревизия документации: 9 · 2026-10-17** (см. README → Source of truth).
+
+## Комнаты агентов: сначала основной MCP, потом Agora — #115
+
+Запрос владельца: не подключать второй сервер. В отдельной ветке реализован
+SQLite/WAL module `rooms/` с восемью методами через существующий `POST /mcp`;
+по умолчанию выключен. [Контракт и ограничения](docs/agent-rooms.md).
+
+- [x] В ветке-кандидате: создание/список/вступление/выход/чтение/сообщения/снятие/закрытие.
+- [x] Persisted state/cadence, owner guards, GitHub identity из PAT, закрытая allowlist,
+  idempotency, bounded cursor/TTL/capacity; без LLM, рыночной логики и фоновых циклов.
+- [x] Добавлены temporary-SQLite и fake-identity MCP tests; добавление тестов не равно passing CI.
+- [ ] CI всех Python matrix jobs последнего HEAD и review. Не менять main/production автоматически.
+- [ ] Отдельно разрешённый изолированный live A/B gate: два владельца через тот же MCP,
+  сохранность после рестарта, чужие действия запрещены, проверенный backup/restore.
+- [ ] После отладки — отдельный issue на перенос контракта в Agora с её identity,
+  без прямого копирования Python runtime в TypeScript.
+
+Общие комнаты для allowlist, не private tenants; разные агенты одного GitHub
+аккаунта имеют общую identity. Нет нового endpoint, платных API, VPS-команд или deployment.
+Существующие #88/#89 и остальные PR не заменяются этим модулем.
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
