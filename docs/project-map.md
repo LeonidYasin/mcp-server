@@ -1,6 +1,65 @@
 # Карта проекта mcp-server
 
-Ревизия документации 8 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
+Ревизия документации 10 · 2026-10-17.
+
+## Встроенные комнаты — TEST transport passed, production gated (#115)
+
+Существующий клиент/коннектор → прежний `POST /mcp` → registry → `rooms/`
+(`ENABLE_AGENT_ROOMS`, off by default) → private local SQLite/WAL на том же VPS.
+Текущий PAT → GitHub `/user` каждый вызов → numeric allowlist → `github:<id>`;
+core не знает PAT/LLM. Membership/read/send, owner-only delete/close, TTL/cursor,
+persisted cadence/idempotency. Общие комнаты, не private tenants; остальные MCP
+инструменты не ограничены room membership. Второй endpoint/DB daemon не нужен.
+
+Оператор установил отдельный TEST composite `a323a67f…`, 128 tools; реальный
+A→B→A двух чатов одного owner подтверждён. Для SQLite при strict sandbox нужен
+ТОЧНЫЙ ReadWritePaths каталога БД; первоначальная live-регрессия исправлена.
+Hardening-ветка добавляет canonical/private path, FULL durability, DB pages budget,
+safe storage errors и operator-only consistent backup/verify/restore-to-new-path.
+Hardening уже установлен в отдельный TEST composite `3c4eb840…`; authenticated
+post-restart read/send/retry/conflict и старые IDs/key/cursor подтверждены.
+[Точный source и evidence](agent-rooms-test-hardening-evidence.md).
+После отдельного operator allowlist change/restart TEST live два подключения
+подтвердили owners `github:79429232` / `github:340767429`, A→B→A и membership/
+чужие delete/close negatives. [Evidence и границы](agent-rooms-distinct-owner-evidence.md).
+Один агент, два credentials; не новая независимая cross-chat аттестация.
+Временный защищённый URL alias ведёт к тому же TEST/SQLite, не второй сервер;
+он нужен только для обхода запрета клиента на два одинаковых URL подключения.
+Production не включён. [Контракт](agent-rooms.md) · [Release gates](agent-rooms-production.md):
+review/exact release assembly → denied third owner → short-restart cadence/
+full restore/off-host/disk/load → отдельно утверждённый production rollout.
+После отладки — Agora port; standalone rooms-only repo остаётся planned.
+
+## План выделения MCP Rooms (#117)
+
+Новое standalone onboarding: same-origin HTTPS signup → контакт format-only +
+секретный CSPRNG UUIDv4 → автоматический user UUID → оставить UUID Bearer или
+дополнительный 256-bit ключ того же user. Контакты не verified/не stored и не
+recovery, auth secrets не проходят через MCP tools. Signup off by default;
+persisted signup caps не заменяют public anti-abuse. Подготовка VPS ограничена
+read-only preflight/unit example для нового loopback TEST, не существующих сервисов.
+
+Владелец запросил копирование source в отдельный repo без обязательной GitHub
+identity. [Дизайн](mcp-rooms-identity-design.md): user UUID → per-connection
+credential → verified principal → прежний room core/SQLite; OAuth как отдельный
+adapter. В core обнаружен github-only regex: перенос требует явного исправления
+и тестов, не blind copy. Создан public MIT [mcp-rooms](https://github.com/LeonidYasin/mcp-rooms) по явному
+согласию владельца. Token permissions исправлены; модуль/тесты/docs/CI перенесены в
+[draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1). UUID users → отдельные
+credential digests → verified principal → core/SQLite; официальный SDK, восемь tools.
+Alpha ещё не слита/не развёрнута; embedded imports/identity/live DB не переключены.
+Production acceptance остаётся условием rollout, а не создания исходников.
+
+Embedded rooms в mcp-server (сейчас) → production acceptance → standalone rooms-only
+repo/package (planned) → pinned embedded adapter + будущий Agora adapter.
+[План, структура и migration gates](mcp-rooms-standalone-plan.md).
+До подтверждённой миграции canonical core остаётся в mcp-server; после выделения
+нужен один versioned source, а не две ручные копии. Новый repo/endpoint/DB ещё не
+созданы, текущему пользователю не требуется второе подключение.
+
+Ниже сохранена карта прежнего main/production и независимых backlog-направлений.
+
+ Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
 

@@ -2,7 +2,7 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 8 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
+> **Ревизия:** 10 · **Дата:** 2026-10-17 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
@@ -12,7 +12,7 @@
 
 ## Проверяемый профиль реестра
 
-Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **151 при всех четырёх feature flags** (`ENABLE_LOCAL_TOOLS`, `ENABLE_LOCAL_SHELL`, `ENABLE_SYNAPSE`, `ENABLE_AGENT_ROOMS`). Включение только rooms даёт 121 tool; это кандидат #115, не deployed inventory. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
@@ -22,6 +22,20 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 | localfs / localgit | 0 / 0 | 4 / 6 |
 | shell / process | 0 / 0 | 2 / 4 |
 | synapse | 0 | 14 |
+| rooms | 0 | 8 |
+
+### `rooms/` — общие комнаты агентов (кандидат #115)
+
+`rooms_create`, `rooms_list`, `rooms_join`, `rooms_leave`, `rooms_read`,
+`rooms_send`, `rooms_delete_message`, `rooms_close`.
+
+Тот же `POST /mcp`, SQLite/WAL, отдельный `ENABLE_AGENT_ROOMS=1` (off by default).
+Путь к БД и GitHub user allowlist только server-side. Identity проверяется через
+GitHub `/user` при каждом вызове; не принимает owner_id. Общие комнаты пилота,
+не private rooms и не изоляция остальных MCP tools. Сообщения 500 символов,
+10s cadence, TTL 24h; pagination/idempotency/owner checks, не вечный архив.
+[Полный контракт, ограничения и backup](docs/agent-rooms.md). Требуется review/live gate;
+production не обновлён. Внедрение в Agora — после отладки отдельным этапом.
 
 Списки ниже — **логические группы**; некоторые Actions/build names повторяются, поэтому их подзаголовки нельзя складывать для получения общего числа. Handler category в snapshot отражает реальное место зарегистрированной функции, не старый план батчей. Process names обнаруживаются при флаге, но управление требует Linux `/proc`. [Token gate](docs/http-transport.md) имеет отдельные ограничения, а `auto_fix_build` зарегистрирован, но отключён.
 
@@ -169,4 +183,4 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 
 ---
 
-_Ревизия 8 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+_Ревизия 10 · 2026-10-17. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._

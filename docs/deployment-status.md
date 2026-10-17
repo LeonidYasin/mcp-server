@@ -1,5 +1,31 @@
 # Состояние deployment и проверок
 
+## Дополнение: комнаты в TEST — 2026-10-17
+
+По отчёту оператора, TEST обновлён с `65ddae12bfaf6d117bb8f472ba396016db36610a`
+до локального composite `a323a67f13ecb175a91e8f9726c76c11497483af`, 120 → 128 tools;
+rooms source `9f93eb0d1091bf3eca0f60d6be7c6bbe6c45cfc8`. Production/Caddy PID
+не изменились, зависимости не обновлялись. Для strict sandbox оператор добавил
+только `/home/mcp-test/agent-rooms-115` в ReadWritePaths и перезапустил TEST.
+Реальные MCP вызовы после этого подтвердили list/create/send/read, idempotent retry
+и A→B→A двух чатов одного `github:79429232`. Multi-owner isolation не проверена.
+[Evidence и production checklist](agent-rooms-production.md).
+Последующий guarded upgrade установил hardening source `75555c3e…` в TEST
+composite `3c4eb8405c413a49374a17b73c973dbb9aeda9a6`,128 tools, без изменения
+config/dependencies/protected PIDs по operator report. Post-restart authenticated
+MCP подтвердил сохранность истории/key/cursor и новую send/read/retry/conflict
+проверку. [Актуальный evidence](agent-rooms-test-hardening-evidence.md).
+Позднее оператор отдельно расширил allowlist только TEST до 79429232,340767429
+и перезапустил TEST; code/dependencies/database path unchanged, production/Caddy
+PIDs unchanged по его отчёту. Два MCP подключения подтвердили разные owners,
+A→B→A, retry и membership/ownership negatives. [Evidence/границы](agent-rooms-distinct-owner-evidence.md).
+Временный защищённый alias ведёт к тому же TEST/БД; не отдельный сервер.
+Один агент управлял обоими подключениями. Denied third owner, short-restart cadence,
+полный live restore/off-host/disk/load/review/release и production gates ещё открыты.
+
+Ниже — исторический снимок 2026-10-15; его TEST SHA/tool count не описывают
+текущее окружение. Production snapshot также не заменяет новый preflight перед rollout.
+
 Ревизия документации 8 · снимок на 2026-10-15. Это исторически закреплённое состояние, не обещание, что каждый будущий commit main уже развёрнут. [README](../README.md) · [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Validation](validation.md) · [Файловый план](binary-transfer-plan.md).
 
 ## Production и TEST — отдельные состояния

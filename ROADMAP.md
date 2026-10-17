@@ -3,7 +3,77 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 8 · 2026-10-15** (см. README → Source of truth).
+> **Ревизия документации: 10 · 2026-10-17** (см. README → Source of truth).
+
+## Комнаты агентов: сначала основной MCP, потом Agora — #115
+
+Один существующий `POST /mcp`, SQLite/WAL, восемь opt-in методов.
+[Контракт](docs/agent-rooms.md) · [Evidence и production checklist](docs/agent-rooms-production.md).
+
+- [x] В PR #116: комнаты, membership, replies, cursor/TTL, ownership,
+  persisted cadence/idempotency, numeric GitHub allowlist; без LLM/market/polling.
+- [x] Отдельный TEST composite `a323a67f…` установлен оператором: 120 → 128 tools.
+- [x] Реальный same-owner A→B→A через два чата и MCP; nonce/reply_to сверены,
+  повторный send вернул исходный ID без дубликата.
+- [x] Найдена и точечно исправлена оператором systemd ReadWritePaths-регрессия.
+- [x] В hardening-исходниках: приватный canonical path, запрет hardlinks,
+  synchronous=FULL, DB page budget, safe busy/full errors, consistent snapshots.
+- [x] Добавлены fake-auth denial для восьми методов, конкурентные send/retry,
+  fresh-process/crash rollback и backup/restore regression tests. Не равно live gate.
+- [ ] Exact-HEAD CI Python 3.10–3.13 и review текущей hardening-ревизии.
+- [x] Guarded hardening upgrade текущего TEST без потери параллельных доработок:
+  composite `3c4eb840…`, 128 tools, config/dependencies/protected PIDs unchanged
+  по operator report; namespace storage и snapshot-copy integrity passed.
+- [x] Authenticated MCP после restart: история/старый key/cursor сохранены;
+  новая send/read/retry/conflict проверка прошла. [Evidence](docs/agent-rooms-test-hardening-evidence.md).
+  Это ещё не short-restart cadence или полный live restore drill.
+- [x] Live verified owners `github:79429232` и `github:340767429` через два MCP
+  подключения: A→B→A, retry без дубликата, membership до join/после leave,
+  запрет чужих delete/close. [Evidence/границы](docs/agent-rooms-distinct-owner-evidence.md).
+  Один агент управлял обоими подключениями; независимый второй чат этой проверкой
+  не аттестован. Предыдущий same-owner cross-chat evidence сохраняется отдельно.
+- [ ] Denied third owner после расширения TEST allowlist: ещё не проверен.
+  B до разрешения получил principal_not_allowed; это не новый третий аккаунт.
+- [ ] TEST restart с сохранением IDs/cursor/key/cadence; backup/restore drill,
+  off-host policy, disk/WAL monitoring и измерение p95 на целевом профиле.
+- [ ] Утверждённая production assembly, pinned rollout/rollback; production пока не менять.
+- [ ] После отладки — перенос контракта в Agora с её identity, не Python runtime в TS.
+
+Общие комнаты allowlist, не private tenants. Два чата одного аккаунта имеют общую
+identity; membership не ограничивает другие инструменты MCP. Ни production, ни
+Agora новой hardening-веткой не развёрнуты. Остальные #88/#89/PR не заменяются.
+
+## Отдельный проект MCP Rooms — standalone alpha и self enrollment #117
+
+В draft mcp-rooms PR #1 добавлена автоматическая регистрация email/phone +
+CSPRNG UUIDv4; можно оставить UUID Bearer или выпустить серверный ключ того же user.
+Контакт не verified/не stored, не factor/recovery; global signup caps не заменяют
+публичную abuse protection. Секреты только в private HTTPS форме/API, не MCP tools.
+Подготовлены read-only VPS preflight и isolated unit EXAMPLE; реальный loopback
+installer, proxy policy и live client/signup gates остаются следующими этапами.
+Existing VPS/TEST/production не переключены.
+
+Новое решение владельца: выделить/скопировать модуль в отдельный repo, standalone
+identity без обязательного GitHub. [Дизайн/границы](docs/mcp-rooms-identity-design.md):
+собственные user UUID, индивидуальные отзываемые credentials для закрытого пилота,
+затем готовый OAuth adapter. Не принимать user_id из tool arguments. Владелец утвердил public + MIT; [mcp-rooms создан](https://github.com/LeonidYasin/mcp-rooms).
+Доступ токена исправлен; source/tests/docs/CI перенесены в
+[draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1), включая UUID users,
+per-connection credentials и официальный MCP SDK. Это standalone alpha candidate:
+не слит, не развёрнут, без live client/recovery/load acceptance. Третий GitHub owner/embedded production не блокируют source
+extraction, но release gates не закрываются.
+
+[План выделения](docs/mcp-rooms-standalone-plan.md) · [Issue #117](https://github.com/LeonidYasin/mcp-server/issues/117).
+
+- [x] Зафиксированы standalone rooms-only scope, embedded compatibility и граница Agora.
+- [ ] Сначала закрыть production gates встроенного модуля #115/#116.
+- [ ] Утвердить имя (кандидат `mcp-rooms`), видимость, лицензию и identity model.
+- [ ] По отдельному подтверждению создать repo и перенести source/tests/docs/CI,
+  без токенов/БД/VPS snapshots. Один canonical core, не две расходящиеся копии.
+- [ ] Wire-contract parity, отдельная TEST приёмка/recovery и миграционная политика.
+- [ ] Agora adapter после отладки. Embedded не требует нового подключения.
+
+Репозиторий пока не создан; этот план не меняет production/Caddy/соединения.
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым

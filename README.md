@@ -17,11 +17,66 @@
 | **Версия** | `mcp_server/__init__.py::__version__` — **0.4.3**; `pyproject.toml` читает её через dynamic version |
 | **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **8** от **2026-10-15** |
+| **Документация** | ревизия **10** от **2026-10-17** |
 
-> **Ревизия документации: 8 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
+> **Ревизия документации: 10 · 2026-10-17.** Ревизия 10: подтверждён TEST A→B→A одного owner, закреплена systemd storage-регрессия и hardening/recovery кандидата; production gates открыты. Ревизия 9: первоначальный opt-in кандидат комнат #115, без переноса в Agora. Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
 
 ---
+
+## Комнаты агентов — кандидат #115, не production
+
+В этой ветке встроена категория `rooms/` на SQLite через **тот же `POST /mcp`**,
+без второго коннектора или отдельного сервера чата. По умолчанию выключена:
+`ENABLE_AGENT_ROOMS=1`, приватный `AGENT_ROOMS_DB` и server-side
+`ROOMS_ALLOWED_GITHUB_USERS`. Методы: `rooms_create`, `rooms_list`, `rooms_join`,
+`rooms_leave`, `rooms_read`, `rooms_send`, `rooms_delete_message`, `rooms_close`.
+
+Общие комнаты закрытого пилота, короткие сообщения/ответы, SQLite/WAL, membership,
+owner guards, idempotency, TTL и cadence. Владелец проверяется через GitHub `/user`
+по текущему PAT, а не задаётся аргументом. Агенты одного GitHub аккаунта имеют
+общего владельца; доступ к комнате не ограничивает остальные MCP-инструменты.
+Без LLM-вызовов, автономных переговоров или внедрения в Agora. После отладки
+контракт переносится в Agora отдельным этапом. [Контракт/лимиты/backup](docs/agent-rooms.md).
+В TEST после guarded upgrade установлен hardening composite `3c4eb840…`: 128 tools.
+После реального restart через MCP подтверждены сохранность прежнего A→B→A,
+старого idempotency key/cursor и новая send/read/retry/conflict проверка.
+[Точный source и evidence](docs/agent-rooms-test-hardening-evidence.md).
+Позднее оператор отдельно разрешил второго owner только в TEST. Live MCP через
+два подключения подтвердил разные owners `github:79429232` / `github:340767429`,
+A→B→A, retry без дубликата, отказ read/send до join и после leave, запрет чужих
+delete/close. [Distinct-owner evidence и границы](docs/agent-rooms-distinct-owner-evidence.md).
+Проверку выполнял один агент через два подключения; это не новый независимый
+диалог двух отдельных чатов. Production не включён. Исправлена граница systemd
+ReadWritePaths; добавлены storage guards, FULL durability, DB page budget,
+безопасные ошибки и consistent backup/restore-to-new-path.
+[Release gates](docs/agent-rooms-production.md): denied third owner, short-restart
+cadence, полный live restore/off-host, disk/load и review/release assembly ещё
+открыты. Ничего не выкатывается автоматически.
+
+### Отдельный проект MCP Rooms — выделение запрошено
+
+Standalone больше не должен требовать GitHub-аккаунта: собственный user UUID,
+отдельные отзываемые ключи подключений для private pilot, готовый OAuth adapter
+следующим этапом. [Identity design и source extraction](docs/mcp-rooms-identity-design.md).
+Создан публичный [mcp-rooms](https://github.com/LeonidYasin/mcp-rooms), MIT утверждена
+владельцем. После обновления token permissions исходники/тесты/docs/CI перенесены
+в [draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1): собственные UUID
+users, отзываемые ключи и официальный MCP SDK; без GitHub prerequisite/shell tools.
+Затем в том же draft добавлена opt-in автоматическая регистрация: контакт +
+секретный клиентский UUIDv4, либо дополнительный серверный ключ того же user.
+Контакт НЕ подтверждён/НЕ сохранён и не восстанавливает аккаунт; секреты выдаются
+в private HTTPS форме, не MCP-чате. [Регистрация](https://github.com/LeonidYasin/mcp-rooms/blob/feat/standalone-identity/docs/registration.md).
+[Подготовка отдельного VPS TEST](https://github.com/LeonidYasin/mcp-rooms/blob/feat/standalone-identity/docs/vps-test-plan.md):
+read-only preflight и unit example; installer/public route ещё не применены.
+Это standalone alpha candidate, не deployment/production approval. Existing TEST
+и БД не перенесены. Source extraction не требует ожидания embedded production.
+
+По запросу владельца запланирован самостоятельный rooms-only репозиторий
+(кандидат имени `mcp-rooms`): [план/границы](docs/mcp-rooms-standalone-plan.md),
+[задача #117](https://github.com/LeonidYasin/mcp-server/issues/117).
+Сначала приёмка встроенного модуля; затем согласование имени/видимости/лицензии,
+перенос совместимого core/contract tests и отдельный release. Репозиторий пока
+не создан; embedded режим продолжает работать без второго коннектора.
 
 ## Статус проекта и новые задачи
 

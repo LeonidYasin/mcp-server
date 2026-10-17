@@ -28,6 +28,10 @@ jobs:
         run: |
           pip install -e ".[dev]"
           pytest -q
+      - name: Rooms tests with operator umask
+        run: |
+          umask 077
+          pytest -q tests/test_agent_rooms.py tests/test_agent_rooms_production.py tests/test_agent_rooms_rollout.py tests/test_agent_rooms_upgrade.py tests/test_rooms_test_alias.py
       - name: Build wheel
         run: |
           pip install build
