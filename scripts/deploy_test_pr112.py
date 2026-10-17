@@ -11,8 +11,8 @@ import tempfile
 import time
 from urllib.request import Request, urlopen
 
-TARGET = '20d26756b87f78f28d9c3f5ea8a14b3fd1de36b7'
-OLD = 'ef7993b87e8d6ed6598065e46203dc6145f9286d'
+TARGET = '65ddae12bfaf6d117bb8f472ba396016db36610a'
+OLD = '20d26756b87f78f28d9c3f5ea8a14b3fd1de36b7'
 ROOT = Path('/home/mcp-test/mcp-server')
 PYTHON = '/home/mcp-test/venv/bin/python3'
 UNIT = 'mcp-test.service'
