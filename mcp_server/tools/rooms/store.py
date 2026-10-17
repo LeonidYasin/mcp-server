@@ -122,6 +122,13 @@ class RoomStore:
         try:
             db.execute('PRAGMA foreign_keys=ON')
             db.execute('PRAGMA busy_timeout=5000')
+            db.execute('PRAGMA synchronous=FULL')
+            if db.execute('PRAGMA page_size').fetchone()[0] != 4096:
+                raise RoomError('unsupported_database_page_size')
+            if db.execute('PRAGMA max_page_count=' + str(self.MAX_PAGES)).fetchone()[0] > self.MAX_PAGES:
+                raise RoomError('room_storage_capacity')
+            db.execute('PRAGMA wal_autocheckpoint=256')
+            db.execute('PRAGMA journal_size_limit=1048576')
             if initialize:
                 db.execute('PRAGMA journal_mode=WAL')
             db.execute('BEGIN IMMEDIATE' if write else 'BEGIN')
