@@ -65,7 +65,23 @@ def _cursor(value, scope):
     return int(sequence)
 
 
+def private_path(path):
+    """Admin-controlled local path; reject aliases and shared/wrong-owner parents."""
+    path = Path(path)
+    if (not path.is_absolute() or path.resolve() != path or
+            not path.parent.is_dir()):
+        raise RoomError('invalid_database_path')
+    parent = path.parent.stat()
+    if parent.st_uid != os.geteuid() or stat.S_IMODE(parent.st_mode) & 0o077:
+        raise RoomError('unsafe_database_directory')
+    return path
+
+
 class RoomStore:
+    # SQLite database pages only: 64 MiB at the required 4096-byte page size.
+    # WAL/SHM/backups still require an operator filesystem budget and monitoring.
+    MAX_PAGES = 16384
+
     def __init__(self, path, clock=None, limits=Limits()):
         self.path = Path(path)
         self.clock = clock or (lambda: int(time.time() * 1000))
