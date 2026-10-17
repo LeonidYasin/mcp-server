@@ -70,6 +70,19 @@ The source fix adds `explicit_path_walk_v1` only after an oversized recursive tr
 
 Regression cases cover nested recovery, shared-directory caching, file modes, tree identity/truncation/ambiguity, absent components, auto-mode refusal, oversized fallback responses, HTTP refusals, quota exhaustion, deep-path request caps, total bytes and blob integrity. CI success is evidence for the source candidate, not deployed recovery on ConstruBot.
 
+## Narrower-query follow-up (13:40 UTC)
+
+Eight additional Search GETs, two broad first-page probes per case, returned HTTP 200. These were new plans with `limit_per_probe=2`; their zero-star/fork continuations remain unrequested. They must not be added to the 24-probe completion claim as completed six-probe plans.
+
+| Case | Default-scope formulations | Reported totals | Example metadata-only candidates |
+| --- | --- | --- | --- |
+| TableBot | `telegram "spreadsheet"`; `telegram "finite state machine"` | 403; 19 | go-telegram/fsm, Feolius/telegram-bot-fsm; spreadsheet integrations remain adjacent rather than equivalent |
+| Agora | `"supply demand" matching`; `"offer" "want" matching` | 30; 33 | dirkju/SupplyDemand, Spring930/supply-demand-matching-platform, JaiSurya7022/skillswap, Rifat44334/skillswap.py |
+| ConstruBot | `"construction" "material" calculator`; `"parametric house"` | 154; 9 | TechProofreader/Materials-Cost-Calculator, linalopes/parametric-house-generator; an awesome-list and parametric-household also remain false-positive risks |
+| Issue dedup | `"duplicate issues"`; `"issue" "deduplication"` | 207; 53 | pelikhan/action-genai-issue-dedup, logpai/bughub dataset, Snowflake-Labs/sfguide-customer-issue-deduplication-demo |
+
+Narrower scope yielded more task-specific descriptions in this small observation, not a measured precision/recall improvement. No newly listed implementation is considered source-verified merely from its name/description. These formulations are analyst-supplied: server search semantics were not changed. Prefer a narrow initial scope and expand README deliberately for recall, then reject catalogs, copying tools, household items and infrastructure unless their actual implementation answers the target problem. A dataset can aid evaluation without being a deployable replacement.
+
 ## Verdict and next gates
 
 - **Passed:** new-tool external invocation, all planned first-page probes, zero-star/fork lanes, explicit continuation/fingerprint handling, honest quota stop, and selected code/fork-parent inspection.
