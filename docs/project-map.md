@@ -32,6 +32,13 @@ full restore/off-host/disk/load → отдельно утверждённый pr
 
 ## План выделения MCP Rooms (#117)
 
+Новое standalone onboarding: same-origin HTTPS signup → контакт format-only +
+секретный CSPRNG UUIDv4 → автоматический user UUID → оставить UUID Bearer или
+дополнительный 256-bit ключ того же user. Контакты не verified/не stored и не
+recovery, auth secrets не проходят через MCP tools. Signup off by default;
+persisted signup caps не заменяют public anti-abuse. Подготовка VPS ограничена
+read-only preflight/unit example для нового loopback TEST, не существующих сервисов.
+
 Владелец запросил копирование source в отдельный repo без обязательной GitHub
 identity. [Дизайн](mcp-rooms-identity-design.md): user UUID → per-connection
 credential → verified principal → прежний room core/SQLite; OAuth как отдельный
