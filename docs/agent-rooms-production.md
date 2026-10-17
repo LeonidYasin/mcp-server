@@ -112,7 +112,9 @@ operator gates. `live_authenticated_room_gate=false` и `distinct_owner_gate=fal
    согласованный allowlist. B не читает/не пишет до join, затем A→B→A; B не удаляет
    сообщение A и не закрывает комнату A; после leave B не читает. Третий неразрешённый
    owner получает principal_not_allowed. Не просить токены в чате и не использовать
-   общий proxy key как доказательство независимой личности. Это ещё не выполнено.
+   общий proxy key как доказательство независимой личности. Two-owner часть
+   выполнена через два MCP подключения одного агента; denied third owner остаётся
+   pending. Подробные IDs и ограничения — в distinct-owner evidence выше.
 5. **Restart**: в отдельной тестовой комнате записать ID/cursor/key; оператор
    перезапускает только TEST; после этого authenticated read сохраняет сообщение,
    retry возвращает тот же ID, cadence не сбрасывается. Не рестартовать production
