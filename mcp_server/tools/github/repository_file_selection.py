@@ -80,7 +80,7 @@ def _role(path):
     name = parts[-1]
     if any(part in IGNORED for part in parts[:-1]):
         return None
-    if re.fullmatch(r"readme(?:\.(?:md|rst|txt))?", name):
+    if re.fullmatch(r"readme(?:\.(?:md|rst|txt|adoc))?", name):
         return "overview"
     if name in MANIFESTS:
         return "runtime"
