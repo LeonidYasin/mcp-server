@@ -49,9 +49,10 @@ Agora новой hardening-веткой не развёрнуты. Осталь�
 identity без обязательного GitHub. [Дизайн/границы](docs/mcp-rooms-identity-design.md):
 собственные user UUID, индивидуальные отзываемые credentials для закрытого пилота,
 затем готовый OAuth adapter. Не принимать user_id из tool arguments. Владелец утвердил public + MIT; [mcp-rooms создан](https://github.com/LeonidYasin/mcp-rooms).
-Перенос кода заблокирован 403 при создании ветки: текущему токену нужен доступ
-к новому repo с Contents write и Workflows write для CI. Пока только init-файлы,
-не готовый модуль. Третий GitHub owner/embedded production не блокируют source
+Доступ токена исправлен; source/tests/docs/CI перенесены в
+[draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1), включая UUID users,
+per-connection credentials и официальный MCP SDK. Это standalone alpha candidate:
+не слит, не развёрнут, без live client/recovery/load acceptance. Третий GitHub owner/embedded production не блокируют source
 extraction, но release gates не закрываются.
 
 [План выделения](docs/mcp-rooms-standalone-plan.md) · [Issue #117](https://github.com/LeonidYasin/mcp-server/issues/117).
