@@ -6,11 +6,32 @@ from mcp_server.tools.github.client import GitHubClient
 
 @mcp_tool(
     name="get_repo_info",
-    description="Основная информация о репозитории (размер, видимость, последний push)",
-    parameters={"owner": {"type": "string"}, "repo": {"type": "string"}},
+    description="Информация о репозитории; mode=public_evidence: bounded anonymous SHA-pinned excerpts, optional fork comparison; not runtime validation.",
+    parameters={
+        "owner": {"type": "string"}, "repo": {"type": "string"},
+        "mode": {"type": "string", "enum": ["legacy", "public_evidence"],
+                 "description": "Default legacy preserves authenticated text; public_evidence returns bounded JSON text."},
+        "ref": {"type": "string", "description": "public_evidence only: branch/tag/SHA, pinned before file reads; default default_branch."},
+        "file_selection": {"type": "string", "enum": ["explicit", "auto"],
+            "description": "public_evidence only: explicit(default) requires evidence_files; auto forbids evidence_files and selects <=6 files plus bounded callable-name windows; explained heuristics, not verified relevance."},
+        "evidence_files": {"type": "array", "minItems": 1, "maxItems": 6,
+            "description": "public_evidence only: explicit selected files, not discovery or arbitrary URL fetch.",
+            "items": {"type": "object", "additionalProperties": False, "required": ["path"],
+                      "properties": {"path": {"type": "string"},
+                          "start_line": {"type": "integer", "minimum": 1, "maximum": 1000000},
+                          "max_lines": {"type": "integer", "minimum": 1, "maximum": 100}}}},
+        "compare_parent": {"type": "boolean", "description": "public_evidence only: explicitly observe fork parent default-branch comparison (no patch); default false."},
+    },
     required=["owner", "repo"],
 )
 def get_repo_info(client: GitHubClient, **kwargs) -> str:
+    mode = kwargs.pop("mode", "legacy")
+    if mode == "public_evidence":
+        from mcp_server.tools.github.repository_evidence import observe
+        return observe(client, **kwargs)
+    if mode != "legacy" or set(kwargs) - {"owner", "repo"}:
+        import json
+        return json.dumps({"state": "invalid_input", "error": "unsupported_mode_or_arguments"})
     d = client._request("GET", f"/repos/{kwargs['owner']}/{kwargs['repo']}").json()
     size_kb = d.get("size", 0)
     visibility = d.get("visibility") or ("private" if d.get("private") else "public")
