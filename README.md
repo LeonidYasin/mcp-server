@@ -37,7 +37,13 @@ owner guards, idempotency, TTL и cadence. Владелец проверяетс
 общего владельца; доступ к комнате не ограничивает остальные MCP-инструменты.
 Без LLM-вызовов, автономных переговоров или внедрения в Agora. После отладки
 контракт переносится в Agora отдельным этапом. [Контракт/лимиты/backup](docs/agent-rooms.md).
-На VPS ничего не установлено и не включено; обязательны CI, review и отдельный live gate.
+В TEST установлен отдельный composite `a323a67f…`: 128 tools, реальный A→B→A
+между двумя чатами одного GitHub owner подтверждён. Это не production и не новый
+hardening HEAD. Исправлена выявленная граница systemd ReadWritePaths; в исходниках
+добавлены storage guards, FULL durability, DB page budget, безопасные ошибки и
+consistent backup/restore-to-new-path. [Evidence и release gates](docs/agent-rooms-production.md).
+До production нужны exact-SHA CI/review, TEST новой ревизии, независимые владельцы,
+рестарт, backup/restore drill и операционный дисковый бюджет. Ничего не выкатывается автоматически.
 
 ## Статус проекта и новые задачи
 
