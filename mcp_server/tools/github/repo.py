@@ -2,6 +2,7 @@
 
 from mcp_server.core.registry import mcp_tool
 from mcp_server.tools.github.client import GitHubClient
+from mcp_server.tools.github.repository_file_selection import FOCUS_PATH_TERMS_SCHEMA
 
 
 @mcp_tool(
@@ -14,6 +15,7 @@ from mcp_server.tools.github.client import GitHubClient
         "ref": {"type": "string", "description": "public_evidence only: branch/tag/SHA, pinned before file reads; default default_branch."},
         "file_selection": {"type": "string", "enum": ["explicit", "auto"],
             "description": "public_evidence only: explicit(default) requires evidence_files; auto forbids evidence_files and selects <=6 files plus bounded callable-name windows; explained heuristics, not verified relevance."},
+        "focus_path_terms": FOCUS_PATH_TERMS_SCHEMA,
         "evidence_files": {"type": "array", "minItems": 1, "maxItems": 6,
             "description": "public_evidence only: explicit selected files, not discovery or arbitrary URL fetch.",
             "items": {"type": "object", "additionalProperties": False, "required": ["path"],
