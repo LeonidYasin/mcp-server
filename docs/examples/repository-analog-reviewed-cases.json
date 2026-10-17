@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "purpose": "Analyst-reviewed relationship ledger, not a semantic classifier or global analog benchmark.",
+  "verification": {
+    "semantic_claim_automatically_verified": false,
+    "foreign_code_executed": false,
+    "runtime_verified": false,
+    "global_complete": false,
+    "candidate_public_evidence_mode_used_for_new_reads": false,
+    "public_mode_auth_fallback_added": false,
+    "existing_authorized_github_mcp_review_calls": 10,
+    "new_candidate_files": 5,
+    "new_candidate_text_bytes": 20219
+  },
+  "sources": [
+    {
+      "repository": "go-telegram/fsm",
+      "ref": "8e54b70cd0f23f40f0c943feffd3191cd29c0ab8",
+      "path": "fsm.go",
+      "blob_sha": "ce496ab10ee74f81c39f3a1e6da938bababd7fb3",
+      "content_sha256": "f25b40c654aaa80c385bb9afb3301499662f03db1fe54412dc9b8131de26127b",
+      "bytes": 3630,
+      "start_line": 1,
+      "end_line": 143,
+      "transport": "Existing authorized GitHub MCP; not candidate public_evidence",
+      "git_blob_matches_directory_and_file_metadata": true,
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "id": "source-1",
+      "source_url": "https://github.com/go-telegram/fsm/blob/8e54b70cd0f23f40f0c943feffd3191cd29c0ab8/fsm.go",
+      "source_role": "candidate"
+    },
+    {
+      "repository": "go-telegram/fsm",
+      "ref": "8e54b70cd0f23f40f0c943feffd3191cd29c0ab8",
+      "path": "user_state_storage.go",
+      "blob_sha": "f58fbd3cccbb48f1575a6615e454513f63ed5fad",
+      "content_sha256": "b94cfc649d44b599a4dd1384d44538b3cd141e1eb3fe867178e0fe52894f09cc",
+      "bytes": 1048,
+      "start_line": 1,
+      "end_line": 52,
+      "transport": "Existing authorized GitHub MCP; not candidate public_evidence",
+      "git_blob_matches_directory_and_file_metadata": true,
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "id": "source-2",
+      "source_url": "https://github.com/go-telegram/fsm/blob/8e54b70cd0f23f40f0c943feffd3191cd29c0ab8/user_state_storage.go",
+      "source_role": "candidate"
+    },
+    {
+      "repository": "zjunhao/ConstructionMaterialCalculator",
+      "ref": "769231651aa3464b84b83268e96533bfd95fc66c",
+      "path": "README.md",
+      "blob_sha": "2c571330216ac8223ef730cdd58d572148c2d0f3",
+      "content_sha256": "f16255acf17c3c8a7c5aef0210a12c4c0790401207e73cedd3fcfdfaebd98561",
+      "bytes": 2981,
+      "start_line": 1,
+      "end_line": 51,
+      "transport": "Existing authorized GitHub MCP; not candidate public_evidence",
+      "git_blob_matches_directory_and_file_metadata": true,
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "id": "source-3",
+      "source_url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/README.md",
+      "source_role": "candidate"
+    },
+    {
+      "repository": "zjunhao/ConstructionMaterialCalculator",
+      "ref": "769231651aa3464b84b83268e96533bfd95fc66c",
+      "path": "src/CalculatorA.java",
+      "blob_sha": "c7b8e47761e9701eb06c32eeeeeb3abc3ee61a1e",
+      "content_sha256": "b698a07068a95739024e249679e6c0f31cd60c7a344f9507cc20542605e5cd01",
+      "bytes": 5112,
+      "start_line": 1,
+      "end_line": 155,
+      "transport": "Existing authorized GitHub MCP; not candidate public_evidence",
+      "git_blob_matches_directory_and_file_metadata": true,
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "id": "source-4",
+      "source_url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/src/CalculatorA.java",
+      "source_role": "candidate"
+    },
+    {
+      "repository": "zjunhao/ConstructionMaterialCalculator",
+      "ref": "769231651aa3464b84b83268e96533bfd95fc66c",
+      "path": "src/OutToExcel.java",
+      "blob_sha": "0e32ef0dd8df7f5529820666631c6ce4b45ae998",
+      "content_sha256": "6a9516f104ce5f511c72bb47925b1a1935b7bbb95df915eadee1f9817346ec30",
+      "bytes": 7448,
+      "start_line": 1,
+      "end_line": 194,
+      "transport": "Existing authorized GitHub MCP; not candidate public_evidence",
+      "git_blob_matches_directory_and_file_metadata": true,
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "id": "source-5",
+      "source_url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/src/OutToExcel.java",
+      "source_role": "candidate"
+    },
+    {
+      "id": "source-6",
+      "repository": "LeonidYasin/Tablebot-pipe-Advanced",
+      "ref": "9e4577cdeddfb19f116d5620a5949ef0cc462d25",
+      "path": "core/fsm_builder.py",
+      "content_sha256": "d99d5a01b6acc48d0ca91afee5185f49398fc15c7b214d8ebc9b0b7d6932fdce",
+      "bytes": 1048,
+      "start_line": 1,
+      "end_line": 24,
+      "source_url": "https://github.com/LeonidYasin/Tablebot-pipe-Advanced/blob/9e4577cdeddfb19f116d5620a5949ef0cc462d25/core/fsm_builder.py",
+      "transport": "Cached earlier SHA-pinned public raw read; not re-read in this review",
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "source_role": "baseline"
+    },
+    {
+      "id": "source-7",
+      "repository": "LeonidYasin/Tablebot-pipe-Advanced",
+      "ref": "9e4577cdeddfb19f116d5620a5949ef0cc462d25",
+      "path": "core/pipeline_executor.py",
+      "content_sha256": "8f10e9257f91f6fe3413203fbbdfb69d7e9955db8997f943e31738c1f97fb660",
+      "bytes": 3519,
+      "start_line": 1,
+      "end_line": 86,
+      "source_url": "https://github.com/LeonidYasin/Tablebot-pipe-Advanced/blob/9e4577cdeddfb19f116d5620a5949ef0cc462d25/core/pipeline_executor.py",
+      "transport": "Cached earlier SHA-pinned public raw read; not re-read in this review",
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "source_role": "baseline"
+    },
+    {
+      "id": "source-8",
+      "repository": "LeonidYasin/ConstruBot",
+      "ref": "ee3d69e0f6c721207ab66ceef2d830a316d80d52",
+      "path": "backend/app/main.py",
+      "content_sha256": "bfa7ad9f91230143826a1572033b039e49589722b0b17d43eae4ffc4aab47dc4",
+      "bytes": 1023,
+      "start_line": 1,
+      "end_line": 40,
+      "source_url": "https://github.com/LeonidYasin/ConstruBot/blob/ee3d69e0f6c721207ab66ceef2d830a316d80d52/backend/app/main.py",
+      "transport": "Cached earlier SHA-pinned public raw read; not re-read in this review",
+      "pinned_tree_mode_chain_independently_verified": false,
+      "source_text_published": false,
+      "source_role": "baseline"
+    }
+  ],
+  "cases": [
+    {
+      "id": "tablebot-fsm",
+      "baseline": "LeonidYasin/Tablebot-pipe-Advanced",
+      "candidate": "go-telegram/fsm",
+      "relationship": "shared_primitive_not_demonstrated_full_substitute",
+      "level": "selected_static_observation",
+      "semantic_claim_automatically_verified": false,
+      "finding": "Candidate Transition sets a per-user state and invokes a state callback; default user-state storage is an in-memory map. Baseline constructs FSM states from table transitions and orchestrates action subprocesses.",
+      "evidence": [
+        {
+          "source_id": "source-1",
+          "start_line": 36,
+          "end_line": 83,
+          "content_sha256": "f25b40c654aaa80c385bb9afb3301499662f03db1fe54412dc9b8131de26127b",
+          "url": "https://github.com/go-telegram/fsm/blob/8e54b70cd0f23f40f0c943feffd3191cd29c0ab8/fsm.go#L36-L83"
+        },
+        {
+          "source_id": "source-2",
+          "start_line": 8,
+          "end_line": 19,
+          "content_sha256": "b94cfc649d44b599a4dd1384d44538b3cd141e1eb3fe867178e0fe52894f09cc",
+          "url": "https://github.com/go-telegram/fsm/blob/8e54b70cd0f23f40f0c943feffd3191cd29c0ab8/user_state_storage.go#L8-L19"
+        },
+        {
+          "source_id": "source-6",
+          "start_line": 8,
+          "end_line": 24,
+          "content_sha256": "d99d5a01b6acc48d0ca91afee5185f49398fc15c7b214d8ebc9b0b7d6932fdce",
+          "url": "https://github.com/LeonidYasin/Tablebot-pipe-Advanced/blob/9e4577cdeddfb19f116d5620a5949ef0cc462d25/core/fsm_builder.py#L8-L24"
+        },
+        {
+          "source_id": "source-7",
+          "start_line": 11,
+          "end_line": 53,
+          "content_sha256": "8f10e9257f91f6fe3413203fbbdfb69d7e9955db8997f943e31738c1f97fb660",
+          "url": "https://github.com/LeonidYasin/Tablebot-pipe-Advanced/blob/9e4577cdeddfb19f116d5620a5949ef0cc462d25/core/pipeline_executor.py#L11-L53"
+        }
+      ],
+      "reuse_path": "Reference or a primitive for a Go implementation, not a drop-in replacement for Python/aiogram table authoring.",
+      "unknowns": [
+        "No complete-source/runtime proof of table import, multi-role workflows or pipeline equivalence.",
+        "Go vs Python integration cost and source license conditions not reviewed.",
+        "Callback failure/state consistency and persistence requirements need a separate adoption review."
+      ]
+    },
+    {
+      "id": "construbot-quantities",
+      "baseline": "LeonidYasin/ConstruBot",
+      "candidate": "zjunhao/ConstructionMaterialCalculator",
+      "relationship": "adjacent_quantity_estimation_and_export",
+      "level": "selected_static_observation",
+      "semantic_claim_automatically_verified": false,
+      "finding": "Candidate computes board/linear-element quantities using dimensions and rounding, groups matching product/type records and writes detail and purchase/selling XLS reports. Baseline returns fixed board/screw/roof estimates from positive width/height.",
+      "evidence": [
+        {
+          "source_id": "source-4",
+          "start_line": 20,
+          "end_line": 83,
+          "content_sha256": "b698a07068a95739024e249679e6c0f31cd60c7a344f9507cc20542605e5cd01",
+          "url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/src/CalculatorA.java#L20-L83"
+        },
+        {
+          "source_id": "source-4",
+          "start_line": 91,
+          "end_line": 104,
+          "content_sha256": "b698a07068a95739024e249679e6c0f31cd60c7a344f9507cc20542605e5cd01",
+          "url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/src/CalculatorA.java#L91-L104"
+        },
+        {
+          "source_id": "source-5",
+          "start_line": 19,
+          "end_line": 49,
+          "content_sha256": "6a9516f104ce5f511c72bb47925b1a1935b7bbb95df915eadee1f9817346ec30",
+          "url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/src/OutToExcel.java#L19-L49"
+        },
+        {
+          "source_id": "source-5",
+          "start_line": 99,
+          "end_line": 194,
+          "content_sha256": "6a9516f104ce5f511c72bb47925b1a1935b7bbb95df915eadee1f9817346ec30",
+          "url": "https://github.com/zjunhao/ConstructionMaterialCalculator/blob/769231651aa3464b84b83268e96533bfd95fc66c/src/OutToExcel.java#L99-L194"
+        },
+        {
+          "source_id": "source-8",
+          "start_line": 21,
+          "end_line": 40,
+          "content_sha256": "bfa7ad9f91230143826a1572033b039e49589722b0b17d43eae4ffc4aab47dc4",
+          "url": "https://github.com/LeonidYasin/ConstruBot/blob/ee3d69e0f6c721207ab66ceef2d830a316d80d52/backend/app/main.py#L21-L40"
+        }
+      ],
+      "reuse_path": "Evaluate BOM grouping, quantity-rounding and export patterns before rebuilding those layers; not a ready A-frame configuration or engineering validation service.",
+      "unknowns": [
+        "Source license/reuse rights not reviewed.",
+        "No runtime/formula accuracy, units robustness, waste/cutting optimization or structural engineering validation.",
+        "Price-total calculation outside the delivered export methods and desktop-to-API integration remain unreviewed."
+      ]
+    }
+  ],
+  "limitations": [
+    "New reads use an existing GitHub MCP connection, NOT the anonymous candidate collector or its measured per-call budget.",
+    "Commit pins and matching provider directory/file blob identifiers plus local Git-blob hashes were checked. A complete commit/tree/mode chain was not independently verified.",
+    "Only source metadata and original analyst summaries are committed; no third-party source snapshots.",
+    "These two manually reviewed cases do not establish automatic similarity detection, precision/recall, novelty or profitability."
+  ]
+}
