@@ -1,6 +1,22 @@
 # Карта проекта mcp-server
 
+> **Analog-search quality candidate (PR #112):** 2–8 formulations, safe explicit page continuations with fingerprint validation, README-scope advisories, accountable facet-coverage ordering and large-commit source-pin recovery. No exhaustive-GitHub or commercial-demand claim. [Audit and acceptance](scenarios/analog-quality-audit.md). Tests run in the agent sandbox only; no VPS execution/deployment is authorized.
+
 Ревизия документации 8 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
+
+## Исследование идей: текущий кандидат #112
+
+`get_repo_info(public_evidence)` → SHA-профиль исходного репозитория →
+`find_repository_analogs(plan_only)` и проверка `query_coverage` → явные поисковые
+batches/страницы → дедупликация по ID → выборочный `public_evidence` кандидатов →
+сопоставление проблемы, механизма, отличий и лицензии с источниками.
+
+Слои: `repository_analogs.py` управляет планом/лимитами; `repository_search.py` читает
+публичную выдачу; `repository_evidence.py` закрепляет commit/tree/blob и проверяет
+целостность; `repository_file_selection.py` предлагает пути, но не доказывает смысл.
+Ни `facet_coverage`, ни stars не являются оценкой семантического сходства или спроса.
+Контроль Agora и известный пропуск: [quality audit](scenarios/analog-quality-audit.md).
+Кандидат не развёрнут; выполнялся только в локальной песочнице, без VPS Python/shell.
 
 ## Архитектура и границы доверия
 

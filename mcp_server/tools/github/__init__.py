@@ -245,3 +245,7 @@ __all__ = [
     "list_my_repos",
     "update_repo",
 ]
+
+# Idea-led public discovery composed with pinned source evidence.
+from mcp_server.tools.github.repository_analogs import find_repository_analogs
+

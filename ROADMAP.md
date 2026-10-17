@@ -1,5 +1,31 @@
 # ROADMAP — расширение MCP-сервера
 
+> **Analog-search quality candidate (PR #112):** 2–8 formulations, safe explicit page continuations with fingerprint validation, README-scope advisories, accountable facet-coverage ordering and large-commit source-pin recovery. No exhaustive-GitHub or commercial-demand claim. [Audit and acceptance](docs/scenarios/analog-quality-audit.md). Tests run in the agent sandbox only; no VPS execution/deployment is authorized.
+
+## Текущий приоритет: идейные аналоги репозиториев — Draft #112
+
+Это исследовательский кандидат, а не развёрнутый инструмент и не закрытие #100/#102.
+Основной маршрут: исходный код своего repo → профиль проблемы/механизма → явные
+синонимы и README-запросы → broad/zero-star/fork discovery → выборочная проверка кода
+на том же SHA → объяснение сходства, отличий и неизвестного. Публикация каталогов и
+коммерческий спрос не выводятся из выдачи GitHub.
+
+- Реализовано в кандидате: 2–8 формулировок, 6–24 планируемых probes при ≤12 поисковых
+  GET за вызов, явные страницы, проверка fingerprint, предупреждения README scope,
+  provenance сортировки и безопасный повтор при усечении кандидатов.
+- Исправлен реальный blocker Agora: oversized REST commit → проверенный компактный
+  Git commit в прежних бюджетах; без выполнения кода репозитория.
+- Проверено локально: 1114 tests, сборка wheel/sdist; публичные запросы Agora.
+  Набор из 24 probes дал 155 уникальных metadata-кандидатов, но пропустил известный
+  can-co; отдельные 6 README probes нашли его. Это контрольный пропуск, не benchmark recall.
+- Не закрыто: размеченная оценка семантической релевантности на разных репозиториях,
+  отбор полезного кода/проверка лицензий, обсуждения и подтверждение спроса из #101/#102.
+  Без этого нельзя обещать «все аналоги», готовую замену или коммерческую перспективу.
+- Отдельный gate: review и установка в TEST только после согласования. VPS Python/shell
+  в этой итерации не запускались; main/production не меняются.
+
+Подробные запросы, ограничения и контроль: [quality audit](docs/scenarios/analog-quality-audit.md).
+
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).

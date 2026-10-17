@@ -1,5 +1,7 @@
 # TOOLS — полный каталог инструментов mcp-server
 
+> **Analog-search quality candidate (PR #112):** 2–8 formulations, safe explicit page continuations with fingerprint validation, README-scope advisories, accountable facet-coverage ordering and large-commit source-pin recovery. No exhaustive-GitHub or commercial-demand claim. [Audit and acceptance](docs/scenarios/analog-quality-audit.md). Tests run in the agent sandbox only; no VPS execution/deployment is authorized.
+
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
 > **Ревизия:** 8 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
@@ -12,11 +14,11 @@
 
 ## Проверяемый профиль реестра
 
-Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **114 default**, **144 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
-| github | 90 | 90 |
+| github | 91 | 91 |
 | build | 2 | 2 |
 | utils / meta / web | 15 / 2 / 4 | 15 / 2 / 4 |
 | localfs / localgit | 0 / 0 | 4 / 6 |
@@ -84,6 +86,18 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 ### Repo info / admin (6)
 `get_repo_info`, `get_repo_languages`, `get_repo_topics`, `list_repo_contributors`, `update_repo_info`, `get_repo_tree`
 
+Candidate, not deployed: `get_repo_info` supports explicit `mode=public_evidence` for
+anonymous, commit-pinned selected excerpts and optional bounded fork comparison.
+Optional `file_selection=auto` chooses up to six files with explained path heuristics,
+using remaining document slots for diverse implementation-role hints (`auto_paths_v2`);
+default explicit selection remains available. Auto does not verify semantic relevance.
+Auto implementation excerpts may center on a callable-name hint (Python AST or basic
+Go/Scala/JS/TS/Rust lexical declarations and supported SDK-registration syntax hints);
+fixed header fallbacks and actual retained ranges
+are reported. No code is imported/executed and no extra GitHub reads are added.
+Default legacy text is unchanged. No runtime/novelty/commercial verdict is inferred.
+See [evidence contract and limits](docs/repository-evidence.md).
+
 ### Repo management (3)
 `create_repo`, `list_my_repos`, `update_repo`
 
@@ -92,8 +106,15 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 
 `push_multiple_files`: existing blob modes сохраняются; explicit `files[].mode`, optional `expected_head_sha`, один complete tree read и non-force ref update. [Modes/concurrency contract](docs/batch-push.md).
 
-### Search (4)
-`search_code`, `search_commits`, `search_issues`, `search_repositories`
+### Search (5)
+`search_code`, `search_commits`, `search_issues`, `search_repositories`, `find_repository_analogs`
+
+Candidate, not deployed: `find_repository_analogs` composes public Search with optional pinned
+evidence: caller-selected problem/mechanism formulations, broad/zero-star/fork lanes,
+round-robin deduplication, explicit budgeted continuation and source provenance.
+Optional `focus_path_terms` biases auto evidence by file-name prefixes without extra GETs.
+No catalog or semantic score.
+[Idea-to-analog workflow and limits](docs/repository-analogs.md).
 
 ---
 
@@ -170,3 +191,7 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 ---
 
 _Ревизия 8 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+
+## Candidate public repository Search mode
+
+[Public repository Search observations](docs/repository-search-observations.md) documents an opt-in JSON mode of existing search_repositories: one anonymous page, explicit forks/query, nullable metadata, coverage and safe continuation. Legacy default stays text; this candidate is not deployed and is not a global index/trend report.
