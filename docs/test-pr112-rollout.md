@@ -4,7 +4,37 @@ This procedure is manual: the operator runs it in the existing VPS root console.
 Do not execute it via MCP `run_python`, and do not weaken the MCP service sandbox.
 Saving these files in GitHub does not deploy or merge anything.
 
-## Fixed scope
+## Current follow-up: deploy the path-walk fix to TEST
+
+The first rollout below already passed. Current installed TEST revision is `20d26756b87f78f28d9c3f5ea8a14b3fd1de36b7` with 120 tools. The next fixed runtime target is `65ddae12bfaf6d117bb8f472ba396016db36610a`, which includes the explicit-path oversized-tree fix and 27 regression cases. [CI attempt 1](https://github.com/LeonidYasin/mcp-server/actions/runs/39036995274) passed Python 3.10–3.13; Python 3.12 logs report 1060 tests passed. See [external acceptance](idea-analog-external-acceptance.md) for what is and is not accepted.
+
+The updated operator script at `72719300c1f5042ddaf5845a358194868850b685` requires that exact existing 20d2675 HEAD and the existing analog-enabled 120-tool inventory. It retains the first rollout's backup, TEST-only restart, protected-service checks and rollback controls. It does not install dependencies or merge main. The agent has only saved the file, not run it.
+
+Run this block in the existing VPS root console only when ready to update TEST:
+
+```bash
+(
+  set -euo pipefail
+  test "$(id -u)" -eq 0
+  umask 077
+  d=$(mktemp -d /root/mcp-test-pr112-command-XXXXXXXX)
+  curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+    'https://raw.githubusercontent.com/LeonidYasin/mcp-server/72719300c1f5042ddaf5845a358194868850b685/scripts/deploy_test_pr112.py' \
+    -o "$d/deploy_test_pr112.py"
+  printf '%s  %s\n' \
+    '61d9965cf74a6ba21b7a35c0dcae59b04a423927111b9f520a19c602dc25b891' \
+    "$d/deploy_test_pr112.py" | sha256sum --check
+  /usr/bin/python3 "$d/deploy_test_pr112.py"
+)
+```
+
+Expected `TEST_ROLLOUT_PASS` target is 65ddae12bfaf6d117bb8f472ba396016db36610a; previous is 20d26756b87f78f28d9c3f5ea8a14b3fd1de36b7; tool count stays 120. The agent must then repeat external ConstruBot explicit evidence for `backend/app/main.py` lines 21–40 at `ee3d69e0f6c721207ab66ceef2d830a316d80d52`. Success of the operator script alone does not establish that recovery. On error, preserve backup and send only concise status, not private logs; do not blindly rerun.
+
+## Historical first rollout — do not rerun after 20d2675 is installed
+
+The remainder records the earlier 119-to-120-tool rollout. Its pinned script and checksum intentionally refer to the original version, not the current follow-up.
+
+### Fixed scope of the first rollout
 
 - Runtime target: `20d26756b87f78f28d9c3f5ea8a14b3fd1de36b7`.
 - Required existing TEST HEAD: `ef7993b87e8d6ed6598065e46203dc6145f9286d`.
