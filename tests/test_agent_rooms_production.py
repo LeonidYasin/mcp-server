@@ -80,7 +80,11 @@ def test_storage_errors_are_classified_without_secrets(configured, monkeypatch, 
 
 
 def test_directory_alias_shared_permissions_and_hardlink_rejected(tmp_path):
-    shared = tmp_path / 'shared'; shared.mkdir(mode=0o755)
+    shared = tmp_path / 'shared'; shared.mkdir(mode=0o700)
+    # mkdir's mode is masked by the operator's inherited umask (077 on VPS).
+    # Construct the intentionally unsafe fixture explicitly; never relax umask.
+    shared.chmod(0o755)
+    assert shared.stat().st_mode & 0o777 == 0o755
     with pytest.raises(RoomError, match='unsafe_database_directory'):
         RoomStore(shared / 'r.db')
     private = tmp_path / 'private'; private.mkdir(mode=0o700)
