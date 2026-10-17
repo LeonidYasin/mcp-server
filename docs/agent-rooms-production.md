@@ -40,7 +40,7 @@ Evidence IDs: room `8c7e2c26-63cc-43bf-9e6d-d1a0195012a3`, A message
 Эти результаты НЕ доказывают live разных владельцев, reboot/power-loss,
 production readiness новой hardening-ревизии или backup действующего VPS.
 
-## Hardening в исходниках; не считать уже установленным
+## Hardening-контракт; установленный source указан в актуальном TEST evidence
 
 - Канонический абсолютный путь, приватный каталог service owner, файл 0600;
   отказ при symlink/alias, другом владельце файла/каталога и hardlink БД.
