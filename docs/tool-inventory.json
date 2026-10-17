@@ -2,7 +2,7 @@
   "format_version": 1,
   "profiles": {
     "default": {
-      "count": 113,
+      "count": 114,
       "tools": [
         {
           "category": "github",
