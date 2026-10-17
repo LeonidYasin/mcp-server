@@ -21,6 +21,15 @@ safe storage errors и operator-only consistent backup/verify/restore-to-new-pat
 exact-SHA CI/review → новая TEST сборка → distinct-owner negatives → restart/recovery/
 disk/load → отдельно утверждённый production rollout. После отладки — Agora port.
 
+## План выделения MCP Rooms (#117)
+
+Embedded rooms в mcp-server (сейчас) → production acceptance → standalone rooms-only
+repo/package (planned) → pinned embedded adapter + будущий Agora adapter.
+[План, структура и migration gates](mcp-rooms-standalone-plan.md).
+До подтверждённой миграции canonical core остаётся в mcp-server; после выделения
+нужен один versioned source, а не две ручные копии. Новый repo/endpoint/DB ещё не
+созданы, текущему пользователю не требуется второе подключение.
+
 Ниже сохранена карта прежнего main/production и независимых backlog-направлений.
 
  Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
