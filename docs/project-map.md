@@ -16,7 +16,10 @@ A→B→A двух чатов одного owner подтверждён. Для 
 ТОЧНЫЙ ReadWritePaths каталога БД; первоначальная live-регрессия исправлена.
 Hardening-ветка добавляет canonical/private path, FULL durability, DB pages budget,
 safe storage errors и operator-only consistent backup/verify/restore-to-new-path.
-Это новые исходники, не уже развёрнутый TEST/production.
+Hardening уже установлен в отдельный TEST composite `3c4eb840…`; authenticated
+post-restart read/send/retry/conflict и старые IDs/key/cursor подтверждены.
+[Точный source и evidence](agent-rooms-test-hardening-evidence.md).
+В production не установлен; distinct-owner и остальные release gates открыты.
 [Контракт](agent-rooms.md) · [Evidence и production gates](agent-rooms-production.md):
 exact-SHA CI/review → новая TEST сборка → distinct-owner negatives → restart/recovery/
 disk/load → отдельно утверждённый production rollout. После отладки — Agora port.
