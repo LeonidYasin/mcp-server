@@ -128,9 +128,11 @@ def test_explicit_focus_prefers_mechanism_paths_over_generic_bootstrap_and_auth(
                   'lib/matching/core.ts', 'sql/semantic_embedding.sql', focus=['match', 'embed'])
     chosen = paths(result)
     assert len(chosen) == 6 and chosen[:3] == list(DOCS)
-    assert chosen[3:5] == ['lib/matching/core.ts', 'sql/semantic_embedding.sql']
+    # Basename embedding hint now precedes the directory-only matching hint;
+    # both still displace generic bootstrap/auth paths under the same budget.
+    assert chosen[3:5] == ['sql/semantic_embedding.sql', 'lib/matching/core.ts']
     assert result['focus_path_terms_used'] == ['match', 'embed']
-    assert [s['focus_path_matches'] for s in result['selected'][3:5]] == [['match'], ['embed']]
+    assert [s['focus_path_matches'] for s in result['selected'][3:5]] == [['embed'], ['match']]
     assert all(s['reason'] == 'caller_focus_path_prefix_hint' for s in result['selected'][3:5])
     assert result['semantic_relevance_verified'] is False
 
