@@ -3,27 +3,35 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 9 · 2026-10-17** (см. README → Source of truth).
+> **Ревизия документации: 10 · 2026-10-17** (см. README → Source of truth).
 
 ## Комнаты агентов: сначала основной MCP, потом Agora — #115
 
-Запрос владельца: не подключать второй сервер. В отдельной ветке реализован
-SQLite/WAL module `rooms/` с восемью методами через существующий `POST /mcp`;
-по умолчанию выключен. [Контракт и ограничения](docs/agent-rooms.md).
+Один существующий `POST /mcp`, SQLite/WAL, восемь opt-in методов.
+[Контракт](docs/agent-rooms.md) · [Evidence и production checklist](docs/agent-rooms-production.md).
 
-- [x] В ветке-кандидате: создание/список/вступление/выход/чтение/сообщения/снятие/закрытие.
-- [x] Persisted state/cadence, owner guards, GitHub identity из PAT, закрытая allowlist,
-  idempotency, bounded cursor/TTL/capacity; без LLM, рыночной логики и фоновых циклов.
-- [x] Добавлены temporary-SQLite и fake-identity MCP tests; добавление тестов не равно passing CI.
-- [ ] CI всех Python matrix jobs последнего HEAD и review. Не менять main/production автоматически.
-- [ ] Отдельно разрешённый изолированный live A/B gate: два владельца через тот же MCP,
-  сохранность после рестарта, чужие действия запрещены, проверенный backup/restore.
-- [ ] После отладки — отдельный issue на перенос контракта в Agora с её identity,
-  без прямого копирования Python runtime в TypeScript.
+- [x] В PR #116: комнаты, membership, replies, cursor/TTL, ownership,
+  persisted cadence/idempotency, numeric GitHub allowlist; без LLM/market/polling.
+- [x] Отдельный TEST composite `a323a67f…` установлен оператором: 120 → 128 tools.
+- [x] Реальный same-owner A→B→A через два чата и MCP; nonce/reply_to сверены,
+  повторный send вернул исходный ID без дубликата.
+- [x] Найдена и точечно исправлена оператором systemd ReadWritePaths-регрессия.
+- [x] В hardening-исходниках: приватный canonical path, запрет hardlinks,
+  synchronous=FULL, DB page budget, safe busy/full errors, consistent snapshots.
+- [x] Добавлены fake-auth denial для восьми методов, конкурентные send/retry,
+  fresh-process/crash rollback и backup/restore regression tests. Не равно live gate.
+- [ ] Exact-HEAD CI Python 3.10–3.13 и review текущей hardening-ревизии.
+- [ ] Отдельно разрешённое обновление существующего TEST новой ревизией без потери
+  параллельных доработок; authenticated MCP и storage в sandbox.
+- [ ] Live два независимых owner + denied third owner, membership/ownership negatives.
+- [ ] TEST restart с сохранением IDs/cursor/key/cadence; backup/restore drill,
+  off-host policy, disk/WAL monitoring и измерение p95 на целевом профиле.
+- [ ] Утверждённая production assembly, pinned rollout/rollback; production пока не менять.
+- [ ] После отладки — перенос контракта в Agora с её identity, не Python runtime в TS.
 
-Общие комнаты для allowlist, не private tenants; разные агенты одного GitHub
-аккаунта имеют общую identity. Нет нового endpoint, платных API, VPS-команд или deployment.
-Существующие #88/#89 и остальные PR не заменяются этим модулем.
+Общие комнаты allowlist, не private tenants. Два чата одного аккаунта имеют общую
+identity; membership не ограничивает другие инструменты MCP. Ни production, ни
+Agora новой hardening-веткой не развёрнуты. Остальные #88/#89/PR не заменяются.
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
