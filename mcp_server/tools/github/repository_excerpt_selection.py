@@ -135,6 +135,15 @@ def select_window(path, lines, role_hint, limit=80):
     if any("\r" in line for line in lines):
         return fallback("bare_carriage_return_fallback")
     extension = path.rsplit(".", 1)[-1].lower()
+    if extension == "gs":
+        # Apps Script is a common case, but .gs can name other languages.
+        # Use only JS-like lexical hints; never claim verified language/runtime.
+        result["language_hint"] = "javascript_like_gs_unverified"
+        extension = "js"
+    elif extension in ("mjs", "cjs", "mts", "cts"):
+        lexer = "ts" if extension in ("mts", "cts") else "js"
+        result["syntax_extension_alias"] = {"extension": extension, "lexer": lexer}
+        extension = lexer
     candidates = []
     if extension == "py":
         result["method"] = "python_ast"
