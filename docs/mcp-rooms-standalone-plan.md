@@ -1,7 +1,13 @@
 # Отдельный проект MCP Rooms — план выделения
 
 Tracking: [#117](https://github.com/LeonidYasin/mcp-server/issues/117).
-Статус: **выделение исходников запрошено владельцем**, repo/deployment ещё не созданы.
+Статус: **репозиторий создан**, перенос кода заблокирован GitHub token permissions.
+Владелец явно утвердил public + MIT; создан [LeonidYasin/mcp-rooms](https://github.com/LeonidYasin/mcp-rooms)
+с auto-init README/LICENSE/gitignore. Попытка создать feat/standalone-identity
+получила 403 Resource not accessible by personal access token. Source/tests/CI ещё
+НЕ скопированы; standalone deployment не выполнялся. Нужен доступ текущего токена
+к новому repo и Contents write; для публикации workflow также Workflows write.
+Исторические предложения ниже не отменяют это утверждённое решение.
 Новое направление: standalone пользователи без обязательной привязки к GitHub;
 [identity design: собственный user UUID, индивидуальные credentials, OAuth adapter](mcp-rooms-identity-design.md).
 Предлагаемое имя `LeonidYasin/mcp-rooms`; API не нашёл доступный текущему токену repo
