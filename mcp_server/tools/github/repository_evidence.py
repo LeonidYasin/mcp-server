@@ -170,8 +170,66 @@ def _pin(reader, full, ref):
     return {"requested_ref": ref, "sha": sha, "tree_sha": tree_sha, "source": source}
 
 
+def _selected_path_tree(reader, full, tree_sha, specs, recursive_source):
+    """Recover explicit paths only; never loosen Reader budgets or follow URLs."""
+    cache, selected = {}, {}
+
+    def load(sha):
+        if sha not in cache:
+            data, source = reader.get("/repos/" + full + "/git/trees/" + sha)
+            if (data.get("sha") != sha or not isinstance(data.get("tree"), list) or
+                    data.get("truncated") is not False):
+                raise Refused("path_tree_unverified")
+            cache[sha] = (data["tree"], source)
+        return cache[sha][0]
+
+    for spec in specs:
+        path = spec["path"]
+        if not _path(path):
+            raise Refused("invalid_explicit_path")
+        parts, current = path.split("/"), tree_sha
+        for position, part in enumerate(parts):
+            entries = load(current)
+            matches = [entry for entry in entries
+                       if isinstance(entry, dict) and entry.get("path") == part]
+            if len(matches) > 1:
+                raise Refused("ambiguous_tree")
+            if not matches:
+                break
+            entry = matches[0]
+            sha = entry.get("sha")
+            if not isinstance(sha, str) or not SHA.fullmatch(sha):
+                raise Refused("path_tree_unverified")
+            if position < len(parts) - 1:
+                # Refuse symlink/submodule traversal, even if Contents could resolve it.
+                if entry.get("type") != "tree" or entry.get("mode") != "040000":
+                    break
+                current = sha
+            elif entry.get("type") == "blob" and entry.get("mode") in ("100644", "100755"):
+                selected[path] = sha
+    observations = [{"sha": sha, "source": source}
+                    for sha, (_, source) in cache.items()]
+    return selected, {"source": cache[tree_sha][1],
+                      "strategy": "explicit_path_walk_v1",
+                      "fallback_from": "recursive_tree_body_budget",
+                      "recursive_tree_source": recursive_source,
+                      "traversed_trees": observations,
+                      "entries_received": sum(len(entries) for entries, _ in cache.values()),
+                      "provider_truncated": False,
+                      "selected_regular_files": sorted(selected)}
+
+
 def _selected_tree(reader, full, tree_sha, specs):
-    data, source = reader.get("/repos/" + full + "/git/trees/" + tree_sha, {"recursive": "1"})
+    try:
+        data, source = reader.get("/repos/" + full + "/git/trees/" + tree_sha, {"recursive": "1"})
+    except Refused as exc:
+        # Only explicit requests can use a bounded path walk after an oversized tree.
+        # Auto discovery still refuses: a partial tree is not exhaustive selection.
+        if (str(exc) != "body_budget" or specs is None or reader.halted_reason or
+                reader.result["budget"]["response_bytes"] >= TOTAL_CAP):
+            raise
+        return _selected_path_tree(reader, full, tree_sha, specs,
+                                   len(reader.result["sources"]) - 1)
     if (data.get("sha") != tree_sha or not isinstance(data.get("tree"), list) or
             type(data.get("truncated")) is not bool):
         raise Refused("tree_unverified")
