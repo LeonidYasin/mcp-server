@@ -174,8 +174,11 @@ null/empty/invalid/duplicate values fail before network. Terms are not silently 
 from the idea text and are NOT added to Search queries.
 
 Focus matches token prefixes after camel-case/punctuation splitting of eligible file paths.
-Observed added/changed source priority remains first; matching paths then precede generic
-role/diversity heuristics. Documents still consume their normal slots. The returned plan
+Observed added/changed source priority remains first; basename token matches precede
+directory-only matches, then unfocused paths and the existing role/diversity heuristics.
+This prevents a shared project namespace from making every file equally focused; directory
+hints remain usable. No-focus ordering is unchanged. Documents still consume their normal slots.
+See [namespace regression and ACK/ACP source review](scenarios/agora-commerce-followup.md). The returned plan
 records `focus_path_terms_used`, per-source `focus_path_matches` and the fixed selection
 reason. These are file-name hints, not proof of content, relevance or feature coverage.
 No content-wide search, model call, extra tree walk, larger file limit or higher GET budget.
