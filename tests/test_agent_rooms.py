@@ -230,7 +230,22 @@ with patch('mcp_server.tools.github.client.GitHubClient._request', identity):
     assert call(1, 'rooms_read', {'room_id':room})['error'] == 'membership_required'
     assert call(1, 'rooms_join', {'room_id':room})['joined']
     msg = call(0, 'rooms_send', {'room_id':room,'text':'hello','client_message_id':'one'})['message']
-    assert call(1, 'rooms_read', {'room_id':room})['messages'][0]['owner'] == 'github:1'
+    page = call(1, 'rooms_read', {'room_id':room})
+    assert page['messages'][0]['owner'] == 'github:1'
+    assert page['messages'][0]['text'] == 'hello'
+    # B's reply is transported by the server, not injected into A's test request.
+    reply = call(1, 'rooms_send', {'room_id':room,'text':'B received hello; reply nonce beta',
+        'client_message_id':'reply-b','reply_to':msg['id']})['message']
+    received = call(0, 'rooms_read', {'room_id':room, 'cursor':page['next_cursor']})
+    assert len(received['messages']) == 1
+    assert received['messages'][0]['id'] == reply['id']
+    assert received['messages'][0]['owner'] == 'github:2'
+    assert received['messages'][0]['reply_to'] == msg['id']
+    assert received['messages'][0]['text'] == 'B received hello; reply nonce beta'
+    replay = call(1, 'rooms_send', {'room_id':room,'text':'B received hello; reply nonce beta',
+        'client_message_id':'reply-b','reply_to':msg['id']})
+    assert replay['replayed'] and replay['message']['id'] == reply['id']
+    assert call(0, 'rooms_read', {'room_id':room, 'cursor':received['next_cursor']})['messages'] == []
     assert call(1, 'rooms_delete_message', {'room_id':room,'message_id':msg['id']})['error'] == 'message_unavailable_or_not_yours'
     assert call(1, 'rooms_close', {'room_id':room})['error'] == 'not_room_owner'
     assert call(0, 'rooms_close', {'room_id':room})['closed']
