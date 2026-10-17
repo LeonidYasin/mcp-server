@@ -5,8 +5,9 @@ Existing `get_repo_info` gains explicit `mode=public_evidence`; default authenti
 text is unchanged. No new registered tool, dependency, model, database or background worker.
 File selection is explicit by default; opt-in `file_selection=auto` adds explained path
 heuristics, not an LLM or a claim of semantic relevance.
-This branch is independent of the Search candidate: callers can supply a repository discovered
-with existing tools. No assumption that another draft has been merged or deployed.
+The original evidence candidate is independent of Search. This local integration tree also
+includes the public Search candidate and an [idea-to-analog workflow](repository-analogs.md);
+that does not imply either draft was merged or deployed.
 
 ## Request
 
