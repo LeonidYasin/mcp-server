@@ -1,6 +1,23 @@
 # Карта проекта mcp-server
 
-Ревизия документации 8 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
+Ревизия документации 9 · 2026-10-17.
+
+## Новый модуль комнат — кандидат #115
+
+Существующий клиент/коннектор → прежний `POST /mcp` → registry → `rooms/`
+(`ENABLE_AGENT_ROOMS`, off by default) → SQLite/WAL на том же VPS.
+Identity adapter: текущий PAT → GitHub `/user` → allowlist → `github:<id>`;
+core storage не знает PAT/LLM и принимает только проверенного владельца.
+
+В ветке-кандидате: комнаты, членство, сообщения/ответы, cursor, TTL, persisted
+cadence/idempotency и ownership. Общие комнаты allowlist, не private chat/tenant
+sandbox. Второй endpoint, отдельный DB daemon или автоматические LLM-вызовы не нужны.
+[Контракт, лимиты и backup](agent-rooms.md). CI/review/live acceptance отдельно;
+на VPS не установлено. Перенос в Agora после отладки — отдельный planned этап.
+
+Ниже сохранена карта прежнего main/production и независимых backlog-направлений.
+
+ Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
 
