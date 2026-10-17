@@ -24,7 +24,7 @@ The download is copied into a private root-owned directory and checksum-verified
   umask 077
   d=$(mktemp -d /root/mcp-test-pr112-command-XXXXXXXX)
   curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
-    'https://raw.githubusercontent.com/LeonidYasin/mcp-server/refs/heads/feat/idea-analog-workflow/scripts/deploy_test_pr112.py' \
+    'https://raw.githubusercontent.com/LeonidYasin/mcp-server/efcaf8145a1771c987021be62a8d40389fb5916f/scripts/deploy_test_pr112.py' \
     -o "$d/deploy_test_pr112.py"
   printf '%s  %s\n' \
     '7f5ab9dbc1378b793302b13c5ef50b24f5e3be8878501689f4ad7904de8525f2' \
