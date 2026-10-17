@@ -15,7 +15,13 @@ composite `3c4eb8405c413a49374a17b73c973dbb9aeda9a6`,128 tools, без изме�
 config/dependencies/protected PIDs по operator report. Post-restart authenticated
 MCP подтвердил сохранность истории/key/cursor и новую send/read/retry/conflict
 проверку. [Актуальный evidence](agent-rooms-test-hardening-evidence.md).
-Distinct owners и production gates остаются открытыми.
+Позднее оператор отдельно расширил allowlist только TEST до 79429232,340767429
+и перезапустил TEST; code/dependencies/database path unchanged, production/Caddy
+PIDs unchanged по его отчёту. Два MCP подключения подтвердили разные owners,
+A→B→A, retry и membership/ownership negatives. [Evidence/границы](agent-rooms-distinct-owner-evidence.md).
+Временный защищённый alias ведёт к тому же TEST/БД; не отдельный сервер.
+Один агент управлял обоими подключениями. Denied third owner, short-restart cadence,
+полный live restore/off-host/disk/load/review/release и production gates ещё открыты.
 
 Ниже — исторический снимок 2026-10-15; его TEST SHA/tool count не описывают
 текущее окружение. Production snapshot также не заменяет новый preflight перед rollout.
