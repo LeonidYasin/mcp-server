@@ -1144,6 +1144,14 @@
           "name": "resolve_review_thread",
           "token_required": true
         },
+        { "category": "rooms", "name": "rooms_close", "token_required": true },
+        { "category": "rooms", "name": "rooms_create", "token_required": true },
+        { "category": "rooms", "name": "rooms_delete_message", "token_required": true },
+        { "category": "rooms", "name": "rooms_join", "token_required": true },
+        { "category": "rooms", "name": "rooms_leave", "token_required": true },
+        { "category": "rooms", "name": "rooms_list", "token_required": true },
+        { "category": "rooms", "name": "rooms_read", "token_required": true },
+        { "category": "rooms", "name": "rooms_send", "token_required": true },
         {
           "category": "web",
           "name": "rss_read",
