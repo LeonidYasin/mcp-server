@@ -16,7 +16,7 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
-| github | 90 | 90 |
+| github | 91 | 91 |
 | build | 2 | 2 |
 | utils / meta / web | 15 / 2 / 4 | 15 / 2 / 4 |
 | localfs / localgit | 0 / 0 | 4 / 6 |
