@@ -6,7 +6,22 @@
 Реализована alpha local UUID/Bearer adapter + официальный SDK; OAuth остаётся planned,
 deployment/live client acceptance не выполнены. Предложения
 о необходимости выбора visibility/license ниже — исторический контекст до решения.
-Это не реализованный standalone auth и не разрешение deployment. Tracking: #117.
+Local auth alpha реализована в указанном draft; это не OAuth и не разрешение deployment. Tracking: #117.
+
+## Новое требование: автоматические пользователи и подготовка VPS
+
+Оператор запросил self enrollment без ручного создания каждого user: email/phone +
+свой случайный UUID, с выбором продолжить UUID или получить серверный ключ.
+В standalone draft добавлены opt-in /signup и POST /register, новый user UUID,
+индивидуальные credential digests, signup replay без дублей, current-user выдача
+и отзыв ключей через HTTPS. Контакт только format-checked, НЕ verified и НЕ stored;
+восстановление/слияние по контакту запрещены. UUIDv4 должен быть CSPRNG-секретом,
+не публичным ID. Server key дополнителен; исходный UUID явно отзывается после проверки.
+Восемь MCP tools не принимают/не возвращают секреты. Регистрация off by default;
+есть persisted global caps, но это не Sybil/DoS защита для публичного рынка.
+Добавлены read-only VPS preflight и unit example для нового loopback TEST; старые
+сервисы/БД/Caddy не менялись, installer/public route не применены.
+Ниже исходный operator-only план — исторический baseline, не запрет self enrollment.
 
 ## Изменение последовательности
 
