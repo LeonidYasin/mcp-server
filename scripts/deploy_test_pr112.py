@@ -106,7 +106,7 @@ def main():
     require(OLD.startswith(before.get('commit', '!')) and len(before.get('commit', '')) >= 7,
             'Unexpected running TEST revision')
     names = set(before['tools'])
-    require('find_repository_analogs' not in names and len(names) == 119,
+    require('find_repository_analogs' in names and len(names) == 120,
             'Unexpected existing TEST inventory; inspect instead of blind rerun')
     backup = Path(tempfile.mkdtemp(prefix='mcp-test-pr112-', dir='/root'))
     changed = False
