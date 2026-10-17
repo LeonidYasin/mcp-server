@@ -4,8 +4,8 @@ import pytest
 from mcp_server.tools.github.repository_file_selection import select_files
 
 
-def plan(*paths, identity=None, comparison=None):
-    return select_files(dict.fromkeys(paths), comparison, identity)
+def plan(*paths, identity=None, comparison=None, focus=None):
+    return select_files(dict.fromkeys(paths), comparison, identity, focus)
 
 
 def paths(result):
@@ -95,3 +95,54 @@ def test_excluded_paths_do_not_supply_roles():
     result = plan('README.md', 'tests/auth.py', 'vendor/server.go', 'generated/main.rs', 'src/index.d.ts')
     assert paths(result) == ['README.md']
     assert result['implementation_role_coverage_hint']['available'] == []
+
+
+def test_apps_script_files_are_implementation_candidates_not_just_readme():
+    result = plan('README.md', 'Kode.gs', 'vendor/hidden.gs', 'tests/test_bot.gs')
+    assert paths(result) == ['README.md', 'Kode.gs']
+    assert result['selected'][1]['role_hint'] == 'implementation'
+    assert result['semantic_relevance_verified'] is False
+
+
+@pytest.mark.parametrize('extension', ['mjs', 'cjs', 'mts', 'cts'])
+def test_javascript_module_extensions_are_eligible_implementation(extension):
+    result = plan('README.md', 'genaisrc/main.genai.' + extension)
+    assert paths(result) == ['README.md', 'genaisrc/main.genai.' + extension]
+    assert result['selected'][1]['role_hint'] == 'implementation'
+
+
+@pytest.mark.parametrize('name', ['action.yml', 'action.yaml'])
+def test_github_action_manifest_can_be_read_as_runtime_context(name):
+    result = plan('README.md', name, 'genaisrc/run.genai.mts')
+    assert paths(result) == ['README.md', name, 'genaisrc/run.genai.mts']
+    assert result['selected'][1]['role_hint'] == 'runtime'
+
+
+@pytest.mark.parametrize('name', ['types.d.mts', 'types.d.cts'])
+def test_typescript_module_declarations_are_not_implementation(name):
+    assert paths(plan('README.md', name)) == ['README.md']
+
+
+def test_explicit_focus_prefers_mechanism_paths_over_generic_bootstrap_and_auth():
+    result = plan(*DOCS, 'src/server.py', 'src/index.ts', 'src/auth.py',
+                  'lib/matching/core.ts', 'sql/semantic_embedding.sql', focus=['match', 'embed'])
+    chosen = paths(result)
+    assert len(chosen) == 6 and chosen[:3] == list(DOCS)
+    assert chosen[3:5] == ['lib/matching/core.ts', 'sql/semantic_embedding.sql']
+    assert result['focus_path_terms_used'] == ['match', 'embed']
+    assert [s['focus_path_matches'] for s in result['selected'][3:5]] == [['match'], ['embed']]
+    assert all(s['reason'] == 'caller_focus_path_prefix_hint' for s in result['selected'][3:5])
+    assert result['semantic_relevance_verified'] is False
+
+
+def test_focus_path_prefixes_split_camel_case_and_never_expand_six_file_budget():
+    result = plan(*DOCS, 'src/server.py', 'src/EstimateMaterials.ts',
+                  'src/StateMachine.ts', 'src/transition_table.py', focus=['material', 'state', 'transit'])
+    assert set(paths(result)[3:]) == {'src/EstimateMaterials.ts', 'src/StateMachine.ts', 'src/transition_table.py'}
+    assert len(paths(result)) == 6
+
+
+def test_observed_added_paths_still_precede_caller_focus_hints():
+    result = plan(*DOCS, 'docs/architecture.md', 'src/extra.py', 'src/matching.py', 'src/server.py',
+                  comparison={'files': [{'path': 'src/extra.py', 'status': 'added'}]}, focus=['match'])
+    assert paths(result)[-2:] == ['src/extra.py', 'src/matching.py']
