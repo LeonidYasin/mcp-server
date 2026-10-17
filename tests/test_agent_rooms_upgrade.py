@@ -63,3 +63,44 @@ def test_configuration_must_match_known_existing_room_files(tmp_path, monkeypatc
 def test_rollback_rejects_wrong_revision_before_commands():
     with pytest.raises(RuntimeError, match='Invalid upgrade rollback state'):
         MODULE.rollback(None, {'old': 'bad'})
+
+
+def test_rollback_only_restarts_test_and_retains_config_data(monkeypatch, capsys):
+    calls = []
+    state = {'old': MODULE.BASE, 'new': 'a' * 40, 'source': MODULE.SOURCE,
+             'config': {'fingerprint': 'same'}, 'tools': ['rooms_list']}
+    def git(*args):
+        calls.append(('git', args))
+        return state['new'] if args == ('rev-parse', 'HEAD') else ''
+    helper = SimpleNamespace(UNIT='mcp-test.service', git=git,
+        command=lambda args: calls.append(('command', args)),
+        prop=lambda *args: '123', storage_probe=lambda pid: calls.append(('probe', pid)))
+    monkeypatch.setattr(MODULE, 'config_fingerprint', lambda h: state['config'])
+    monkeypatch.setattr(MODULE, 'wait_ready', lambda *args: calls.append(('ready', args[1])))
+    MODULE.rollback(helper, state)
+    assert ('command', ['systemctl', 'stop', 'mcp-test.service']) in calls
+    assert ('command', ['systemctl', 'start', 'mcp-test.service']) in calls
+    assert ('git', ('checkout', '--detach', MODULE.BASE)) in calls
+    assert 'ROLLBACK PASS' in capsys.readouterr().out
+    assert 'mcp-server.service' not in str(calls) and 'unlink' not in str(calls)
+
+
+def test_rollback_refuses_config_change_before_stopping(monkeypatch):
+    state = {'old': MODULE.BASE, 'new': 'a' * 40, 'source': MODULE.SOURCE,
+             'config': {'fingerprint': 'old'}}
+    monkeypatch.setattr(MODULE, 'config_fingerprint', lambda h: {'fingerprint': 'changed'})
+    with pytest.raises(RuntimeError, match='Config changed'):
+        MODULE.rollback(None, state)
+
+
+def test_wait_ready_rejects_wrong_sha_or_tool_loss(monkeypatch):
+    monkeypatch.setattr(MODULE.time, 'sleep', lambda seconds: None)
+    helper = SimpleNamespace(health=lambda: {'tools': ['rooms_list'], 'commit': 'wrong'},
+                             prop=lambda *args: 'active', UNIT='mcp-test.service')
+    with pytest.raises(RuntimeError, match='health did not match'):
+        MODULE.wait_ready(helper, MODULE.SOURCE, ['rooms_list'])
+    helper.health = lambda: {'tools': [], 'commit': MODULE.SOURCE}
+    with pytest.raises(RuntimeError, match='health did not match'):
+        MODULE.wait_ready(helper, MODULE.SOURCE, ['rooms_list'])
+    helper.health = lambda: {'tools': ['rooms_list'], 'commit': MODULE.SOURCE[:7]}
+    assert MODULE.wait_ready(helper, MODULE.SOURCE, ['rooms_list'])['tools'] == ['rooms_list']
