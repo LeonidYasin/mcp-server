@@ -1,5 +1,20 @@
 # Состояние deployment и проверок
 
+## Дополнение: комнаты в TEST — 2026-10-17
+
+По отчёту оператора, TEST обновлён с `65ddae12bfaf6d117bb8f472ba396016db36610a`
+до локального composite `a323a67f13ecb175a91e8f9726c76c11497483af`, 120 → 128 tools;
+rooms source `9f93eb0d1091bf3eca0f60d6be7c6bbe6c45cfc8`. Production/Caddy PID
+не изменились, зависимости не обновлялись. Для strict sandbox оператор добавил
+только `/home/mcp-test/agent-rooms-115` в ReadWritePaths и перезапустил TEST.
+Реальные MCP вызовы после этого подтвердили list/create/send/read, idempotent retry
+и A→B→A двух чатов одного `github:79429232`. Multi-owner isolation не проверена.
+[Evidence и production checklist](agent-rooms-production.md).
+Новые hardening commits PR #116 в эту работающую сборку НЕ установлены.
+
+Ниже — исторический снимок 2026-10-15; его TEST SHA/tool count не описывают
+текущее окружение. Production snapshot также не заменяет новый preflight перед rollout.
+
 Ревизия документации 8 · снимок на 2026-10-15. Это исторически закреплённое состояние, не обещание, что каждый будущий commit main уже развёрнут. [README](../README.md) · [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Validation](validation.md) · [Файловый план](binary-transfer-plan.md).
 
 ## Production и TEST — отдельные состояния
