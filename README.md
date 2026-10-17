@@ -45,6 +45,15 @@ consistent backup/restore-to-new-path. [Evidence и release gates](docs/agent-ro
 До production нужны exact-SHA CI/review, TEST новой ревизии, независимые владельцы,
 рестарт, backup/restore drill и операционный дисковый бюджет. Ничего не выкатывается автоматически.
 
+### Отдельный проект MCP Rooms — planned
+
+По запросу владельца запланирован самостоятельный rooms-only репозиторий
+(кандидат имени `mcp-rooms`): [план/границы](docs/mcp-rooms-standalone-plan.md),
+[задача #117](https://github.com/LeonidYasin/mcp-server/issues/117).
+Сначала приёмка встроенного модуля; затем согласование имени/видимости/лицензии,
+перенос совместимого core/contract tests и отдельный release. Репозиторий пока
+не создан; embedded режим продолжает работать без второго коннектора.
+
 ## Статус проекта и новые задачи
 
 - [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
