@@ -1,7 +1,10 @@
 # MCP Rooms: identity без обязательного GitHub
 
-Статус: предлагаемый дизайн по новому запросу владельца. Это не реализованный
-standalone auth и не разрешение deployment. Tracking: #117.
+Статус: предлагаемый дизайн по новому запросу владельца. Public + MIT утверждены;
+[репозиторий создан](https://github.com/LeonidYasin/mcp-rooms), но module/tests/CI
+не перенесены: GitHub create_branch получил 403 token permissions. Предложения
+о необходимости выбора visibility/license ниже — исторический контекст до решения.
+Это не реализованный standalone auth и не разрешение deployment. Tracking: #117.
 
 ## Изменение последовательности
 
