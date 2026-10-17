@@ -33,6 +33,20 @@
 identity; membership не ограничивает другие инструменты MCP. Ни production, ни
 Agora новой hardening-веткой не развёрнуты. Остальные #88/#89/PR не заменяются.
 
+## Отдельный проект MCP Rooms — planned #117
+
+[План выделения](docs/mcp-rooms-standalone-plan.md) · [Issue #117](https://github.com/LeonidYasin/mcp-server/issues/117).
+
+- [x] Зафиксированы standalone rooms-only scope, embedded compatibility и граница Agora.
+- [ ] Сначала закрыть production gates встроенного модуля #115/#116.
+- [ ] Утвердить имя (кандидат `mcp-rooms`), видимость, лицензию и identity model.
+- [ ] По отдельному подтверждению создать repo и перенести source/tests/docs/CI,
+  без токенов/БД/VPS snapshots. Один canonical core, не две расходящиеся копии.
+- [ ] Wire-contract parity, отдельная TEST приёмка/recovery и миграционная политика.
+- [ ] Agora adapter после отладки. Embedded не требует нового подключения.
+
+Репозиторий пока не создан; этот план не меняет production/Caddy/соединения.
+
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
 - 🟡 средний — ощутимо расширяет возможности
