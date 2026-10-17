@@ -18,7 +18,7 @@ import tempfile
 import time
 
 BASE = 'a323a67f13ecb175a91e8f9726c76c11497483af'
-SOURCE = '48a029f2867df399e473dad927dec165d91fa518'
+SOURCE = '75555c3ebee335a151be3ebdcb6af2bfdc0b767a'
 HELPER_BLOB = 'a61d2d133cbd9b74a93ad33ba246173470480379'
 HELPER_URL = ('https://raw.githubusercontent.com/LeonidYasin/mcp-server/' + SOURCE +
               '/scripts/enable_test_agent_rooms.py')
