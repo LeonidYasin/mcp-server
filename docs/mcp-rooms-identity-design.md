@@ -1,8 +1,10 @@
 # MCP Rooms: identity без обязательного GitHub
 
 Статус: предлагаемый дизайн по новому запросу владельца. Public + MIT утверждены;
-[репозиторий создан](https://github.com/LeonidYasin/mcp-rooms), но module/tests/CI
-не перенесены: GitHub create_branch получил 403 token permissions. Предложения
+[репозиторий создан](https://github.com/LeonidYasin/mcp-rooms); token permissions
+исправлены и module/tests/docs/CI перенесены в [draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1).
+Реализована alpha local UUID/Bearer adapter + официальный SDK; OAuth остаётся planned,
+deployment/live client acceptance не выполнены. Предложения
 о необходимости выбора visibility/license ниже — исторический контекст до решения.
 Это не реализованный standalone auth и не разрешение deployment. Tracking: #117.
 
