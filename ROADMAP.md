@@ -43,7 +43,14 @@
 identity; membership не ограничивает другие инструменты MCP. Ни production, ни
 Agora новой hardening-веткой не развёрнуты. Остальные #88/#89/PR не заменяются.
 
-## Отдельный проект MCP Rooms — planned #117
+## Отдельный проект MCP Rooms — source extraction requested #117
+
+Новое решение владельца: выделить/скопировать модуль в отдельный repo, standalone
+identity без обязательного GitHub. [Дизайн/границы](docs/mcp-rooms-identity-design.md):
+собственные user UUID, индивидуальные отзываемые credentials для закрытого пилота,
+затем готовый OAuth adapter. Не принимать user_id из tool arguments. Public/private
+и лицензия ещё требуют ответа; repo не создан. Третий GitHub owner/embedded
+production не блокируют разработку standalone, но release gates не закрываются.
 
 [План выделения](docs/mcp-rooms-standalone-plan.md) · [Issue #117](https://github.com/LeonidYasin/mcp-server/issues/117).
 
