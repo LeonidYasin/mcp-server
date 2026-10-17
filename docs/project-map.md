@@ -37,8 +37,10 @@ identity. [Дизайн](mcp-rooms-identity-design.md): user UUID → per-connec
 credential → verified principal → прежний room core/SQLite; OAuth как отдельный
 adapter. В core обнаружен github-only regex: перенос требует явного исправления
 и тестов, не blind copy. Создан public MIT [mcp-rooms](https://github.com/LeonidYasin/mcp-rooms) по явному
-согласию владельца. Перенос модуля/тестов/CI заблокирован GitHub 403 token
-permissions при создании ветки; работающей standalone сборки ещё нет.
+согласию владельца. Token permissions исправлены; модуль/тесты/docs/CI перенесены в
+[draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1). UUID users → отдельные
+credential digests → verified principal → core/SQLite; официальный SDK, восемь tools.
+Alpha ещё не слита/не развёрнута; embedded imports/identity/live DB не переключены.
 Production acceptance остаётся условием rollout, а не создания исходников.
 
 Embedded rooms в mcp-server (сейчас) → production acceptance → standalone rooms-only
