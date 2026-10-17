@@ -37,9 +37,11 @@ owner guards, idempotency, TTL и cadence. Владелец проверяетс
 общего владельца; доступ к комнате не ограничивает остальные MCP-инструменты.
 Без LLM-вызовов, автономных переговоров или внедрения в Agora. После отладки
 контракт переносится в Agora отдельным этапом. [Контракт/лимиты/backup](docs/agent-rooms.md).
-В TEST установлен отдельный composite `a323a67f…`: 128 tools, реальный A→B→A
-между двумя чатами одного GitHub owner подтверждён. Это не production и не новый
-hardening HEAD. Исправлена выявленная граница systemd ReadWritePaths; в исходниках
+В TEST после guarded upgrade установлен hardening composite `3c4eb840…`: 128 tools.
+После реального restart через MCP подтверждены сохранность прежнего A→B→A,
+старого idempotency key/cursor и новая send/read/retry/conflict проверка.
+[Точный source и evidence](docs/agent-rooms-test-hardening-evidence.md).
+Это не production и не distinct-owner acceptance. Исправлена выявленная граница systemd ReadWritePaths; в исходниках
 добавлены storage guards, FULL durability, DB page budget, безопасные ошибки и
 consistent backup/restore-to-new-path. [Evidence и release gates](docs/agent-rooms-production.md).
 До production нужны exact-SHA CI/review, TEST новой ревизии, независимые владельцы,
