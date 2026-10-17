@@ -291,3 +291,25 @@ def test_sdk_binding_cap_prevents_unbounded_receiver_matching():
     result = choose(padded(source), "index.ts")
     assert result["reason"] == "framework_binding_cap"
     assert result["anchor"] is None and not result["candidate_scan_complete"]
+
+
+def test_gs_uses_javascript_like_hint_without_execution_or_verified_language():
+    result = choose(padded('throw new Error("NEVER EXECUTE");\nfunction handleUpdate(e) {\nreturn e;\n}'), 'Kode.gs')
+    assert result['anchor']['name'] == 'handleUpdate' and result['start_line'] > 80
+    assert result['method'] == 'js_lexical'
+    assert result['language_hint'] == 'javascript_like_gs_unverified'
+    assert result['semantic_relevance_verified'] is False
+
+
+def test_gs_comment_and_string_declarations_are_not_execution_evidence():
+    result = choose(padded('// function execute() {}\nconst fake = "function execute() {}";\nfunction helper() {}'), 'bot.gs')
+    assert result['candidate_count'] == 1 and result['anchor']['name'] == 'helper'
+
+
+@pytest.mark.parametrize('extension,lexer', [('mjs', 'js'), ('cjs', 'js'), ('mts', 'ts'), ('cts', 'ts')])
+def test_javascript_module_extensions_use_existing_bounded_lexical_policy(extension, lexer):
+    result = choose(padded('throw new Error("NEVER EXECUTE");\nexport async function handleUpdate(e) { return e; }'),
+                    'genaisrc/main.genai.' + extension)
+    assert result['anchor']['name'] == 'handleUpdate' and result['start_line'] > 80
+    assert result['syntax_extension_alias'] == {'extension': extension, 'lexer': lexer}
+    assert result['semantic_relevance_verified'] is False
