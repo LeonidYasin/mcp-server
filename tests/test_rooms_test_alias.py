@@ -74,12 +74,13 @@ def test_cleanup_retains_unrelated_concurrent_change_and_refuses_foreign_route()
     config = fixture()
     parts, route, _ = MODULE.plan(config, ID)
     descend(config, parts[:-1]).insert(0, route)
+    state = {'id': ID, 'route': copy.deepcopy(route)}
     config['logging'] = {'logs': {}}
-    stripped, _ = MODULE.without_alias(config, {'id': ID, 'route': route})
+    stripped, _ = MODULE.without_alias(config, state)
     assert stripped['logging'] == {'logs': {}}
     descend(config, parts)['terminal'] = False
     with pytest.raises(RuntimeError, match='Alias changed'):
-        MODULE.without_alias(config, {'id': ID, 'route': route})
+        MODULE.without_alias(config, state)
 
 
 def test_existing_alias_and_duplicate_ids_refused():
