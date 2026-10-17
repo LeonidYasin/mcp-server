@@ -1,6 +1,12 @@
 # SANDBOX.md — изолированный запуск MCP с доступом к локальным файлам
 
-Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 9 · 2026-10-17.
+Эти инструкции относятся к localfs/localgit (`ENABLE_LOCAL_TOOLS=1`), а также более опасным shell/process (`ENABLE_LOCAL_SHELL=1`). Ревизия документации 10 · 2026-10-17.
+
+Для встроенного rooms-модуля systemd sandbox должен разрешать запись только в
+приватный каталог AGENT_ROOMS_DB через дополнительный ReadWritePaths; не отключать
+ProtectSystem/ProtectHome. Discovery и UID-проверка вне сервиса не проверяют эту
+границу. [TEST regression, evidence и production gates](docs/agent-rooms-production.md).
+Room membership не ограничивает остальные инструменты endpoint.
 
 **Кандидат rooms (#115):** `ENABLE_AGENT_ROOMS` независим от localfs/shell.
 Комнаты не требуют включать `ENABLE_LOCAL_TOOLS` или `ENABLE_LOCAL_SHELL`.
