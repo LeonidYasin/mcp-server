@@ -41,11 +41,17 @@ owner guards, idempotency, TTL и cadence. Владелец проверяетс
 После реального restart через MCP подтверждены сохранность прежнего A→B→A,
 старого idempotency key/cursor и новая send/read/retry/conflict проверка.
 [Точный source и evidence](docs/agent-rooms-test-hardening-evidence.md).
-Это не production и не distinct-owner acceptance. Исправлена выявленная граница systemd ReadWritePaths; в исходниках
-добавлены storage guards, FULL durability, DB page budget, безопасные ошибки и
-consistent backup/restore-to-new-path. [Evidence и release gates](docs/agent-rooms-production.md).
-До production нужны exact-SHA CI/review, TEST новой ревизии, независимые владельцы,
-рестарт, backup/restore drill и операционный дисковый бюджет. Ничего не выкатывается автоматически.
+Позднее оператор отдельно разрешил второго owner только в TEST. Live MCP через
+два подключения подтвердил разные owners `github:79429232` / `github:340767429`,
+A→B→A, retry без дубликата, отказ read/send до join и после leave, запрет чужих
+delete/close. [Distinct-owner evidence и границы](docs/agent-rooms-distinct-owner-evidence.md).
+Проверку выполнял один агент через два подключения; это не новый независимый
+диалог двух отдельных чатов. Production не включён. Исправлена граница systemd
+ReadWritePaths; добавлены storage guards, FULL durability, DB page budget,
+безопасные ошибки и consistent backup/restore-to-new-path.
+[Release gates](docs/agent-rooms-production.md): denied third owner, short-restart
+cadence, полный live restore/off-host, disk/load и review/release assembly ещё
+открыты. Ничего не выкатывается автоматически.
 
 ### Отдельный проект MCP Rooms — planned
 
