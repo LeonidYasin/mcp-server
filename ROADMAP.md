@@ -26,8 +26,14 @@
   по operator report; namespace storage и snapshot-copy integrity passed.
 - [x] Authenticated MCP после restart: история/старый key/cursor сохранены;
   новая send/read/retry/conflict проверка прошла. [Evidence](docs/agent-rooms-test-hardening-evidence.md).
-  Это ещё не short-restart cadence, distinct owners или полный live restore drill.
-- [ ] Live два независимых owner + denied third owner, membership/ownership negatives.
+  Это ещё не short-restart cadence или полный live restore drill.
+- [x] Live verified owners `github:79429232` и `github:340767429` через два MCP
+  подключения: A→B→A, retry без дубликата, membership до join/после leave,
+  запрет чужих delete/close. [Evidence/границы](docs/agent-rooms-distinct-owner-evidence.md).
+  Один агент управлял обоими подключениями; независимый второй чат этой проверкой
+  не аттестован. Предыдущий same-owner cross-chat evidence сохраняется отдельно.
+- [ ] Denied third owner после расширения TEST allowlist: ещё не проверен.
+  B до разрешения получил principal_not_allowed; это не новый третий аккаунт.
 - [ ] TEST restart с сохранением IDs/cursor/key/cadence; backup/restore drill,
   off-host policy, disk/WAL monitoring и измерение p95 на целевом профиле.
 - [ ] Утверждённая production assembly, pinned rollout/rollback; production пока не менять.
