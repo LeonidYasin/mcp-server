@@ -102,8 +102,15 @@ See [evidence contract and limits](docs/repository-evidence.md).
 
 `push_multiple_files`: existing blob modes сохраняются; explicit `files[].mode`, optional `expected_head_sha`, один complete tree read и non-force ref update. [Modes/concurrency contract](docs/batch-push.md).
 
-### Search (4)
-`search_code`, `search_commits`, `search_issues`, `search_repositories`
+### Search (5)
+`search_code`, `search_commits`, `search_issues`, `search_repositories`, `find_repository_analogs`
+
+Candidate, not deployed: `find_repository_analogs` composes public Search with optional pinned
+evidence: caller-selected problem/mechanism formulations, broad/zero-star/fork lanes,
+round-robin deduplication, explicit budgeted continuation and source provenance.
+Optional `focus_path_terms` biases auto evidence by file-name prefixes without extra GETs.
+No catalog or semantic score.
+[Idea-to-analog workflow and limits](docs/repository-analogs.md).
 
 ---
 
