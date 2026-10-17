@@ -30,7 +30,10 @@ no environment HTTP proxy, bounded responses. GitHub PAT в скрипте не�
 
 Перед добавлением создаётся root transient systemd timer на90 минут, выполняющий
 ОДНУ попытку cleanup (внутри до3 CAS retries). Это не гарантия удаления при outage,
-конкурентной модификации самого route или недоступном admin API. Итог содержит
+конкурентной модификации самого route или недоступном admin API. Timer transient:
+после reboot он может исчезнуть, а alias может сохраниться Caddy autosave. После
+reboot/reload обязательно проверить и выполнить ручной cleanup при необходимости;
+не считать90 минут жёстким сроком жизни. Итог содержит
 точную ручную cleanup_command и private state path. При ошибке добавления/проверки
 script пытается удалить только собственный exact route. Никакого whole-config
 restore: чужие параллельные изменения сохраняются. Изменённый route/duplicate IDs
