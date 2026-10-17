@@ -151,6 +151,11 @@
         },
         {
           "category": "github",
+          "name": "find_repository_analogs",
+          "token_required": true
+        },
+        {
+          "category": "github",
           "name": "get_android_build_error",
           "token_required": true
         },
@@ -732,6 +737,11 @@
         {
           "category": "synapse",
           "name": "find_my_match",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "find_repository_analogs",
           "token_required": true
         },
         {
