@@ -1,5 +1,7 @@
 # MCP GitHub Server
 
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](docs/release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
 [![tools](https://img.shields.io/badge/tools-runtime_registry-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
@@ -17,16 +19,16 @@
 | **Версия** | `mcp_server/__init__.py::__version__` — **0.4.3**; `pyproject.toml` читает её через dynamic version |
 | **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **8** от **2026-10-15** |
+| **Документация** | ревизия **9** от **2026-10-15** |
 
-> **Ревизия документации: 8 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
+> **Ревизия документации: 9 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
 
 ---
 
 ## Статус проекта и новые задачи
 
 - [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
-- **Новый файловый маршрут запланирован, не реализован:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
+- **Полный файловый маршрут ещё не принят:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). В этой ветке добавлен только read-only Release foundation. Upload-кандидат PR #91 отдельно прошёл file-backed ZIP/XLSX и count-quota gates; остальные gates pending. Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
 - `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Малый synthetic client→TEST probe подтвердил сохранение bytes/size/hash через file-backed аргументы; это не готовый upload API и не доказательство доступности такого механизма во всех клиентах. [Результат и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
 - `create_or_update_binary_file` сейчас декодирует base64 **как UTF-8** и записывает файл в Git: это не универсальный ZIP/XLSX upload и не staging. `download_artifact` относится к **Actions artifacts**, а не к Release assets.
 - [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87) — Draft, artifact attempt identity: не выдавать установку кандидата в TEST за завершённый live acceptance. `auto_fix_build` в `main` отключён; безопасная замена — [#86](https://github.com/LeonidYasin/mcp-server/issues/86).
@@ -50,7 +52,7 @@
 | Ветки / сравнение | `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches` |
 | PR | `create_pull_request`, `list_pull_requests`, `get_pull_request`, `update_pull_request`, `merge_pull_request`, `close_pull_request`, `add_pr_comment`, `request_pr_review`, `get_review_threads`, `resolve_review_thread`, `unresolve_review_thread` |
 | Issues / метки | `create_issue`, `list_issues`, `get_issue`, `close_issue`, `add_issue_comment`, `add_labels` |
-| Releases / Tags | `list_releases`, `create_release`, `get_latest_release`, `list_tags`, `create_tag`, `delete_tag` |
+| Releases / Tags | `list_releases`, `create_release`, `get_latest_release`, `get_release`, `list_release_assets`, `list_tags`, `create_tag`, `delete_tag` |
 | Gists | `create_gist`, `list_gists`, `get_gist`, `update_gist` |
 | Actions / Workflows | `dispatch_workflow`, `rerun_workflow`, `rerun_failed_jobs`, `cancel_workflow`, `list_workflows`, `list_workflow_runs`, `get_workflow_by_file`, `list_artifacts`, `download_artifact`, `get_workflow_run_status`, `get_workflow_run_steps`, `get_workflow_logs_preview`, `get_run_logs_by_step`, `get_step_logs_via_checks`, `read_run_logs_offset`, `grep_run_logs`, `grep_workflow_logs` |
 | Search | `search_code`, `search_commits`, `search_issues`, `search_repositories` |

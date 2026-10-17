@@ -1,9 +1,11 @@
 # ROADMAP — расширение MCP-сервера
 
+> **Read-only кандидат #64/#89:** добавлены `get_release` и `list_release_assets`; без asset bytes, writes/publish, Actions и deployment. [Контракт и ограничения](docs/release-reads.md). PR #91 (upload) остаётся отдельным кандидатом; это не его merge или приёмка полного маршрута.
+
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 8 · 2026-10-15** (см. README → Source of truth).
+> **Ревизия документации: 9 · 2026-10-15** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
@@ -23,7 +25,7 @@
 | PR #87 / #69 | Draft HEAD `ef7993b87e8d6ed6598065e46203dc6145f9286d`, CI 4/4 success. TEST checkout совпадает с HEAD; специализированный authenticated deployed gate artifact identity ещё pending. Нельзя выводить attempt по имени/времени/общему SHA. |
 | #58 / #86 | Android/Kotlin диагностика и безопасный repo-specific auto-fix остаются open. Опасный template-to-main autofix отключён в main; замена не реализована. |
 | #53 / #59 | Диагностика доступа и неопределённый post-effect persistence остаются open; не повторять потенциально успешную мутацию вслепую. |
-| #64 | Lifecycle tags/releases остаётся open. Получение release IDs и asset API согласовать с #89, не делать два конкурирующих контракта. |
+| #64 | Lifecycle tags/releases остаётся open. Read-only get_release/list_release_assets реализованы одним кандидатом для #64/#89; update_tag/update_release и asset bytes остаются pending. |
 | **#88 → #89 — открыты** | Реальная передача bytes клиент → staging → приватный Release asset → Actions → проверяемый результат. Малый synthetic client→TEST probe прошёл; staging/upload API и E2E ещё отсутствуют. #89 зависит от #88. Приоритет P1 предлагается для нового пользовательского сценария, не означает реализацию. |
 | #66 / #68 | Actions secrets и verified repo/Pages configuration остаются open. Никаких настоящих secrets или изменения Pages в этом docs PR. |
 | #77 | Сквозной аудит всех методов: schemas + args + results + turns; отдельно измерить большой бинарный маршрут без base64 в контексте модели. |

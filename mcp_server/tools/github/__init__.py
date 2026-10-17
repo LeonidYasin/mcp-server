@@ -50,6 +50,7 @@ from mcp_server.tools.github.releases import (
     create_release,
     get_latest_release,
 )
+from mcp_server.tools.github.release_reads import get_release, list_release_assets
 from mcp_server.tools.github.tags import list_tags, create_tag, delete_tag
 from mcp_server.tools.github.batch import push_multiple_files
 
@@ -183,6 +184,8 @@ __all__ = [
     "list_releases",
     "create_release",
     "get_latest_release",
+    "get_release",
+    "list_release_assets",
     "list_tags",
     "create_tag",
     "delete_tag",

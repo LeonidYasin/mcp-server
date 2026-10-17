@@ -2,7 +2,7 @@
   "format_version": 1,
   "profiles": {
     "default": {
-      "count": 113,
+      "count": 115,
       "tools": [
         {
           "category": "github",
@@ -226,6 +226,11 @@
         },
         {
           "category": "github",
+          "name": "get_release",
+          "token_required": true
+        },
+        {
+          "category": "github",
           "name": "get_repo_info",
           "token_required": true
         },
@@ -377,6 +382,11 @@
         {
           "category": "github",
           "name": "list_pull_requests",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_release_assets",
           "token_required": true
         },
         {
@@ -572,7 +582,7 @@
       ]
     },
     "all_enabled": {
-      "count": 143,
+      "count": 145,
       "tools": [
         {
           "category": "github",
@@ -811,6 +821,11 @@
         },
         {
           "category": "github",
+          "name": "get_release",
+          "token_required": true
+        },
+        {
+          "category": "github",
           "name": "get_repo_info",
           "token_required": true
         },
@@ -1007,6 +1022,11 @@
         {
           "category": "github",
           "name": "list_pull_requests",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "list_release_assets",
           "token_required": true
         },
         {
