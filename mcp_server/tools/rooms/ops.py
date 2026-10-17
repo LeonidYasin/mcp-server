@@ -1,10 +1,13 @@
 """MCP adapters. Identity is verified per request; user text is never executed."""
 import json
+import logging
 import os
 import re
 import sqlite3
 from mcp_server.core.registry import mcp_tool
 from .store import RoomError, RoomStore
+
+LOG = logging.getLogger(__name__)
 
 
 def _invoke(client, action, **args):
@@ -31,7 +34,22 @@ def _invoke(client, action, **args):
         payload = {'ok': True, **result}
     except RoomError as exc:
         payload = {'ok': False, 'error': exc.code, **exc.details}
-    except (sqlite3.Error, OSError):
+    except sqlite3.Error as exc:
+        # Numeric primary result code only. Never log exception text, SQL, paths,
+        # headers, owner, token or message arguments. Old Python may lack the code.
+        code = getattr(exc, 'sqlite_errorcode', 0)
+        code = (code & 255) if type(code) is int else 0
+        LOG.warning('rooms_storage_error sqlite_primary_code=%d', code)
+        if code in (5, 6):  # SQLITE_BUSY / SQLITE_LOCKED, including extended codes
+            payload = {'ok': False, 'error': 'room_storage_busy',
+                       'retryable': True, 'retry_after_ms': 250}
+        elif code == 13:  # SQLITE_FULL
+            payload = {'ok': False, 'error': 'room_storage_capacity', 'retryable': False}
+        else:
+            payload = {'ok': False, 'error': 'room_storage_unavailable'}
+    except OSError as exc:
+        code = exc.errno if type(exc.errno) is int else 0
+        LOG.warning('rooms_storage_error os_errno=%d', code)
         payload = {'ok': False, 'error': 'room_storage_unavailable'}
     except Exception:
         payload = {'ok': False, 'error': 'room_request_failed'}
