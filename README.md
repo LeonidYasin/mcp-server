@@ -58,8 +58,10 @@ cadence, полный live restore/off-host, disk/load и review/release assembl
 Standalone больше не должен требовать GitHub-аккаунта: собственный user UUID,
 отдельные отзываемые ключи подключений для private pilot, готовый OAuth adapter
 следующим этапом. [Identity design и source extraction](docs/mcp-rooms-identity-design.md).
-Source extraction можно начать до embedded production; repo пока не создан,
-public/private и лицензия требуют подтверждения владельца.
+Создан публичный [mcp-rooms](https://github.com/LeonidYasin/mcp-rooms), MIT утверждена
+владельцем. Перенос source/tests/CI ещё не выполнен: GitHub отклонил создание ветки
+в новом repo (403 token permissions). Требуется доступ текущего токена к новому repo.
+Source extraction не требует ожидания embedded production.
 
 По запросу владельца запланирован самостоятельный rooms-only репозиторий
 (кандидат имени `mcp-rooms`): [план/границы](docs/mcp-rooms-standalone-plan.md),
