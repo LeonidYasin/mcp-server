@@ -2,11 +2,13 @@
 
 Tracking: [#117](https://github.com/LeonidYasin/mcp-server/issues/117).
 Статус: **репозиторий создан**, перенос кода заблокирован GitHub token permissions.
-Владелец явно утвердил public + MIT; создан [LeonidYasin/mcp-rooms](https://github.com/LeonidYasin/mcp-rooms)
-с auto-init README/LICENSE/gitignore. Попытка создать feat/standalone-identity
-получила 403 Resource not accessible by personal access token. Source/tests/CI ещё
-НЕ скопированы; standalone deployment не выполнялся. Нужен доступ текущего токена
-к новому repo и Contents write; для публикации workflow также Workflows write.
+Владелец явно утвердил public + MIT; создан [LeonidYasin/mcp-rooms](https://github.com/LeonidYasin/mcp-rooms).
+Первоначальный GitHub 403 снят после operator token permission update.
+Source/tests/docs/CI скопированы и адаптированы в [draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1):
+SQLite room core + maintenance, собственные UUID users, индивидуальные credential
+digests/expiry/revoke/disable/resource/scopes, local admin CLI, официальный MCP SDK
+с восемью room tools. Provenance закреплён в новом repo. Это alpha candidate,
+не merge/release и не standalone deployment; existing embedded/VPS не менялись.
 Исторические предложения ниже не отменяют это утверждённое решение.
 Новое направление: standalone пользователи без обязательной привязки к GitHub;
 [identity design: собственный user UUID, индивидуальные credentials, OAuth adapter](mcp-rooms-identity-design.md).
