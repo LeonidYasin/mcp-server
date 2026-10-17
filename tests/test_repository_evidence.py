@@ -705,3 +705,46 @@ def test_followup_rechecks_blob_instead_of_trusting_previous_read(corpus):
     assert followup['state'] == 'partial' and followup['files'] == []
     assert followup['gaps'][0]['error'] == 'file_unverified_or_too_large'
     assert followup['budget']['requests'] == 4
+
+
+def test_zero_remaining_success_keeps_file_but_prevents_sibling_and_parent_gets(fake):
+    fake.meta = metadata(fork=True)
+    fake.override = lambda req: httpx.Response(200, json=fake.file,
+        headers={'x-ratelimit-remaining': '0'}) if '/contents/' in req.url.path else None
+    result = run(fake, evidence_files=[{'path': 'README.md'}, {'path': 'f0'}], compare_parent=True)
+    assert result['state'] == 'partial' and len(fake.calls) == 4
+    assert len(result['files']) == 1 and result['files'][0]['path'] == 'README.md'
+    assert result['budget']['requests'] == 4
+    assert any(g['error'] == 'observed_rate_budget' for g in result['gaps'])
+    assert result['fork_comparison'] is None
+
+
+@pytest.mark.parametrize('status,headers', [(429, {}), (403, {'retry-after': '60'}),
+                                           (403, {'x-ratelimit-remaining': '0'})])
+def test_rate_refusal_prevents_sibling_gets_without_sleep_or_retry(fake, status, headers):
+    fake.override = lambda req: httpx.Response(status, text=SECRET, headers=headers) if '/contents/' in req.url.path else None
+    result = run(fake, evidence_files=[{'path': 'README.md'}, {'path': 'f0'}])
+    assert len(fake.calls) == 4 and len(result['sources']) == 4
+    assert result['state'] == 'partial' and not result['files']
+    assert result['gaps'][-1]['error'] == 'observed_rate_budget'
+    assert SECRET not in json.dumps(result)
+
+
+@pytest.mark.parametrize('focus', [None, [], 'match', [1], ['ma'], ['../match'], ['match/name'],
+                                  ['match', 'MATCH'], ['x' * 33], ['match'] * 9])
+def test_invalid_auto_path_focus_rejected_before_network(fake, focus):
+    result = auto(fake, focus_path_terms=focus)
+    assert result['state'] == 'invalid_input' and not fake.calls
+
+
+def test_path_focus_is_auto_only_and_not_silently_ignored_in_explicit_mode(fake):
+    result = run(fake, focus_path_terms=['match'])
+    assert result['state'] == 'invalid_input' and not fake.calls
+
+
+def test_path_focus_read_budget_does_not_increase(corpus):
+    fake, _, _ = corpus
+    result = auto(fake, focus_path_terms=['main', 'auth'])
+    assert result['budget']['requests'] <= 9 and len(result['files']) == 6
+    assert result['file_selection']['focus_path_terms_used'] == ['main', 'auth']
+    assert not result['file_selection']['semantic_relevance_verified']
