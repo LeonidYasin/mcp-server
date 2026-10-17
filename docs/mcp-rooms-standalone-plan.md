@@ -1,10 +1,15 @@
 # Отдельный проект MCP Rooms — план выделения
 
 Tracking: [#117](https://github.com/LeonidYasin/mcp-server/issues/117).
-Статус: **planned**, отдельный репозиторий НЕ создан, перенос/новый deployment
-не выполнялись. Предлагаемое имя `LeonidYasin/mcp-rooms` требует проверки доступности
-и согласования владельца. Видимость/лицензия отдельно; не создавать public repo
-автоматически. Это развитие rooms, не замена основной цели Agora — рынка.
+Статус: **выделение исходников запрошено владельцем**, repo/deployment ещё не созданы.
+Новое направление: standalone пользователи без обязательной привязки к GitHub;
+[identity design: собственный user UUID, индивидуальные credentials, OAuth adapter](mcp-rooms-identity-design.md).
+Предлагаемое имя `LeonidYasin/mcp-rooms`; API не нашёл доступный текущему токену repo
+с этим именем (404 — не гарантия глобальной доступности). Видимость/лицензия требуют
+ответа владельца; не создавать public repo и не выбирать MIT автоматически.
+Копирование source/tests/CI не обязано ждать embedded production/третьего GitHub
+аккаунта: критерии ниже ограничивают release/deployment/migration, не сам source extraction.
+Это развитие rooms, не замена основной цели Agora — рынка.
 
 ## Цель и границы v0.1
 
