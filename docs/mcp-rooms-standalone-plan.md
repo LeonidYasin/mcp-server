@@ -1,7 +1,7 @@
 # Отдельный проект MCP Rooms — план выделения
 
 Tracking: [#117](https://github.com/LeonidYasin/mcp-server/issues/117).
-Статус: **репозиторий создан**, перенос кода заблокирован GitHub token permissions.
+Статус: **repo создан, standalone alpha перенесена в draft PR**, deployment не выполнялся.
 Владелец явно утвердил public + MIT; создан [LeonidYasin/mcp-rooms](https://github.com/LeonidYasin/mcp-rooms).
 Первоначальный GitHub 403 снят после operator token permission update.
 Source/tests/docs/CI скопированы и адаптированы в [draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1):
