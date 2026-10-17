@@ -53,7 +53,13 @@ ReadWritePaths; добавлены storage guards, FULL durability, DB page budg
 cadence, полный live restore/off-host, disk/load и review/release assembly ещё
 открыты. Ничего не выкатывается автоматически.
 
-### Отдельный проект MCP Rooms — planned
+### Отдельный проект MCP Rooms — выделение запрошено
+
+Standalone больше не должен требовать GitHub-аккаунта: собственный user UUID,
+отдельные отзываемые ключи подключений для private pilot, готовый OAuth adapter
+следующим этапом. [Identity design и source extraction](docs/mcp-rooms-identity-design.md).
+Source extraction можно начать до embedded production; repo пока не создан,
+public/private и лицензия требуют подтверждения владельца.
 
 По запросу владельца запланирован самостоятельный rooms-only репозиторий
 (кандидат имени `mcp-rooms`): [план/границы](docs/mcp-rooms-standalone-plan.md),
