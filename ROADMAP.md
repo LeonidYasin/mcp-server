@@ -43,7 +43,15 @@
 identity; membership не ограничивает другие инструменты MCP. Ни production, ни
 Agora новой hardening-веткой не развёрнуты. Остальные #88/#89/PR не заменяются.
 
-## Отдельный проект MCP Rooms — source extraction requested #117
+## Отдельный проект MCP Rooms — standalone alpha и self enrollment #117
+
+В draft mcp-rooms PR #1 добавлена автоматическая регистрация email/phone +
+CSPRNG UUIDv4; можно оставить UUID Bearer или выпустить серверный ключ того же user.
+Контакт не verified/не stored, не factor/recovery; global signup caps не заменяют
+публичную abuse protection. Секреты только в private HTTPS форме/API, не MCP tools.
+Подготовлены read-only VPS preflight и isolated unit EXAMPLE; реальный loopback
+installer, proxy policy и live client/signup gates остаются следующими этапами.
+Existing VPS/TEST/production не переключены.
 
 Новое решение владельца: выделить/скопировать модуль в отдельный repo, standalone
 identity без обязательного GitHub. [Дизайн/границы](docs/mcp-rooms-identity-design.md):
