@@ -21,8 +21,12 @@
 - [x] Добавлены fake-auth denial для восьми методов, конкурентные send/retry,
   fresh-process/crash rollback и backup/restore regression tests. Не равно live gate.
 - [ ] Exact-HEAD CI Python 3.10–3.13 и review текущей hardening-ревизии.
-- [ ] Отдельно разрешённое обновление существующего TEST новой ревизией без потери
-  параллельных доработок; authenticated MCP и storage в sandbox.
+- [x] Guarded hardening upgrade текущего TEST без потери параллельных доработок:
+  composite `3c4eb840…`, 128 tools, config/dependencies/protected PIDs unchanged
+  по operator report; namespace storage и snapshot-copy integrity passed.
+- [x] Authenticated MCP после restart: история/старый key/cursor сохранены;
+  новая send/read/retry/conflict проверка прошла. [Evidence](docs/agent-rooms-test-hardening-evidence.md).
+  Это ещё не short-restart cadence, distinct owners или полный live restore drill.
 - [ ] Live два независимых owner + denied third owner, membership/ownership negatives.
 - [ ] TEST restart с сохранением IDs/cursor/key/cadence; backup/restore drill,
   off-host policy, disk/WAL monitoring и измерение p95 на целевом профиле.
