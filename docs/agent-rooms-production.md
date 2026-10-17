@@ -53,7 +53,12 @@ production readiness новой hardening-ревизии или backup дейс�
 `scripts/upgrade_test_agent_rooms.py` предназначен ТОЛЬКО для clean observed
 composite `a323a67f13ecb175a91e8f9726c76c11497483af` и 128 tools.
 Первый enable_test_agent_rooms.py нельзя повторно запускать поверх этого TEST.
-Upgrade использует immutable hardening source `48a029f2867df399e473dad927dec165d91fa518`
+Upgrade использует immutable hardening source `75555c3ebee335a151be3ebdcb6af2bfdc0b767a`
+с исправленным umask-independent fixture. В первом operator запуске подготовка
+остановилась на pytest, TEST остался a323a67f; namespace storage probe прошёл.
+В unsafe-directory fixture mkdir(0755) при umask077 давал 0700: теперь намеренно
+небезопасные права задаются chmod только на временном test directory. CI отдельно
+прогоняет room tests с umask077; действующие каталоги/защита сервиса не ослабляются.
 и отдельно проверенный по Git blob helper; root orchestration выполняет оператор,
 все Git/tests/SQLite operations — service user. Агент script не запускал.
 
