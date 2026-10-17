@@ -186,7 +186,7 @@ def main():
         git('worktree', 'add', '--detach', str(candidate), OLD)
         git('checkout', SOURCE, '--', *PAYLOAD, repo=candidate)
         git('-c', 'user.name=TEST room rollout', '-c', 'user.email=test-rollout@localhost',
-            'commit', '-m', 'TEST-only room overlay on observed 65ddae12; source 9f93eb0d', repo=candidate)
+            'commit', '-m', 'TEST-only room overlay on observed 65ddae12; source ' + SOURCE, repo=candidate)
         composite = git('rev-parse', 'HEAD', repo=candidate)
         require(sorted(git('diff', '--name-only', OLD, composite, repo=candidate).splitlines()) == sorted(PAYLOAD),
                 'Composite changes more than the room payload.')
