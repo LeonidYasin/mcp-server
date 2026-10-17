@@ -221,8 +221,10 @@ def main():
             'dependencies_changed': False, 'caddy_changed': False, 'live_authenticated_room_gate': False,
             'private_backup': str(backup), 'rollback_command': '/usr/bin/python3 -I ' + str(backup / 'rollout.py') +
             ' --rollback ' + str(backup / 'state.json')}, ensure_ascii=False))
-    except Exception:
-        print('STOP: details retained in private log: ' + str(backup / 'rollout.log'))
+    except Exception as exc:
+        reason = str(exc) if isinstance(exc, RuntimeError) else type(exc).__name__
+        print('STOP: ' + reason)
+        print('Details retained in private log: ' + str(backup / 'rollout.log'))
         if changed and state:
             try:
                 rollback(state)
