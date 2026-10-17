@@ -62,6 +62,12 @@ Standalone больше не должен требовать GitHub-аккаун
 владельцем. После обновления token permissions исходники/тесты/docs/CI перенесены
 в [draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1): собственные UUID
 users, отзываемые ключи и официальный MCP SDK; без GitHub prerequisite/shell tools.
+Затем в том же draft добавлена opt-in автоматическая регистрация: контакт +
+секретный клиентский UUIDv4, либо дополнительный серверный ключ того же user.
+Контакт НЕ подтверждён/НЕ сохранён и не восстанавливает аккаунт; секреты выдаются
+в private HTTPS форме, не MCP-чате. [Регистрация](https://github.com/LeonidYasin/mcp-rooms/blob/feat/standalone-identity/docs/registration.md).
+[Подготовка отдельного VPS TEST](https://github.com/LeonidYasin/mcp-rooms/blob/feat/standalone-identity/docs/vps-test-plan.md):
+read-only preflight и unit example; installer/public route ещё не применены.
 Это standalone alpha candidate, не deployment/production approval. Existing TEST
 и БД не перенесены. Source extraction не требует ожидания embedded production.
 
