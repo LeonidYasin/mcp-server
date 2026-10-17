@@ -291,3 +291,30 @@ See [the measured three-repository scenario](scenarios/repository-evidence-first
 and [its observation metadata](examples/repository-evidence-public-sample.json).
 That earlier explicit-selection sample retains the hashes of its earlier runtime; it is
 not relabelled as a live run of later automatic-selection changes.
+### JavaScript-like `.gs` source candidates
+
+The local idea-analog integration additionally treats regular `.gs` paths as implementation
+candidates. Long files use the bounded JS lexical window policy with an explicit
+`javascript_like_gs_unverified` hint. This supports common Apps Script repositories without
+asserting language/runtime from the suffix; no import, execution or extra traversal is added.
+Existing exclusions, file budgets and explicit fallback/range reporting still apply.
+
+### Caller focus and explicit rate stops in the local integration
+
+`focus_path_terms` is an optional auto-only list of1–8 distinct ASCII alphanumeric path-token
+prefixes (3–32chars), e.g. `["match","embed"]`. It is validated before network; explicit and
+legacy modes reject it rather than silently ignore it. Added/changed source paths keep
+priority, then matching file paths precede generic role/namespace hints. Document slots,
+six-file limit and all read/integrity budgets remain unchanged. The plan records terms and
+matches; no claim that path hints locate or verify the requested mechanism is inferred.
+
+Regular `.mjs/.cjs/.mts/.cts` and `.sql` are eligible implementation candidates;
+`action.yml/action.yaml` can provide runtime context. Module JS/TS suffixes use the existing
+bounded lexical policies with `syntax_extension_alias` reported; TypeScript declaration
+`.d.mts/.d.cts` files are excluded. SQL retains a bounded header, not parsed SQL behavior.
+
+After HTTP429, explicit remaining=0, or HTTP403 with numeric Retry-After, the same observation
+makes no further sibling/parent GETs. Already verified files are retained and unattempted
+reads get `observed_rate_budget` gaps. A bare403 without a quota signal remains scoped to
+that refused read (e.g. permission-denied fork comparison); no automatic auth/retry is added.
+This is checked stopping, not quota prediction or hard cancellation of an in-flight request.
