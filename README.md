@@ -59,9 +59,11 @@ Standalone больше не должен требовать GitHub-аккаун
 отдельные отзываемые ключи подключений для private pilot, готовый OAuth adapter
 следующим этапом. [Identity design и source extraction](docs/mcp-rooms-identity-design.md).
 Создан публичный [mcp-rooms](https://github.com/LeonidYasin/mcp-rooms), MIT утверждена
-владельцем. Перенос source/tests/CI ещё не выполнен: GitHub отклонил создание ветки
-в новом repo (403 token permissions). Требуется доступ текущего токена к новому repo.
-Source extraction не требует ожидания embedded production.
+владельцем. После обновления token permissions исходники/тесты/docs/CI перенесены
+в [draft PR #1](https://github.com/LeonidYasin/mcp-rooms/pull/1): собственные UUID
+users, отзываемые ключи и официальный MCP SDK; без GitHub prerequisite/shell tools.
+Это standalone alpha candidate, не deployment/production approval. Existing TEST
+и БД не перенесены. Source extraction не требует ожидания embedded production.
 
 По запросу владельца запланирован самостоятельный rooms-only репозиторий
 (кандидат имени `mcp-rooms`): [план/границы](docs/mcp-rooms-standalone-plan.md),
