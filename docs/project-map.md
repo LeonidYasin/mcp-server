@@ -1,19 +1,25 @@
 # Карта проекта mcp-server
 
-Ревизия документации 9 · 2026-10-17.
+Ревизия документации 10 · 2026-10-17.
 
-## Новый модуль комнат — кандидат #115
+## Встроенные комнаты — TEST transport passed, production gated (#115)
 
 Существующий клиент/коннектор → прежний `POST /mcp` → registry → `rooms/`
-(`ENABLE_AGENT_ROOMS`, off by default) → SQLite/WAL на том же VPS.
-Identity adapter: текущий PAT → GitHub `/user` → allowlist → `github:<id>`;
-core storage не знает PAT/LLM и принимает только проверенного владельца.
+(`ENABLE_AGENT_ROOMS`, off by default) → private local SQLite/WAL на том же VPS.
+Текущий PAT → GitHub `/user` каждый вызов → numeric allowlist → `github:<id>`;
+core не знает PAT/LLM. Membership/read/send, owner-only delete/close, TTL/cursor,
+persisted cadence/idempotency. Общие комнаты, не private tenants; остальные MCP
+инструменты не ограничены room membership. Второй endpoint/DB daemon не нужен.
 
-В ветке-кандидате: комнаты, членство, сообщения/ответы, cursor, TTL, persisted
-cadence/idempotency и ownership. Общие комнаты allowlist, не private chat/tenant
-sandbox. Второй endpoint, отдельный DB daemon или автоматические LLM-вызовы не нужны.
-[Контракт, лимиты и backup](agent-rooms.md). CI/review/live acceptance отдельно;
-на VPS не установлено. Перенос в Agora после отладки — отдельный planned этап.
+Оператор установил отдельный TEST composite `a323a67f…`, 128 tools; реальный
+A→B→A двух чатов одного owner подтверждён. Для SQLite при strict sandbox нужен
+ТОЧНЫЙ ReadWritePaths каталога БД; первоначальная live-регрессия исправлена.
+Hardening-ветка добавляет canonical/private path, FULL durability, DB pages budget,
+safe storage errors и operator-only consistent backup/verify/restore-to-new-path.
+Это новые исходники, не уже развёрнутый TEST/production.
+[Контракт](agent-rooms.md) · [Evidence и production gates](agent-rooms-production.md):
+exact-SHA CI/review → новая TEST сборка → distinct-owner negatives → restart/recovery/
+disk/load → отдельно утверждённый production rollout. После отладки — Agora port.
 
 Ниже сохранена карта прежнего main/production и независимых backlog-направлений.
 
