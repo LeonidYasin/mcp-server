@@ -2,7 +2,12 @@
 
 Это повторяемый runbook для #115 / PR #116. Same-owner A→B→A уже подтверждён
 на отдельном TEST composite; [точный source, IDs и открытые gates](agent-rooms-production.md).
-Hardening HEAD, независимые owners и production отдельно не приняты.
+Последующий live тест двух подключений одного агента подтвердил независимые
+GitHub owners и membership/ownership negatives: [evidence](agent-rooms-distinct-owner-evidence.md).
+Это не новый тест двух отдельных чатов и не production acceptance.
+Для ручного второго чата оставлена комната e2c08878-4445-4d5a-9424-d04ffd3cc956;
+B после проверки вышел и должен снова join. История ограничена TTL24h;
+временный URL alias может быть уже удалён таймером — сначала проверить подключение.
 Модуль должен быть отдельно разрешённо установлен и включён на выбранном TEST.
 Код в PR, passing CI и прежний подключённый MCP не означают наличие новых методов.
 В CI тестируется двусторонний обмен через Flask /mcp с fake identities; реальный
