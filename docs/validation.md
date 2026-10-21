@@ -1,6 +1,6 @@
 # Воспроизводимая проверка документации
 
-Ревизия 8 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
+Ревизия 9 · 2026-10-15. [README](../README.md) · [TOOLS](../TOOLS.md) · [Карта](project-map.md) · [HTTP-контракт](http-transport.md).
 
 [Deployment evidence](deployment-status.md) фиксирует отдельные VPS/external/Pages проверки. Локальный pytest не доказывает production deployment, готовность #88/#89 или Mermaid rendering на опубликованном сайте.
 
@@ -23,7 +23,7 @@ Windows: создать venv через `py -m venv .venv`, активирова
 
 ### Что проверяет scripts/check_docs.py
 
-- Два **независимых процесса** discovery с явно выключенными/включёнными `ENABLE_LOCAL_TOOLS`, `ENABLE_LOCAL_SHELL`, `ENABLE_SYNAPSE`. Это важно: imports и registry discovery кэшируются внутри Python process.
+- Два **независимых процесса** discovery с явно выключенными/включёнными `ENABLE_LOCAL_TOOLS`, `ENABLE_LOCAL_SHELL`, `ENABLE_SYNAPSE`, `ENABLE_FILE_UPLOADS`. Это важно: imports и registry discovery кэшируются внутри Python process.
 - Полное совпадение имён, handler categories и текущего Bearer gate с [tool-inventory.json](tool-inventory.json). Required parameters должны существовать в schema properties.
 - Каждое зарегистрированное имя упомянуто в TOOLS; proposed names не попадают в inventory.
 - Обычные inline local Markdown links/images во всех корневых `*.md` и `docs/**/*.md`, существование files/heading fragments; fenced code игнорируется. Это не полный Markdown parser: reference-style/HTML links и внешний HTTP не проверяются.
@@ -43,10 +43,14 @@ python scripts/check_docs.py
 
 Regeneration — только явное действие maintainer после проверки кода/schema/docs. Нельзя автоматически переписывать snapshot в CI, иначе drift станет невидимым. Удалённые/добавленные names, flags и token gate требуют review. Snapshot отражает текущий checkout, не production attestation и не обещание будущих API.
 
+## Проверки #88 кандидата
+
+`tests/test_uploads.py`: synthetic binary/ZIP/XLSX round-trip, in-process Flask+mocked GitHub auth, byte/hash integrity, owner/allowlist, bounds/quotas/TTL, exact retry/offset conflicts, parallel SQLite connections, transactional rollback, private filesystem guards, redaction и клиентский helper. Fresh-process discovery: default 113; uploads-only 119; all-enabled 149. Эти tests не требуют root/PAT/сети. Изолированный native TEST gate и реальный клиент→deployed API — отдельные проверки; ~41 МБ не запускается автоматически.
+
 ## Дополнительные gates
 
 - **HTTP examples:** `tests/test_documentation.py` проверяет JSON examples из HTTP-контракта через Flask test client и фактические status/headers. Это не внешний client interoperability test.
-- **Mermaid:** карта имеет текстовый fallback. Source отрендерен локально mermaid-cli 12.0.0 + Chromium и визуально проверен; это не обещание идентичного layout всех GitHub/site renderers. Отдельный frontend/site build пока не настроен.
+- **Mermaid:** карта имеет текстовый fallback. Source отрендерен локально mermaid-cli 12.0.0 + Chromium и визуально проверен; это не обещание идентичного layout всех GitHub/site renderers. Существующий Pages workflow опубликовал ревизию 8 после #90; Mermaid на самом сайте визуально ещё не принят.
 - **Shell snippets:** Linux bash syntax проверяется отдельно; это не доказательство apt/systemd/Caddy/bwrap/WSL deployment. Никакие root commands не исполняются автоматической проверкой docs.
 - **CI:** для точного PR HEAD проверить все Python 3.10–3.13 jobs, не переиспользовать success другого commit. В evidence фиксировать SHA и URL run.
 - **TEST vs production:** runtime discovery, exact checkout, restart procedure и dedicated live acceptance — отдельные доказательства; Git metadata cwd не гарантирует загруженный worker code.

@@ -1,5 +1,7 @@
 # MCP GitHub Server
 
+> **Обновление приёмки #88:** file-backed ZIP и XLSX, live count quota 8/9 и освобождение ёмкости после cancel — PASS. Полная приёмка ещё открыта. [Матрица доказательств и оставшиеся gates](docs/upload-acceptance.md) · [XLSX/quota evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204702804).
+
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
 [![tools](https://img.shields.io/badge/tools-runtime_registry-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
@@ -17,17 +19,17 @@
 | **Версия** | `mcp_server/__init__.py::__version__` — **0.4.3**; `pyproject.toml` читает её через dynamic version |
 | **Список инструментов** | рантайм-реестр: `list_my_tools`; каталог — [`TOOLS.md`](TOOLS.md); состав зависит от feature flags |
 | **Схема инструмента** | `describe_tool(name)` |
-| **Документация** | ревизия **8** от **2026-10-15** |
+| **Документация** | ревизия **9** от **2026-10-15** |
 
-> **Ревизия документации: 8 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован.
+> **Ревизия документации: 9 · 2026-10-15.** Инкрементируется при каждом значимом изменении README/ROADMAP/TOOLS/SANDBOX. При расхождении доков и рантайма — прав рантайм (код), доки приводим к нему. Ревизия 4: добавлен раздел «Продакшен (Gunicorn + Caddy)». Ревизия 5: добавлен подраздел «Пошаговый деплой на Ubuntu VPS», а также Windows/Waitress и примечание про PEP 668/venv. Ревизия 6: синхронизированы roadmap, карта проекта и границы планируемого бинарного канала #88 → #89; это документация, не реализация этих задач. Ревизия 7: полный runtime/docs audit, stateless HTTP-контракт, OS-границы и автоматические inventory/link/example guards. Ревизия 8: завершённый production rollout, отдельный TEST-кандидат, HTTP-проверенная публикация Pages и ограниченная feasibility #88; upload API ещё не реализован. Ревизия 9: opt-in кандидат #88 с bounded MCP chunks, verified GitHub owner/allowlist и SQLite staging; deployed acceptance ещё pending.
 
 ---
 
 ## Статус проекта и новые задачи
 
 - [Roadmap](ROADMAP.md) — приоритеты и проверяемые gates; [карта проекта](docs/project-map.md) — архитектура и зависимости. Код в `main`, кандидат в TEST и production — разные состояния.
-- **Новый файловый маршрут запланирован, не реализован:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Подробности и ограничения — [в плане](docs/binary-transfer-plan.md).
-- `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Малый synthetic client→TEST probe подтвердил сохранение bytes/size/hash через file-backed аргументы; это не готовый upload API и не доказательство доступности такого механизма во всех клиентах. [Результат и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
+- **Файловый маршрут: кандидат #88, не production-ready E2E:** [#88](https://github.com/LeonidYasin/mcp-server/issues/88) (реальные bytes клиент → staging) → [#89](https://github.com/LeonidYasin/mcp-server/issues/89) (Release assets → Actions → проверяемый результат). Для #88 добавлен opt-in chunk/staging API, default OFF; малый authenticated deployed smoke новых upload tools прошёл: 50 bytes / два чанка, size/SHA-256, retries, incomplete refusal и удаление. Затем прошёл настоящий file-backed ZIP client→staging gate: 110 124 bytes / 3 чанка, size/hash и удаление ([evidence](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204515365)). XLSX file-backed gate и live count quota 8/9 также прошли. Полная приёмка #88 pending: live owner isolation, byte/global quotas/expiry, retention и большой прогон. #89 не реализован. [Evidence и границы smoke](https://github.com/LeonidYasin/mcp-server/pull/91#issuecomment-6204289526). [Контракт и включение](docs/file-uploads.md) · [План](docs/binary-transfer-plan.md).
+- `/data/...` в среде клиента **не является путём на MCP-сервере**. `run_command`, локальные файловые API и серверный `path` не передают файл между средами. Малый synthetic client→TEST probe подтвердил сохранение bytes/size/hash через file-backed аргументы; это не приёмка нового chunk API и не доказательство доступности такого механизма во всех клиентах. [Результат и ограничения](docs/binary-transfer-plan.md#предварительная-feasibility--2026-10-15).
 - `create_or_update_binary_file` сейчас декодирует base64 **как UTF-8** и записывает файл в Git: это не универсальный ZIP/XLSX upload и не staging. `download_artifact` относится к **Actions artifacts**, а не к Release assets.
 - [PR #87](https://github.com/LeonidYasin/mcp-server/pull/87) — Draft, artifact attempt identity: не выдавать установку кандидата в TEST за завершённый live acceptance. `auto_fix_build` в `main` отключён; безопасная замена — [#86](https://github.com/LeonidYasin/mcp-server/issues/86).
 - **Production обновлён по отдельному разрешению:** `mcp-server.service` закреплён на `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6`, 113 tools, опасные локальные категории выключены. TEST остаётся на кандидате #87. [Снимок окружений и evidence](docs/deployment-status.md). Новые commits/PR не разворачиваются автоматически.
@@ -437,6 +439,7 @@ python -m mcp_server.server
 | [`docs/binary-transfer-plan.md`](docs/binary-transfer-plan.md) | план #88 → #89: клиентские bytes, staging, Release assets, Actions и критерии приёмки |
 | [`SANDBOX.md`](SANDBOX.md) | границы localfs/localgit/shell/process, уровни 1–3 и ограничения |
 | [`docs/http-transport.md`](docs/http-transport.md) | stateless HTTP-контракт, token gate и безопасный offline smoke |
+| [`docs/file-uploads.md`](docs/file-uploads.md) | opt-in binary chunk API, verified owner, quotas/TTL, file-backed client helper и pending gates |
 | [`docs/deployment-status.md`](docs/deployment-status.md) | датированный снимок production/TEST, rollout evidence и оставшиеся gates |
 | [`docs/validation.md`](docs/validation.md) | воспроизводимые проверки каталога, ссылок, тестов и сборки |
 | [`docs/tool-inventory.json`](docs/tool-inventory.json) | автоматически сверяемые default/all-enabled профили реестра |
