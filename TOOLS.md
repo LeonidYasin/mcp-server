@@ -2,7 +2,7 @@
 
 > **Source of truth:** рантайм-реестр сервера. Актуальный список всегда можно получить вызовом MCP-инструмента `list_my_tools`; схему любого инструмента — `describe_tool`.
 >
-> **Ревизия:** 8 · **Дата:** 2026-10-15 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
+> **Ревизия:** 13 · **Дата:** 2026-10-16 · **Состав:** проверять `list_my_tools` на выбранной сборке и feature flags
 
 Инструменты сгруппированы по подпакетам `mcp_server/tools/`. Каждый подпакет — независимая категория, которую можно включать/отключать отдельно.
 
@@ -12,11 +12,11 @@
 
 ## Проверяемый профиль реестра
 
-Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **113 default**, **143 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
+Snapshot [tool-inventory.json](docs/tool-inventory.json) получен локальным discovery без вызова handlers/сети и сверяется `python scripts/check_docs.py`. Для этой кодовой базы: **114 default**, **144 при всех трёх feature flags**. Это не счётчик deployed production/TEST: их revision/env надо читать отдельно.
 
 | Категория handler (уникальные registry names) | Default | All enabled |
 | --- | --- | --- |
-| github | 90 | 90 |
+| github | 91 | 91 |
 | build | 2 | 2 |
 | utils / meta / web | 15 / 2 / 4 | 15 / 2 / 4 |
 | localfs / localgit | 0 / 0 | 4 / 6 |
@@ -169,4 +169,8 @@ Linux-only, opt-in `ENABLE_LOCAL_SHELL`; identity guard до сигналов, n
 
 ---
 
-_Ревизия 8 · 2026-10-15. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+_Ревизия 13 · 2026-10-16. При изменении инструментов сверять каталог с runtime, учитывать feature flags и инкрементировать ревизию; планируемые API не включать в число доступных._
+
+## Public-author + opt-in Events — кандидат #99
+
+`analyze_github_author` (`username, repo_page=1, per_page=20, include_text=false, include_activity=false, activity_days=30, event_page=1`) — один публичный профиль и одна owned-repo page, primary-language counts с явными denominator/coverage; 2GETmax по умолчанию,3GETmax с opt-in public Events (фиксированная page20, event_page1–15); без private/Search/скрытого fan-out. Events ≠ commits/полная история, empty ≠ inactive. Исходящие запросы анонимные, dispatcher token gate сохранён. Реестр этого кандидата не deployment. [Контракт](docs/github-author-analytics.md).

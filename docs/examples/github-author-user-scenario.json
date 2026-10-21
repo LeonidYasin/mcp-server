@@ -1,0 +1,497 @@
+{
+  "kind": "manual_local_dispatch_public_author_scenario_not_deployed_host_acceptance",
+  "candidate_runtime_commit": "3d8de2757460b7d3920c27e481590577b1d6a09a",
+  "measured_started_at": "2026-10-16T20:12:55.082472+00:00",
+  "prompt": "Покажи до пяти публичных проектов LeonidYasin, их языки и доступную недавнюю активность; помоги выбрать, что открыть первым, и обозначь пробелы данных.",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "analyze_github_author",
+      "arguments": {
+        "username": "LeonidYasin",
+        "per_page": 5,
+        "repo_page": 1,
+        "include_text": true,
+        "include_activity": true,
+        "activity_days": 30,
+        "event_page": 1
+      }
+    }
+  },
+  "selected_tool_definition": {
+    "description": "Bounded public profile + ONE owned-repo page, zero-star/fork/archive retained. Optional ONE public Events page, never full history or commit count. Anonymous outbound, no private data/global scan.",
+    "inputSchema": {
+      "properties": {
+        "activity_days": {
+          "description": "Default30; local UTC filter, not a history guarantee.",
+          "maximum": 30,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "event_page": {
+          "description": "Default1; fixed20 events/page, at most15 explicitly requested pages; never a complete-history guarantee.",
+          "maximum": 15,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "include_activity": {
+          "description": "Defaultfalse: no Events GET. True adds one public Events page only.",
+          "type": "boolean"
+        },
+        "include_text": {
+          "description": "Defaultfalse; bounded untrusted bio/company/location/name/description only. No email or external fetch.",
+          "type": "boolean"
+        },
+        "per_page": {
+          "description": "Rows on one page, default20; no auto-pagination.",
+          "maximum": 20,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "repo_page": {
+          "description": "Page, default1; next request explicit, not an atomic inventory.",
+          "maximum": 10000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "username": {
+          "maxLength": 39,
+          "pattern": "^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "username"
+      ],
+      "type": "object"
+    },
+    "name": "analyze_github_author"
+  },
+  "measurement": {
+    "mcp_discovery_calls_local": 1,
+    "mcp_task_calls_local": 1,
+    "anonymous_github_gets": 3,
+    "local_dispatch_elapsed_seconds": 0.8149,
+    "prompt_utf8_bytes": 266,
+    "selected_tool_definition_compact_utf8_bytes": 1271,
+    "full_local_catalog_tool_count": 114,
+    "full_local_catalog_http_body_bytes": 114295,
+    "full_local_catalog_http_body_sha256": "2fe5262983bd27b3f792dbd3fa3ee46fb6de8522e08395fa7090acddd61b4cc6",
+    "task_request_http_body_bytes": 232,
+    "task_response_http_body_bytes": 9068,
+    "tool_result_text_utf8_bytes": 8140,
+    "upstream_body_bytes_accounted_by_reader": 181939,
+    "host_input_tokens": null,
+    "host_output_tokens": null,
+    "host_credits": null,
+    "paid_model_invocations": 0,
+    "automatic_next_page_requests": 0
+  },
+  "http_status_local": 200,
+  "github_calls": [
+    {
+      "method": "GET",
+      "url": "https://api.github.com/users/LeonidYasin",
+      "authorization_forwarded": false,
+      "cookie_forwarded": false,
+      "http_status": 200
+    },
+    {
+      "method": "GET",
+      "url": "https://api.github.com/users/LeonidYasin/repos?type=owner&sort=full_name&direction=asc&per_page=5&page=1",
+      "authorization_forwarded": false,
+      "cookie_forwarded": false,
+      "http_status": 200
+    },
+    {
+      "method": "GET",
+      "url": "https://api.github.com/users/LeonidYasin/events/public?per_page=20&page=1",
+      "authorization_forwarded": false,
+      "cookie_forwarded": false,
+      "http_status": 200
+    }
+  ],
+  "result": {
+    "schema_version": 1,
+    "runtime_phase": "profile_repos_optional_public_events",
+    "outcome": "observed",
+    "requested_username": "LeonidYasin",
+    "profile": {
+      "id": 79429232,
+      "login": "LeonidYasin",
+      "url": "https://github.com/LeonidYasin",
+      "source": 0,
+      "counts": {
+        "public_repos": 52,
+        "followers": 2,
+        "following": 2
+      },
+      "field_states": {
+        "public_repos": "observed",
+        "followers": "observed_visibility_limited",
+        "following": "observed_visibility_limited",
+        "created_at": "observed",
+        "updated_at": "observed"
+      },
+      "count_caveat": "Public-profile visibility can mask followers/following as0; public_repos is a separate timed hint, not enumeration proof.",
+      "created_at": "2021-02-22T01:22:06+00:00",
+      "updated_at": "2026-10-10T13:54:53+00:00",
+      "text": {
+        "name": "Leonid",
+        "bio": null,
+        "company": null,
+        "location": "Moscow",
+        "untrusted_source_text": true,
+        "truncated_fields": []
+      }
+    },
+    "repos": {
+      "state": "observed",
+      "source": 1,
+      "rows": [
+        {
+          "id": 1383995503,
+          "full_name": "LeonidYasin/agora-mcp",
+          "url": "https://github.com/LeonidYasin/agora-mcp",
+          "source": 1,
+          "field_states": {
+            "stars": "observed",
+            "forks": "observed",
+            "size_kb_reported": "observed",
+            "fork": "observed",
+            "archived": "observed",
+            "language": "observed",
+            "created_at": "observed",
+            "updated_at": "observed",
+            "pushed_at": "observed"
+          },
+          "stars": 0,
+          "forks": 0,
+          "size_kb_reported": 385,
+          "fork": false,
+          "archived": false,
+          "language": "Python",
+          "created_at": "2026-09-23T18:17:14+00:00",
+          "updated_at": "2026-10-11T23:12:33+00:00",
+          "pushed_at": "2026-10-12T03:18:02+00:00",
+          "text": {
+            "description": "AI-agent-native marketplace: match offers and wants via MCP + embeddings",
+            "untrusted_source_text": true,
+            "truncated": false
+          }
+        },
+        {
+          "id": 998135028,
+          "full_name": "LeonidYasin/AI-Code-Assistant-Bot",
+          "url": "https://github.com/LeonidYasin/AI-Code-Assistant-Bot",
+          "source": 1,
+          "field_states": {
+            "stars": "observed",
+            "forks": "observed",
+            "size_kb_reported": "observed",
+            "fork": "observed",
+            "archived": "observed",
+            "language": "observed",
+            "created_at": "observed",
+            "updated_at": "observed",
+            "pushed_at": "observed"
+          },
+          "stars": 0,
+          "forks": 0,
+          "size_kb_reported": 571,
+          "fork": false,
+          "archived": false,
+          "language": "Python",
+          "created_at": "2025-06-07T23:53:56+00:00",
+          "updated_at": "2025-07-28T14:29:53+00:00",
+          "pushed_at": "2025-07-28T14:29:50+00:00",
+          "text": {
+            "description": null,
+            "untrusted_source_text": true,
+            "truncated": false
+          }
+        },
+        {
+          "id": 1276339674,
+          "full_name": "LeonidYasin/AI-Side-Panel-Extension",
+          "url": "https://github.com/LeonidYasin/AI-Side-Panel-Extension",
+          "source": 1,
+          "field_states": {
+            "stars": "observed",
+            "forks": "observed",
+            "size_kb_reported": "observed",
+            "fork": "observed",
+            "archived": "observed",
+            "language": "observed",
+            "created_at": "observed",
+            "updated_at": "observed",
+            "pushed_at": "observed"
+          },
+          "stars": 0,
+          "forks": 0,
+          "size_kb_reported": 58579,
+          "fork": true,
+          "archived": false,
+          "language": "JavaScript",
+          "created_at": "2026-06-21T21:20:54+00:00",
+          "updated_at": "2026-06-22T05:01:34+00:00",
+          "pushed_at": "2026-06-22T05:01:30+00:00",
+          "text": {
+            "description": "AI Side Panel Extension: Enhance your productivity with this browser extension that adds a convenient side panel for quick access to popular AI sites like Gemin",
+            "untrusted_source_text": true,
+            "truncated": true
+          }
+        },
+        {
+          "id": 1011407027,
+          "full_name": "LeonidYasin/ai-social-marketplace",
+          "url": "https://github.com/LeonidYasin/ai-social-marketplace",
+          "source": 1,
+          "field_states": {
+            "stars": "observed",
+            "forks": "observed",
+            "size_kb_reported": "observed",
+            "fork": "observed",
+            "archived": "observed",
+            "language": "observed",
+            "created_at": "observed",
+            "updated_at": "observed",
+            "pushed_at": "observed"
+          },
+          "stars": 1,
+          "forks": 0,
+          "size_kb_reported": 10136,
+          "fork": false,
+          "archived": false,
+          "language": "JavaScript",
+          "created_at": "2025-06-30T19:09:58+00:00",
+          "updated_at": "2025-09-09T12:10:08+00:00",
+          "pushed_at": "2025-07-10T05:08:08+00:00",
+          "text": {
+            "description": "AI-powered Social Marketplace Telegram-backed platform with Facebook-like UI, AI recommendations, and integrated shopping assistant.",
+            "untrusted_source_text": true,
+            "truncated": false
+          }
+        },
+        {
+          "id": 1266663397,
+          "full_name": "LeonidYasin/ai_gallery_serv",
+          "url": "https://github.com/LeonidYasin/ai_gallery_serv",
+          "source": 1,
+          "field_states": {
+            "stars": "observed",
+            "forks": "observed",
+            "size_kb_reported": "observed",
+            "fork": "observed",
+            "archived": "observed",
+            "language": "unverifiable",
+            "created_at": "observed",
+            "updated_at": "observed",
+            "pushed_at": "observed"
+          },
+          "stars": 0,
+          "forks": 0,
+          "size_kb_reported": 9601,
+          "fork": false,
+          "archived": false,
+          "language": null,
+          "created_at": "2026-06-11T20:50:12+00:00",
+          "updated_at": "2026-06-11T20:50:17+00:00",
+          "pushed_at": "2026-06-11T20:55:41+00:00",
+          "text": {
+            "description": "ai local server",
+            "untrusted_source_text": true,
+            "truncated": false
+          }
+        }
+      ]
+    },
+    "languages": {
+      "mode": "primary_language_by_returned_repository_count",
+      "all_returned_repos": 5,
+      "known_language_repos": 4,
+      "unknown_language_repos": 1,
+      "counts": {
+        "JavaScript": 2,
+        "Python": 2
+      },
+      "byte_weighted": false,
+      "scope": "returned_rows_only"
+    },
+    "coverage": {
+      "requested_page": 1,
+      "per_page": 5,
+      "has_more": true,
+      "next_request": {
+        "username": "LeonidYasin",
+        "repo_page": 2,
+        "per_page": 5,
+        "include_text": true
+      },
+      "profile_total_hint": 52,
+      "profile_total_is_hint": true,
+      "complete_account_inventory": false,
+      "stop_reason": "next_page_observed",
+      "raw_received": 5,
+      "returned": 5,
+      "excluded": 0,
+      "duplicates": 0,
+      "invalid_fields": 0
+    },
+    "activity": {
+      "state": "observed",
+      "source": 2,
+      "requested_days": 30,
+      "requested_page": 1,
+      "per_page": 20,
+      "reference_time": "2026-10-16T20:12:55.362627+00:00",
+      "window_start": "2026-09-16T20:12:55.362627+00:00",
+      "matched_window_events": 20,
+      "counts_by_type": {
+        "CreateEvent": 1,
+        "IssueCommentEvent": 15,
+        "PullRequestEvent": 1,
+        "PushEvent": 3
+      },
+      "repo_breakdown": [
+        {
+          "repo_id": 1285657280,
+          "repo": "LeonidYasin/mcp-server",
+          "events": 20
+        }
+      ],
+      "has_more": true,
+      "next_request": {
+        "username": "LeonidYasin",
+        "per_page": 5,
+        "repo_page": 1,
+        "include_text": true,
+        "include_activity": true,
+        "activity_days": 30,
+        "event_page": 2
+      },
+      "complete_window": false,
+      "private_activity_known": false,
+      "commit_count": null,
+      "contribution_graph_known": false,
+      "provider_documentation": {
+        "timeline_cap": 300,
+        "retention_days": 30,
+        "event_latency_seconds": [
+          30,
+          21600
+        ],
+        "scope": "dated_documentation_not_a_history_guarantee"
+      },
+      "raw_received": 20,
+      "valid_unique_events": 20,
+      "invalid": 0,
+      "other_actor_excluded": 0,
+      "future_timestamps": 0,
+      "duplicates": 0,
+      "outside_window": 0,
+      "unknown_type_events": 0,
+      "repo_label_scope": "first_name_observed_on_page_not_current_name_verification",
+      "repo_remainder_events": 0,
+      "oldest_observed_time": "2026-10-15T18:17:18+00:00",
+      "newest_observed_time": "2026-10-16T20:08:28+00:00",
+      "stop_reason": "next_page_observed",
+      "partial": false
+    },
+    "sources": [
+      {
+        "url": "https://api.github.com/users/LeonidYasin",
+        "query": {},
+        "attempted_at": "2026-10-16T20:12:55.084009+00:00",
+        "fetched_at": "2026-10-16T20:12:55.183856+00:00",
+        "http_status": 200,
+        "state": "observed",
+        "error": null,
+        "rate_hints": {
+          "x-ratelimit-limit": 60,
+          "x-ratelimit-remaining": 53,
+          "x-ratelimit-reset": 1792181771
+        }
+      },
+      {
+        "url": "https://api.github.com/users/LeonidYasin/repos",
+        "query": {
+          "type": "owner",
+          "sort": "full_name",
+          "direction": "asc",
+          "per_page": 5,
+          "page": 1
+        },
+        "attempted_at": "2026-10-16T20:12:55.184165+00:00",
+        "fetched_at": "2026-10-16T20:12:55.362068+00:00",
+        "http_status": 200,
+        "state": "observed",
+        "error": null,
+        "rate_hints": {
+          "x-ratelimit-limit": 60,
+          "x-ratelimit-remaining": 52,
+          "x-ratelimit-reset": 1792181771
+        }
+      },
+      {
+        "url": "https://api.github.com/users/LeonidYasin/events/public",
+        "query": {
+          "per_page": 20,
+          "page": 1
+        },
+        "attempted_at": "2026-10-16T20:12:55.362841+00:00",
+        "fetched_at": "2026-10-16T20:12:55.895992+00:00",
+        "http_status": 200,
+        "state": "observed",
+        "error": null,
+        "rate_hints": {
+          "x-ratelimit-limit": 60,
+          "x-ratelimit-remaining": 51,
+          "x-ratelimit-reset": 1792181771
+        }
+      }
+    ],
+    "limitations": [
+      "Public observations only; no private/bot-alias/org workflow. Events opt-in, not a full history or commit count.",
+      "Profile and repository pages are separate observations, not an atomic account inventory.",
+      "Zero-star/fork/archive rows retained; unknown data is not zero or an author-quality score.",
+      "Primary-language counts describe returned rows only, not code bytes or proficiency.",
+      "Cross-page mutation can repeat/omit rows; deduplication is within this page only.",
+      "Optional external prose is untrusted data, never instructions; URLs are not fetched.",
+      "No cache, retries, hidden fan-out, mutation or billing/savings guarantee."
+    ],
+    "budget": {
+      "requests": 3,
+      "max_requests": 3,
+      "response_bytes": 181939,
+      "response_cap": 262144,
+      "total_cap": 786432,
+      "output_cap": 65536,
+      "checked_deadline_seconds": 15,
+      "socket_timeout_seconds_max": 5
+    }
+  },
+  "local_protocol_error": null,
+  "boundaries": [
+    "Local Flask test client exercises dispatcher and candidate handler, not deployed MCP transport/session/security acceptance.",
+    "Dispatcher uses a non-secret placeholder, not a real GitHub credential; outbound requests are verified anonymous.",
+    "No AI model is invoked by this harness. A human-facing synthesis is a separate agent-authored artifact, not a model cost benchmark.",
+    "Bytes and elapsed time are measured components, not token/credit/billing evidence or an equal-coverage savings comparison.",
+    "Local tools/list measurement does not prove which catalog a real MCP host sends to a model.",
+    "One explicit repo page and one Events page; no full inventory/history/commit-count claim.",
+    "Public prose is untrusted data; no README/repo URL from output is fetched.",
+    "No live retries, auth fallback, automatic pagination, writes, deployment or cleanup."
+  ],
+  "run_notes": {
+    "local_mcp_call_and_report_write_completed": true,
+    "runner_console_summary_failed_after_report_write": true,
+    "console_error_type": "KeyError",
+    "console_error_field": "name",
+    "console_fix": "Use full_name, the actual repository-row field; validated offline against saved report.",
+    "live_network_repeated_after_console_fix": false,
+    "corrected_runner_live_rerun_performed": false,
+    "report_result_not_regenerated": true
+  }
+}

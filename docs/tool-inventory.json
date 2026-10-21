@@ -2,7 +2,7 @@
   "format_version": 1,
   "profiles": {
     "default": {
-      "count": 113,
+      "count": 114,
       "tools": [
         {
           "category": "github",
@@ -17,6 +17,11 @@
         {
           "category": "github",
           "name": "add_pr_comment",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "analyze_github_author",
           "token_required": true
         },
         {
@@ -572,7 +577,7 @@
       ]
     },
     "all_enabled": {
-      "count": 143,
+      "count": 144,
       "tools": [
         {
           "category": "github",
@@ -587,6 +592,11 @@
         {
           "category": "github",
           "name": "add_pr_comment",
+          "token_required": true
+        },
+        {
+          "category": "github",
+          "name": "analyze_github_author",
           "token_required": true
         },
         {
