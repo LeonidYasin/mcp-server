@@ -1,0 +1,133 @@
+{
+  "format_version": 1,
+  "scope": "local_detached_integration_only_not_merge_or_deployment",
+  "inputs": {
+    "heads": {
+      "main": "0c12a3753efe749c4f16b751da569f4461d83a15",
+      "upload91": "4edf84e3c67809122ec41d6b3de98970bb840f34",
+      "audit107": "0ed59daa35bc4374b7524d8bd29f3f7bc21d4493"
+    },
+    "merge_base": "a9a303f2434bc67a6f41a3dcb8524461cb2407b1",
+    "overlap": [
+      "MANIFEST.in",
+      "README.md",
+      "ROADMAP.md",
+      "SANDBOX.md",
+      "TOOLS.md",
+      "docs/project-map.md",
+      "docs/tool-inventory.json"
+    ],
+    "merge_tree_exit_code": 1
+  },
+  "conflict_files": [
+    "README.md",
+    "ROADMAP.md",
+    "SANDBOX.md",
+    "TOOLS.md",
+    "docs/project-map.md",
+    "docs/tool-inventory.json"
+  ],
+  "local_resolution": {
+    "documentation_revision": 11,
+    "preserve": "both candidate contracts, #91 dated acceptance evidence and all pending gates",
+    "inventory": "regenerated using merged scripts/check_docs.py --write-inventory",
+    "test_count_changes": {
+      "file": "tests/test_uploads.py",
+      "before": [
+        113,
+        119
+      ],
+      "after": [
+        114,
+        120
+      ]
+    },
+    "benchmark_change": "explicitly force ENABLE_FILE_UPLOADS=0 with the other three flags",
+    "tested_git_tree": "efbafcbeb9fdf1295a2aca6d5a389f2deab3b55b"
+  },
+  "verification": {
+    "python": "3.13.14",
+    "initial_full_suite": {
+      "passed": 823,
+      "failed": 2,
+      "reason": "stale total-count expectations in #91 discovery tests"
+    },
+    "resolved_full_suite_passed": 825,
+    "audit_with_upload_flag_on_passed": 75,
+    "extracted_sdist_suite_passed": 825,
+    "wheel_and_sdist_built": true,
+    "documentation": {
+      "inventory": {
+        "default": 114,
+        "all_enabled": 150
+      },
+      "local_links_checked": 141,
+      "result": "passed"
+    },
+    "profiles": {
+      "default": {
+        "count": 114,
+        "unique_count": 114,
+        "audit_present": true,
+        "audit_token_gate": true,
+        "audit_schema_sha256": "6d631e6ce4566c011f88e2d08ee6184617f633a03d5deb5009cad9ccb4108fc4",
+        "uploads": [],
+        "run_command_present": false
+      },
+      "uploads_only": {
+        "count": 120,
+        "unique_count": 120,
+        "audit_present": true,
+        "audit_token_gate": true,
+        "audit_schema_sha256": "6d631e6ce4566c011f88e2d08ee6184617f633a03d5deb5009cad9ccb4108fc4",
+        "uploads": [
+          "append_file_chunk",
+          "begin_file_upload",
+          "cancel_file_upload",
+          "cleanup_file_uploads",
+          "finish_file_upload",
+          "get_file_upload_status"
+        ],
+        "run_command_present": false
+      },
+      "legacy_all_without_uploads": {
+        "count": 144,
+        "unique_count": 144,
+        "audit_present": true,
+        "audit_token_gate": true,
+        "audit_schema_sha256": "6d631e6ce4566c011f88e2d08ee6184617f633a03d5deb5009cad9ccb4108fc4",
+        "uploads": [],
+        "run_command_present": true
+      },
+      "all_four_flags": {
+        "count": 150,
+        "unique_count": 150,
+        "audit_present": true,
+        "audit_token_gate": true,
+        "audit_schema_sha256": "6d631e6ce4566c011f88e2d08ee6184617f633a03d5deb5009cad9ccb4108fc4",
+        "uploads": [
+          "append_file_chunk",
+          "begin_file_upload",
+          "cancel_file_upload",
+          "cleanup_file_uploads",
+          "finish_file_upload",
+          "get_file_upload_status"
+        ],
+        "run_command_present": true
+      }
+    },
+    "audit_schema_identical_across_profiles": true,
+    "benchmark": {
+      "inherited_upload_flag_before_fix": "changed evidence in the combined tree",
+      "both_inherited_flag_values_after_fix": "all six rows exactly equal the checked-in #107 baseline",
+      "actual_host_billing_or_agent_turns_measured": false
+    }
+  },
+  "limits": [
+    "Single merge direction (#107 receives #91) in a detached local worktree; reverse-order rebase/merge and future commits not validated.",
+    "All-four-flags profile is discovery-only, not full handler acceptance for every category.",
+    "No GitHub/model request in measured benchmark; no private/live/deployed acceptance.",
+    "No remote branch merge/rebase or service, Caddy, allowlist, visibility, About/topics change.",
+    "Combined local tree is not committed or pushed; only benchmark environment pin and report enter #107."
+  ]
+}

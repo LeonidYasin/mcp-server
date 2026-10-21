@@ -3,7 +3,7 @@
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
-> **Ревизия документации: 8 · 2026-10-15** (см. README → Source of truth).
+> **Ревизия документации: 10 · 2026-10-16** (см. README → Source of truth).
 
 Легенда приоритетов:
 - 🔴 высокий — блокирует базовые сценарии, делать первым
@@ -36,6 +36,10 @@
 2. Для нового файлового сценария малый feasibility probe выполнен; далее выбрать и документировать основной клиентский transport #88 и реализовать staging; только после этого #89. Объекты для mutating smoke tests и прогон ~41 МБ требуют отдельного разрешения.
 3. #89 согласовать с #64 (release lookup/IDs/assets), #59 (неопределённый POST), #53 (доступ), #77 (token/memory budgets). Actions artifact, Release asset и staging `file_id` — разные сущности.
 4. #58/#86, доступ, lifecycle, secrets и Pages сохраняются отдельными PR; будущие docs/site gates и deployments требуют отдельной проверки и разрешения. Уже выполненный rollout не означает принятия #87/#88/#89.
+
+## Кандидат #103 — read-only discoverability audit
+
+В отдельной feature-ветке реализован один `audit_repo_seo` с bounded public GET, explicit private opt-in, pinned root evidence, actions и честными unverifiable статусами. [Контракт](docs/repo-discoverability.md). Это первый ограниченный срез #103, не полный SEO-сервис: добавлены только source-derived review drafts статического description и allowlisted keywords; оценка аналогов, генерация marketing copy и публикации не реализованы. [Ограниченный offline cost experiment](docs/repo-audit-benchmark.md) не закрывает #77. #103 не закрывать по наличию кода; review/CI, merge и deployment — отдельные gates. Другие #99–#105 остаются backlog. Датированный исходный план ниже сохранён как история.
 
 ## Новый backlog — GitHub analytics, research и discoverability (2026-10-16)
 

@@ -1,6 +1,6 @@
 # Карта проекта mcp-server
 
-Ревизия документации 8 · 2026-10-15. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
+Ревизия документации 10 · 2026-10-16. Источник для карты — этот файл; обновлять вместе с [ROADMAP](../ROADMAP.md), [README](../README.md), [TOOLS](../TOOLS.md) и [файловым планом](binary-transfer-plan.md). Это карта кода и backlog; датированный production rollout и отдельный TEST-кандидат подтверждены в [снимке окружений](deployment-status.md).
 
 ## Архитектура и границы доверия
 
@@ -54,6 +54,10 @@ flowchart TD
 | Надёжность / стоимость | Текущие safety contracts сохраняются | #53 access diagnostics; #59 post-effect reconciliation; #77 end-to-end token audit |
 | Admin / secrets / сайт | Существующие repo admin tools не равны полному lifecycle Pages | #66 secure secrets boundary; #68 verified features/Pages, configured ≠ deployed ≠ HTTP verified |
 | Synapse / экосистема | Существующие feature-gated категории; отдельные связанные проекты | Item/embedding roadmap и таблица экосистемы сохранены в ROADMAP; не смешивать с binary transport |
+
+## Кандидат discoverability audit #103
+
+Один `audit_repo_seo` в отдельной ветке: GitHub read-only → pinned root/README + metadata → compact evidence/actions. [Контракт](repo-discoverability.md). Не обращается к внешним сайтам, не меняет Pages/репо; публичные запросы без токена, private только opt-in. Отдельные merge/deployment/acceptance gates; это частичная реализация #103, не новый production snapshot.
 
 ## Новый backlog research / discoverability — 2026-10-16
 
