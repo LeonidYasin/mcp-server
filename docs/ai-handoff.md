@@ -71,3 +71,22 @@
 
 Текущее поручение владельца: сначала сохранить этот server-handoff, затем работать
 над MCP Rooms. Server-код/merge/deploy данным поручением не исполняются.
+
+
+## Граф продолжения и зависимостей
+
+```mermaid
+flowchart TD
+    E["AGENTS + work-state + evidence ledger"] --> M["main: transport / GitHub safety / attempts"]
+    E --> R["PR110 search → PR111 evidence → PR112 analog workflow"]
+    E --> B["PR91 binary staging #88"]
+    B -. "отдельный pending E2E" .-> A["#89 Release assets → Actions → verified bytes"]
+    E --> C["PR116 embedded rooms: GitHub identity"]
+    C --> S["mcp-rooms: extraction уже выполнен"]
+    S --> F["F3c.1 CI → F3c.2 operator/resources"]
+    R -. "review и отдельное approval" .-> D["Будущий rollout, не выполняется сейчас"]
+    F -. "preflight → loopback → HTTPS" .-> D
+```
+
+Пунктир — незавершённая/разрешаемая зависимость, не доступный endpoint.
+[Проверка handoff и границы CI](handoff-validation.md).

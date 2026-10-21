@@ -85,5 +85,17 @@
   "current_owner_order": [
     "Save server durable handoff in reviewed PR, not main merge.",
     "Then continue MCP Rooms F3c.2 in its own repository."
-  ]
+  ],
+  "documentation_validation": {
+    "source_sha": "5e4e8ce2178ae4fa291508f88ca83a308223a9df",
+    "evidence": "docs/handoff-validation.md",
+    "python312_passed": 695,
+    "matrix": [
+      "3.10",
+      "3.11",
+      "3.12",
+      "3.13"
+    ],
+    "kind": "CI_DOCUMENTATION_NOT_DEPLOYMENT"
+  }
 }
