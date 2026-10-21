@@ -1,18 +1,26 @@
 # Состояние deployment и проверок
 
-Ревизия документации 8 · снимок на 2026-10-15. Это исторически закреплённое состояние, не обещание, что каждый будущий commit main уже развёрнут. [README](../README.md) · [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Validation](validation.md) · [Файловый план](binary-transfer-plan.md).
+Ревизия документации 9 · снимок на 2026-10-21. Это исторически закреплённое состояние, не обещание, что каждый будущий commit main уже развёрнут. [README](../README.md) · [Roadmap](../ROADMAP.md) · [Карта](project-map.md) · [Validation](validation.md) · [Файловый план](binary-transfer-plan.md).
 
 ## Production и TEST — отдельные состояния
 
 | Окружение | Проверенная ревизия / профиль | Статус |
 | --- | --- | --- |
-| Production | `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6`, detached HEAD, версия 0.4.3, 113 tools | Rollout и внешний MCP smoke passed; localfs/localgit, shell/process, Synapse выключены |
+| Production | `a0dc3286a05f774bdf321de05f695b7d4c755f61` (main после squash PR #119), detached HEAD, 114 tools | Rollout 2026-10-21 PASS, внешний MCP smoke passed; rooms, localfs/localgit, shell/process, Synapse выключены |
 | TEST | `ef7993b87e8d6ed6598065e46203dc6145f9286d`, кандидат Draft PR #87, 119 tools | Shell/process включены только TEST; localfs/localgit/Synapse выключены. Специализированный authenticated deployed artifact gate pending |
-| main после merge #70 | `b78b209cf5e8927c2c4bb9771d6ff0bafcad0cf6` | Документационный merge; будущие docs commits не меняют закреплённую production revision автоматически |
+| main после squash #119 | `a0dc3286a05f774bdf321de05f695b7d4c755f61` | CI main 3.10–3.13 success; будущие docs commits не меняют закреплённую production revision автоматически |
 
 Production: `mcp-server.service`, Unix user/group `mcp`, checkout `/home/mcp/mcp-server`, venv `.venv`, Gunicorn, локальный порт 3001. TEST: `mcp-test.service`, user `mcp-test`, checkout `/home/mcp-test/mcp-server`, отдельный venv `/home/mcp-test/venv`, порт 3002; внешний путь `/test/mcp`.
 
-## Что реально выполнено
+## Rollout 2026-10-21 — PR #119
+
+- Merge: PR #119 squash → `main` `a0dc3286a05f774bdf321de05f695b7d4c755f61` (parent `8c2aa3ac6972e680cd9df7af982e66731d21f2ce`), 51 файл, +15748/−9 — совпадает с PR. Исходные ветки `release/research-prod-candidate` и `feat/idea-analog-workflow` сохранены.
+- CI: [run 39635233318](https://github.com/LeonidYasin/mcp-server/actions/runs/39635233318), Python 3.10–3.13 success; combined status 7/7 success.
+- Операторский guarded root-скрипт (inline paste): preflight, флаги `ENABLE_AGENT_ROOMS/LOCAL_SHELL/LOCAL_TOOLS/SYNAPSE` выключены, зависимости не менялись, приватный backup, detached checkout точного SHA, import check, restart, health. Итог `RESULT=ROLLOUT_PASS old=8c2aa3ac… new=a0dc3286… pid=392628`, backup `/root/mcp-rollout-20261021-164229`. Откат не потребовался. TEST, Caddy, системные пакеты не затронуты.
+- Внешняя проверка через production MCP: `list_my_tools` = **114**; `find_repository_analogs` зарегистрирован и выполнил bounded read-only поиск (2 запроса GitHub Search, 5 кандидатов, без записи); `search_repositories` с `mode=public`, `get_repo_info` с `mode=public_evidence`, `create_branch` с `from_sha`; ни одного `rooms_*` и ни одного из `run_command`, `run_python`, `start_background`, `stop_process`, `process_status`, `tail_log`.
+- Отдельная TEST-приёмка этого точного SHA в production-профиле не выполнялась — решение владельца; компенсировано CI, неизменными зависимостями, автоматическим откатом и внешним smoke.
+
+## Что реально выполнено (rollout 2026-10-15)
 
 1. До rollout проверен точный HEAD PR #70 `602b6e9ffa8eb1f31d54db5610c56f9cc436e2ad` в отдельном checkout/venv под `mcp-test`: **640 pytest**, inventory **113/143**, 74 локальные ссылки, smoke import, wheel/sdist. [VPS evidence](https://github.com/LeonidYasin/mcp-server/pull/70#issuecomment-6200030171).
 2. PR #70 squash merged; дерево reviewed HEAD и merge SHA одинаково. CI main: [run 38790796983](https://github.com/LeonidYasin/mcp-server/actions/runs/38790796983). Проверка кода не подменяет отдельную приёмку каждого backlog issue.

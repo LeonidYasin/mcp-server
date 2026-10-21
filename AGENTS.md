@@ -3,6 +3,27 @@
 Owner-facing communication is in Russian. Historical runbooks never override the
 rules below.
 
+## Standard rollout: `mcp-deploy`
+
+Routine production/TEST updates use the installed root-owned command
+`/usr/local/sbin/mcp-deploy` (source: `scripts/ops/mcp-deploy`, reviewed and
+tested in CI). The agent gives the owner one line, for example:
+
+```bash
+mcp-deploy prod <full-40-hex-sha>
+```
+
+Before giving it, the agent verifies: the SHA is on `main` (production), CI for
+that exact SHA is green, no dependency files changed, PR/merge state. After
+`RESULT=ROLLOUT_PASS` the agent verifies externally via MCP (`list_my_tools`,
+`describe_tool`, bounded read-only smoke) and records evidence in the PR and
+`docs/deployment-status.md`. Rollback: `mcp-deploy prod <old-sha> --downgrade`.
+`mcp-deploy status` shows current revisions. Changes to `mcp-deploy` itself are
+installed by an inline paste block that reads the file from git by exact commit
+SHA (`git show <sha>:scripts/ops/mcp-deploy`), never via `curl`.
+
+Inline paste blocks (below) remain for non-standard one-off operations.
+
 ## Operator scripts for the root Linux console
 
 The owner runs every VPS/root operation himself by **pasting a block into the
