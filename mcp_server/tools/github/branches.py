@@ -1,6 +1,7 @@
 """MCP tools: GitHub branches."""
 
 import json
+import re
 from urllib.parse import quote
 
 from mcp_server.core.registry import mcp_tool
@@ -67,57 +68,110 @@ def get_branch(client: GitHubClient, **kwargs) -> str:
     )
 
 
+def _branch_http_status(error: Exception):
+    """The client wraps HTTP errors; retain status via exception chaining."""
+    seen = set()
+    while error is not None and id(error) not in seen:
+        seen.add(id(error))
+        response = getattr(error, "response", None)
+        status = getattr(response, "status_code", None)
+        if type(status) is int:
+            return status
+        error = error.__cause__ or error.__context__
+    return None
+
+
+def _valid_new_branch(branch):
+    if not isinstance(branch, str) or not branch or branch == "@":
+        return False
+    if (branch.startswith(("/", "-")) or branch.endswith(("/", "."))
+            or ".." in branch or "@{" in branch or "//" in branch
+            or re.search(r"[\x00-\x20\x7f~^:?*\\\[]", branch)):
+        return False
+    return all(not part.startswith(".") and not part.endswith(".lock")
+               for part in branch.split("/"))
+
+
 @mcp_tool(
     name="create_branch",
     description=(
-        "Создаёт новую ветку от указанного ref (по умолчанию — main). "
-        "Идемпотентен: если ветка уже существует — вернёт её SHA без ошибки."
+        "Создаёт ветку от from_branch (ветка/ref/SHA, default main) или точного from_sha. "
+        "SHA из доступного fork network сохраняет историю без merge. "
+        "Существующая ветка — no-op только при совпадении SHA; никогда не перезаписывает ref."
     ),
     parameters={
         "owner": {"type": "string"},
         "repo": {"type": "string"},
         "branch": {"type": "string", "description": "Имя новой ветки"},
-        "from_branch": {"type": "string", "description": "Источник (по умолчанию main)"},
+        "from_branch": {"type": "string", "description": "Ветка/ref/SHA (default main); не сочетать с from_sha"},
+        "from_sha": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$",
+                     "description": "Точный 40-значный SHA коммита, в том числе из доступного форка"},
     },
     required=["owner", "repo", "branch"],
 )
 def create_branch(client: GitHubClient, **kwargs) -> str:
     owner, repo, branch = kwargs["owner"], kwargs["repo"], kwargs["branch"]
-    from_branch = kwargs.get("from_branch") or "main"
+    if not _valid_new_branch(branch):
+        raise ValueError("branch: недопустимое имя Git-ветки")
+    if "from_sha" in kwargs and "from_branch" in kwargs:
+        raise ValueError("Укажи только один источник: from_sha или from_branch")
+    source = kwargs.get("from_sha") if "from_sha" in kwargs else kwargs.get("from_branch", "main")
+    if not isinstance(source, str) or not source.strip():
+        raise ValueError("Источник должен быть непустой строкой")
+    if "from_sha" in kwargs and not re.fullmatch(r"[0-9a-fA-F]{40}", source):
+        raise ValueError("from_sha: требуется полный 40-значный SHA коммита")
+    prefix = f"/repos/{owner}/{repo}"
+    ref_path = f"{prefix}/git/ref/heads/{quote(branch, safe='')}"
 
-    # 0. Если ветка уже есть — не ошибка, а «уже существует» + SHA.
+    # Resolve a commit, not heads/<source>: this also accepts tags and fork SHAs.
     try:
-        existing = client._request(
-            "GET", f"/repos/{owner}/{repo}/git/ref/heads/{branch}"
-        ).json()
-        sha = existing["object"]["sha"]
-        return f"ℹ️ Ветка '{branch}' уже существует ({sha[:8]})"
-    except Exception:
-        pass
+        sha = client._request("GET", f"{prefix}/commits/{quote(source, safe='')}").json()["sha"]
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-fA-F]{40}", sha):
+            raise ValueError("GitHub не вернул полный SHA коммита")
+        sha = sha.lower()
+        if ("from_sha" in kwargs or re.fullmatch(r"[0-9a-fA-F]{40}", source)) and sha != source.lower():
+            raise ValueError("GitHub вернул другой SHA")
+    except Exception as error:
+        return f"❌ Не удалось разрешить источник '{source}' в {owner}/{repo}: {error}"
 
-    # 1. SHA источника.
+    def read_ref():
+        data = client._request("GET", ref_path).json()
+        if data.get("ref") != f"refs/heads/{branch}" or data.get("object", {}).get("type") != "commit":
+            raise ValueError("GitHub вернул неожиданный ref или тип объекта")
+        return data["object"]["sha"]
+
+    def existing_result(actual):
+        if actual == sha:
+            return f"ℹ️ Ветка '{branch}' уже существует на нужном SHA: {sha} (без изменений)"
+        return (f"❌ Конфликт: ветка '{branch}' уже существует на SHA {actual}, "
+                f"ожидался {sha}. Ветка не изменена.")
+
     try:
-        ref_resp = client._request(
-            "GET", f"/repos/{owner}/{repo}/git/ref/heads/{from_branch}"
-        )
-        sha = ref_resp.json()["object"]["sha"]
-    except Exception as e:
-        return (
-            f"❌ Не удалось получить '{from_branch}' в {owner}/{repo}: {e}\n"
-            f"   Проверь имя исходной ветки (list_branches) — часто это main, но бывает master."
-        )
+        return existing_result(read_ref())
+    except Exception as error:
+        # Auth, rate limit, transport and malformed responses are NOT absence.
+        if _branch_http_status(error) != 404:
+            return f"❌ Не удалось проверить целевую ветку '{branch}': {error}"
 
-    # 2. Создаём ref.
     try:
-        client._request(
-            "POST",
-            f"/repos/{owner}/{repo}/git/refs",
-            json={"ref": f"refs/heads/{branch}", "sha": sha},
-        )
-    except Exception as e:
-        return f"❌ Не удалось создать ветку '{branch}': {e}"
+        client._request("POST", f"{prefix}/git/refs",
+                        json={"ref": f"refs/heads/{branch}", "sha": sha})
+    except Exception as error:
+        # A concurrent creator may have won. No second POST and no PATCH/force.
+        if _branch_http_status(error) == 422:
+            try:
+                return existing_result(read_ref())
+            except Exception:
+                pass
+        return f"❌ Создание ветки '{branch}' не подтверждено: {error}. Проверь get_branch перед повтором."
 
-    return f"✅ Ветка '{branch}' создана из '{from_branch}' ({sha[:8]})"
+    try:
+        actual = read_ref()
+        if actual != sha:
+            raise ValueError(f"Ожидался {sha}, получен {actual}; ref не перезаписан")
+    except Exception as error:
+        return f"⚠️ GitHub принял создание '{branch}', но read-back не подтверждён: {error}"
+    return f"✅ Ветка '{branch}' создана из '{source}'. SHA: {sha}. Read-back подтверждён."
 
 
 @mcp_tool(

@@ -50,6 +50,8 @@ Snapshot [tool-inventory.json](docs/tool-inventory.json) получен лока
 ### Ветки / сравнение (6)
 `list_branches`, `get_branch`, `create_branch`, `delete_branch`, `compare_branches`, `merge_branches`
 
+`create_branch`: `from_branch` принимает ветку/ref/SHA; `from_sha` — точный полный SHA, включая доступный fork network. Без merge и перезаписи ref; no-op только при совпадении SHA, обязательный read-back. [Контракт копирования ветки](docs/create-branch.md).
+
 `compare_branches`: `max_files` (0–300, default 10) ограничивает summary и patches; `max_patch_bytes` / `max_patch_lines` ограничивают общий patch. SHA и completeness/truncation — в JSON-строке `metadata:`. Three-dot, не diff двух деревьев. [Подробный контракт](docs/compare-branches.md).
 
 ### Pull Requests (11)
