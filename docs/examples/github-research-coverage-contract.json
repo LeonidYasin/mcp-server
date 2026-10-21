@@ -1,0 +1,94 @@
+{
+  "kind": "design_contract_not_implemented_global_research_engine",
+  "user_priority": "GitHub-wide ideas, trends and new projects including zero-star, forks and personal-account work; CI debugging remains primary operational workflow",
+  "coverage": {
+    "target": "discoverable_public_github_repositories_across_topics",
+    "point_in_time_global_complete_claim": false,
+    "search_is_complete_registry": false,
+    "catalog_enumeration_is_atomic_snapshot": false,
+    "required_ledger": [
+      "source",
+      "query_or_listing_cursor",
+      "observed_at",
+      "returned_count",
+      "provider_total_hint",
+      "incomplete_results",
+      "truncated",
+      "next_cursor",
+      "unavailable_count",
+      "refresh_policy",
+      "missing_sources"
+    ],
+    "private_data_in_scope": false
+  },
+  "inclusion": {
+    "minimum_stars": 0,
+    "forks": "include_and_preserve_individual_repo_identity",
+    "personal_account_repositories": "include",
+    "unknown_owner_type": "retain_as_unknown",
+    "solo_author_inference_from_user_owner": false,
+    "missing_description_or_language": "retain_with_unknown_fields",
+    "archived": "retain_and_label",
+    "fork_family_dedup": "group_related_but_do_not_silently_drop_forks"
+  },
+  "findings": {
+    "similar_ideas": [
+      "explain_problem_or_solution_similarity_with_evidence",
+      "distinguish_names_topics_readme_code_evidence",
+      "separate_retrieval_from_model_hypotheses",
+      "missing_evidence_is_not_absence_of_analogs"
+    ],
+    "novelty_types": [
+      "newly_created_repository",
+      "newly_observed_in_index",
+      "new_release",
+      "new_observed_capability"
+    ],
+    "trends": {
+      "repeated_comparable_snapshots_required": true,
+      "single_search_page_proves_trend": false,
+      "separate": [
+        "popularity_change",
+        "project_activity_change",
+        "new_independent_project_count",
+        "fork_family_count"
+      ],
+      "stars_as_quality_or_demand_proof": false
+    },
+    "fork_originality_without_parent_comparison": "unknown"
+  },
+  "report_sections": [
+    "coverage_and_time_window",
+    "newly_observed_projects",
+    "similar_idea_clusters_with_evidence",
+    "observed_changes_or_trends_if_baseline_exists",
+    "zero_star_and_fork_inclusion",
+    "unknowns_and_recommended_drilldowns"
+  ],
+  "implementation_gates": [
+    "verify_sources_terms_pagination_and_fork_semantics",
+    "measure_catalog_enumeration_and_refresh_cost",
+    "choose_bounded_storage_and_checkpoint_design",
+    "independent_corpus_edge_case_tests",
+    "one_reproducible_report_before_launch"
+  ],
+  "infrastructure": {
+    "large_crawl_started": false,
+    "storage_service_deployed": false,
+    "paid_embeddings_or_models_authorized": false,
+    "vps_writes_or_cleanup_authorized_by_this_contract": false,
+    "separate_infrastructure_and_budget_approval_required": true
+  },
+  "existing_gaps": [
+    "search_repositories_returns_only_first_page_text",
+    "search_repositories_drops_incomplete_results",
+    "search_repositories_drops_repo_id_fork_owner_type_timestamps_and_next_cursor",
+    "no_global_catalog_or_snapshot_history",
+    "no_implemented_trend_or_similarity_engine"
+  ],
+  "issues": [
+    "#100",
+    "#102",
+    "#77"
+  ]
+}
