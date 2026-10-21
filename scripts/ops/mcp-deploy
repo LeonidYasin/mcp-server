@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# mcp-deploy — guarded rollout of LeonidYasin/mcp-server to an exact commit SHA.
+#
+#   mcp-deploy prod <40-hex-sha> [--downgrade]
+#   mcp-deploy test <40-hex-sha> [--downgrade]
+#   mcp-deploy status
+#
+# Installed root-owned at /usr/local/sbin/mcp-deploy. Run as root by the owner.
+# Steps: read-only preflight (STOP = nothing changed) -> private backup ->
+# detached checkout of the exact SHA -> import check -> restart -> post-checks ->
+# automatic rollback on any error. Last line: RESULT=...
+# Never prints secrets: from the service environment only ENABLE_* flags.
+set -Eeuo pipefail
+
+usage(){ sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; }
+
+case "${1:-}" in
+  -h|--help|help) usage; exit 0 ;;
+esac
+
+PROFILE="${1:-}"; TARGET="${2:-}"; OPT="${3:-}"
+DOWNGRADE=0
+
+profile(){
+  case "$1" in
+    prod) SVC=mcp-server.service; U=mcp;      DIR=/home/mcp/mcp-server;      PY=/home/mcp/mcp-server/.venv/bin/python; PORT=3001; STRICT=1 ;;
+    test) SVC=mcp-test.service;   U=mcp-test; DIR=/home/mcp-test/mcp-server; PY=/home/mcp-test/venv/bin/python;       PORT=3002; STRICT=0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [ "$PROFILE" = status ]; then
+  [ "$(id -u)" = 0 ] || { echo "RESULT=STOP нужен root"; exit 1; }
+  for p in prod test; do
+    profile "$p"
+    head=$(sudo -u "$U" -H git -C "$DIR" rev-parse HEAD 2>/dev/null || echo "?")
+    echo "$p: service=$(systemctl is-active "$SVC" 2>/dev/null || true) pid=$(systemctl show -p MainPID --value "$SVC" 2>/dev/null || echo ?) head=$head"
+  done
+  echo "RESULT=STATUS"
+  exit 0
+fi
+
+profile "$PROFILE" || { usage; echo "RESULT=STOP неизвестный профиль '$PROFILE'"; exit 2; }
+[[ "$TARGET" =~ ^[0-9a-f]{40}$ ]] || { usage; echo "RESULT=STOP нужен полный 40-символьный SHA"; exit 2; }
+case "$OPT" in
+  "") ;;
+  --downgrade) DOWNGRADE=1 ;;
+  *) usage; echo "RESULT=STOP неизвестный параметр '$OPT'"; exit 2 ;;
+esac
+
+stop(){ echo "STOP: $*"; echo "RESULT=STOP $PROFILE (ничего не изменено)"; exit 1; }
+[ "$(id -u)" = 0 ] || stop "нужен root"
+
+TS=$(date +%Y%m%d-%H%M%S)
+LOGDIR=/var/log/mcp-deploy
+install -d -m 700 "$LOGDIR"
+LOG="$LOGDIR/$PROFILE-$TS.log"
+exec > >(tee -a "$LOG") 2>&1
+
+exec 9>/run/mcp-deploy.lock
+flock -n 9 || stop "другой mcp-deploy уже выполняется"
+
+g(){ sudo -u "$U" -H git -C "$DIR" "$@"; }
+
+echo "== mcp-deploy $PROFILE -> $TARGET ($TS)"
+echo "== preflight"
+systemctl is-active --quiet "$SVC" || stop "$SVC не active"
+[ -x "$PY" ] || stop "нет $PY"
+OLD=$(g rev-parse HEAD)
+OLDPID=$(systemctl show -p MainPID --value "$SVC")
+echo "old=$OLD pid=$OLDPID"
+[ "$OLD" = "$TARGET" ] && { echo "RESULT=ALREADY_AT_TARGET $PROFILE $TARGET"; exit 0; }
+[ -z "$(g status --porcelain --untracked-files=no)" ] || stop "изменённые tracked-файлы в $DIR"
+echo "untracked (не трогаем):"; g status --porcelain || true
+
+FLAGS=$(tr '\0' '\n' < "/proc/$OLDPID/environ" | grep -E '^ENABLE_[A-Z_]+=' || true)
+echo "flags: $(echo "${FLAGS:-<не заданы>}" | tr '\n' ' ')"
+if [ "$STRICT" = 1 ] && echo "$FLAGS" | grep -E '^ENABLE_(AGENT_ROOMS|LOCAL_SHELL|LOCAL_TOOLS|SYNAPSE)=' | grep -qiE '=(1|true|yes|on)$'; then
+  stop "опасный флаг включён в production"
+fi
+df -h "$DIR" | tail -1
+
+echo "== fetch/verify"
+g fetch --quiet origin main
+g cat-file -e "$TARGET^{commit}" 2>/dev/null || g fetch --quiet origin "$TARGET" || true
+g cat-file -e "$TARGET^{commit}" 2>/dev/null || stop "target $TARGET не найден в origin"
+if [ "$STRICT" = 1 ]; then
+  g merge-base --is-ancestor "$TARGET" origin/main || stop "production: target не входит в origin/main"
+fi
+if ! g merge-base --is-ancestor "$OLD" "$TARGET"; then
+  [ "$DOWNGRADE" = 1 ] || stop "target не потомок текущего SHA (для отката нужен --downgrade)"
+  echo "downgrade/side-switch разрешён явно"
+fi
+DEPS=$(g diff --name-only "$OLD" "$TARGET" -- pyproject.toml 'requirements*.txt' setup.py setup.cfg)
+[ -z "$DEPS" ] || { echo "$DEPS"; stop "изменились зависимости — нужна отдельная операция"; }
+echo "changed files: $(g diff --name-only "$OLD" "$TARGET" | wc -l)"
+
+BK=/root/mcp-rollout-$PROFILE-$TS
+echo "== backup -> $BK"
+install -d -m 700 "$BK"
+echo "$OLD" > "$BK/old_sha"
+systemctl cat "$SVC" > "$BK/unit.txt"
+tar -C "$(dirname "$DIR")" -czf "$BK/checkout.tgz" --exclude=.venv "$(basename "$DIR")"
+
+rollback(){
+  trap - ERR
+  echo "!! ОШИБКА -> ROLLBACK на $OLD"
+  g checkout --quiet --detach "$OLD" || true
+  systemctl restart "$SVC" || true
+  sleep 5
+  echo "service после отката: $(systemctl is-active "$SVC" || true) head=$(g rev-parse HEAD || true)"
+  echo "RESULT=ROLLED_BACK $PROFILE old=$OLD backup=$BK log=$LOG"
+  exit 1
+}
+trap rollback ERR
+
+echo "== switch"
+g checkout --quiet --detach "$TARGET"
+sudo -u "$U" -H bash -c "cd '$DIR' && '$PY' -c 'import mcp_server.server; print(\"import ok\")'" >/dev/null
+echo "import ok"
+systemctl restart "$SVC"
+sleep 5
+systemctl is-active --quiet "$SVC"
+NEWPID=$(systemctl show -p MainPID --value "$SVC")
+[ "$NEWPID" != "$OLDPID" ]
+CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/health" || true)
+echo "health=$CODE"
+case "$CODE" in 2??|401|403) ;; *) false ;; esac
+[ "$(g rev-parse HEAD)" = "$TARGET" ]
+trap - ERR
+logger -t mcp-deploy "ROLLOUT_PASS $PROFILE $OLD -> $TARGET pid=$NEWPID"
+echo "RESULT=ROLLOUT_PASS $PROFILE old=$OLD new=$TARGET pid=$NEWPID backup=$BK log=$LOG"
