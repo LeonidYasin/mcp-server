@@ -130,14 +130,23 @@ def search_issues(client: GitHubClient, **kwargs) -> str:
 
 @mcp_tool(
     name="search_repositories",
-    description="Поиск репозиториев через GitHub Search (language:, stars:, topic:, org:, user:)",
+    description="Repository Search: legacy text by default; mode=public returns one bounded anonymous JSON page with coverage/continuation. Not a global index.",
     parameters={
         "query": {"type": "string", "description": "Запрос (синтаксис GitHub repo search)"},
         "limit": {"type": "integer", "description": "Сколько результатов (по умолчанию 20, максимум 100)"},
+        "mode": {"type": "string", "enum": ["legacy", "public"], "description": "Default legacy keeps authenticated text behavior; public is anonymous JSON, public repos only."},
+        "page": {"type": "integer", "description": "Public mode only: one page, default1; accessible Search window1000 results, no auto-pagination."},
+        "sort": {"type": "string", "enum": ["best_match", "stars", "forks", "help-wanted-issues", "updated"], "description": "Public mode only; default best_match. No hidden popularity filter."},
+        "order": {"type": "string", "enum": ["asc", "desc"], "description": "Public mode only: default desc; provider ignores unless sort is explicit."},
     },
     required=["query"],
 )
 def search_repositories(client: GitHubClient, **kwargs) -> str:
+    if kwargs.get("mode", "legacy") == "public":
+        from .repository_search import observe
+        return observe(client, **kwargs)
+    if kwargs.get("mode", "legacy") != "legacy" or set(kwargs) - {"query", "limit", "mode"}:
+        return "❌ Для структурированной страницы/page/sort/order используй mode=public; неизвестный mode/аргумент."
     res = _search(client, "/search/repositories", kwargs.get("query"), kwargs.get("limit", 20), "repositories")
     if isinstance(res, str):
         return res
