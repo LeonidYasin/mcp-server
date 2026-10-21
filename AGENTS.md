@@ -5,14 +5,25 @@ rules below.
 
 ## Operator scripts for the root Linux console
 
-The owner runs every VPS/root operation himself. Agents must never hand over a
-multi-line script to be pasted line by line into an interactive root shell
-(a pasted `set -e`/`exit` can kill the root session, and partial pastes leave the
-server half-changed).
+The owner runs every VPS/root operation himself by **pasting a block into the
+root console**. Agents give the script inline in chat, **not as a file** (no
+`scripts/ops/*.sh` to download, no `curl`/`wget` of scripts, never `curl | bash`).
 
-1. Put the script into a **file** in this repository: `scripts/ops/<task>.sh`,
-   mode `100755`, `#!/usr/bin/env bash`, `set -Eeuo pipefail`.
-2. Pin exact full SHAs, service, user and paths inside the file. No branch-name
+The block must be paste-safe in an interactive root shell:
+
+1. Wrap the whole script so it runs in a child bash, passed as an argument (stdin
+   stays the terminal, `set -e`/`exit` cannot kill the root session, a partial
+   paste does nothing until the closing line):
+
+```bash
+bash -c "$(cat <<'MCP_OPS_EOF'
+set -Eeuo pipefail
+# ... script body ...
+MCP_OPS_EOF
+)" 2>&1 | tee /root/<task>-$(date +%Y%m%d-%H%M%S).log
+```
+
+2. Pin exact full SHAs, service, user and paths in the body. No branch-name
    checkouts, no `reset --hard`, no force, no deleting unfamiliar files.
 3. Structure: read-only preflight with `STOP` (changes nothing) → private
    root-only backup → change → post-checks → automatic rollback on any error.
@@ -21,15 +32,8 @@ server half-changed).
 5. The last line is a machine-readable `RESULT=...` (for example
    `ROLLOUT_PASS`, `STOP`, `ROLLED_BACK`, `ALREADY_AT_TARGET`) that the owner sends
    back to the agent.
-6. Check syntax with `bash -n` and compute SHA-256 before handing it over.
-7. Give the owner **one paste-safe line** that downloads the file by **commit
-   SHA** (not branch), verifies SHA-256 and runs it as a file with a log:
-
-```bash
-cd /root && curl -fsSLo <task>.sh https://raw.githubusercontent.com/LeonidYasin/mcp-server/<commit-sha>/scripts/ops/<task>.sh && echo "<sha256>  <task>.sh" | sha256sum -c - && bash <task>.sh 2>&1 | tee <task>.log
-```
-
-Never use `curl | bash`. If the checksum fails, nothing is executed.
+6. Check the body with `bash -n` before handing it over; the body must not
+   contain the line `MCP_OPS_EOF`.
 
 ## Other standing constraints
 
