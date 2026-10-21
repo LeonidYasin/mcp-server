@@ -1,0 +1,1353 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-16T23:21:15.852599+00:00",
+  "runtime_commit": "f12aa3a33239af777c62a5cf1e3cdc03299647bf",
+  "runtime_files_sha256": {
+    "mcp_server/tools/github/repository_evidence.py": "a7fd1505a230b9d2c1f1d6fcf76d479d131ab7314ee70cfc33700ec6e234415e",
+    "mcp_server/tools/github/repo.py": "2dacba16d05d61361af51db26e7d6f2ab27d0cf252fe1b0c75685f9620c369e2",
+    "mcp_server/tools/github/repository_file_selection.py": "f49c4a38d7062d9c94ac5e66546306cb972cfdd8adef4baeb5a8273babca2767",
+    "mcp_server/tools/github/repository_excerpt_selection.py": "1b8244f8817a1cd3f7a823e4158df03dee73f3fd7bf94a111c512944ffe1d914",
+    "mcp_server/tools/github/repository_framework_hints.py": "163bd36dac2ba9b713b5b0e09e535ad4bda94536f1be2699f2ea5995243bcb7c"
+  },
+  "scope": "Analyst-selected explicit follow-up on two known regression repos. Local Flask MCP dispatcher, anonymous upstream, pinned commits. No deployed-host, runtime, security or complete repository validation.",
+  "verbatim_source_excerpts_committed": false,
+  "cases": [
+    {
+      "id": "pf-auth-and-routing",
+      "arguments": {
+        "owner": "peakflo",
+        "repo": "pfMCP",
+        "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+        "evidence_files": [
+          {
+            "path": "src/auth/clients/LocalAuthClient.py",
+            "start_line": 74,
+            "max_lines": 49
+          },
+          {
+            "path": "src/auth/clients/GumloopAuthClient.py",
+            "start_line": 18,
+            "max_lines": 41
+          },
+          {
+            "path": "src/auth/clients/NangoAuthClient.py",
+            "start_line": 47,
+            "max_lines": 32
+          },
+          {
+            "path": "src/servers/peakflo/credential_broker.py",
+            "start_line": 19,
+            "max_lines": 65
+          },
+          {
+            "path": "src/servers/peakflo/main.py",
+            "start_line": 323,
+            "max_lines": 41
+          },
+          {
+            "path": "src/servers/peakflo/tools/peakflo_api.py",
+            "start_line": 229,
+            "max_lines": 48
+          }
+        ],
+        "mode": "public_evidence",
+        "file_selection": "explicit",
+        "compare_parent": false
+      },
+      "elapsed_seconds": 1.138944,
+      "tool_text_utf8_bytes": 19878,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 971774821,
+          "full_name": "peakflo/pfMCP",
+          "fork": true,
+          "stars": 21,
+          "default_branch": "main",
+          "license_spdx": "GPL-3.0",
+          "parent": "andrewtdiz/guMCP",
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+          "sha": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+          "tree_sha": "060ec432370b3f41345b8f59f1416549b4b02cfd",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 782,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "src/auth/clients/GumloopAuthClient.py",
+            "src/auth/clients/LocalAuthClient.py",
+            "src/auth/clients/NangoAuthClient.py",
+            "src/servers/peakflo/credential_broker.py",
+            "src/servers/peakflo/main.py",
+            "src/servers/peakflo/tools/peakflo_api.py"
+          ]
+        },
+        "file_selection": {
+          "strategy": "explicit",
+          "selected": [
+            {
+              "path": "src/auth/clients/LocalAuthClient.py",
+              "start_line": 74,
+              "max_lines": 49
+            },
+            {
+              "path": "src/auth/clients/GumloopAuthClient.py",
+              "start_line": 18,
+              "max_lines": 41
+            },
+            {
+              "path": "src/auth/clients/NangoAuthClient.py",
+              "start_line": 47,
+              "max_lines": 32
+            },
+            {
+              "path": "src/servers/peakflo/credential_broker.py",
+              "start_line": 19,
+              "max_lines": 65
+            },
+            {
+              "path": "src/servers/peakflo/main.py",
+              "start_line": 323,
+              "max_lines": 41
+            },
+            {
+              "path": "src/servers/peakflo/tools/peakflo_api.py",
+              "start_line": 229,
+              "max_lines": 48
+            }
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP",
+            "params": {},
+            "attempted_at": "2026-10-16T23:21:14.024622+00:00",
+            "fetched_at": "2026-10-16T23:21:14.178127+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 32,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/commits/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+            "params": {},
+            "attempted_at": "2026-10-16T23:21:14.178372+00:00",
+            "fetched_at": "2026-10-16T23:21:14.305907+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 31,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/git/trees/060ec432370b3f41345b8f59f1416549b4b02cfd",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T23:21:14.306193+00:00",
+            "fetched_at": "2026-10-16T23:21:14.455873+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 30,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/auth/clients/LocalAuthClient.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:14.456393+00:00",
+            "fetched_at": "2026-10-16T23:21:14.580519+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 29,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/auth/clients/GumloopAuthClient.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:14.581050+00:00",
+            "fetched_at": "2026-10-16T23:21:14.719400+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 28,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/auth/clients/NangoAuthClient.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:14.720295+00:00",
+            "fetched_at": "2026-10-16T23:21:14.819947+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 27,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/servers/peakflo/credential_broker.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:14.821619+00:00",
+            "fetched_at": "2026-10-16T23:21:14.913955+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 26,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/servers/peakflo/main.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:14.914370+00:00",
+            "fetched_at": "2026-10-16T23:21:15.011288+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 25,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/servers/peakflo/tools/peakflo_api.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:15.015099+00:00",
+            "fetched_at": "2026-10-16T23:21:15.113493+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 24,
+              "x-ratelimit-reset": 1792194550
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 9,
+          "max_requests": 12,
+          "response_bytes": 344800,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "src/auth/clients/LocalAuthClient.py",
+            "blob_sha": "e5dd6ada43b0618a44563111787c0405d40a22dd",
+            "content_sha256": "371083414a88f6ec36638dffb626a96a9715bfa79119f3bf6257a0b638c43b7c",
+            "source": 3,
+            "total_lines": 122,
+            "start_line": 74,
+            "end_line": 122,
+            "returned_lines": 49,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 74,
+              "max_lines": 49
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/LocalAuthClient.py#L74-L122",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/auth/clients/GumloopAuthClient.py",
+            "blob_sha": "5664203ef970b50ac3cfa3c7dc05c84e990216b0",
+            "content_sha256": "79239f1f76cf207da260ccff1a6e6946fd025159cfe4967f9e381afffa178f0d",
+            "source": 4,
+            "total_lines": 58,
+            "start_line": 18,
+            "end_line": 58,
+            "returned_lines": 41,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 18,
+              "max_lines": 41
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/GumloopAuthClient.py#L18-L58",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/auth/clients/NangoAuthClient.py",
+            "blob_sha": "f00ea5db900433d9c6d0e6e5ced810e872518d50",
+            "content_sha256": "0a2e5cac34094dcb8aaa64bc6af96c2207c0f7e1c7feea415e563c470eec13d5",
+            "source": 5,
+            "total_lines": 535,
+            "start_line": 47,
+            "end_line": 78,
+            "returned_lines": 32,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 47,
+              "max_lines": 32
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/NangoAuthClient.py#L47-L78",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/servers/peakflo/credential_broker.py",
+            "blob_sha": "5bf6070907993f45068fe989ca838c6b44e3c497",
+            "content_sha256": "86375a4cc7112e297a9644dfce323fd3de8fbba11b3b6287bea09e237d090a21",
+            "source": 6,
+            "total_lines": 83,
+            "start_line": 19,
+            "end_line": 83,
+            "returned_lines": 65,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 19,
+              "max_lines": 65
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/credential_broker.py#L19-L83",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/servers/peakflo/main.py",
+            "blob_sha": "de5cc0a1ee5afdd51c3f1d5a4faeece885670e3f",
+            "content_sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768",
+            "source": 7,
+            "total_lines": 941,
+            "start_line": 323,
+            "end_line": 363,
+            "returned_lines": 41,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 323,
+              "max_lines": 41
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py#L323-L363",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/servers/peakflo/tools/peakflo_api.py",
+            "blob_sha": "94b2928b896cc1ba3683456bb9c5ce37ee50ed27",
+            "content_sha256": "2e6de5a3b039849acd47763ef5269760e0357c7db627b210520cff643ffd3cec",
+            "source": 8,
+            "total_lines": 389,
+            "start_line": 229,
+            "end_line": 276,
+            "returned_lines": 48,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 229,
+              "max_lines": 48
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/tools/peakflo_api.py#L229-L276",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "pf-storage-retries-and-http",
+      "arguments": {
+        "owner": "peakflo",
+        "repo": "pfMCP",
+        "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+        "evidence_files": [
+          {
+            "path": "src/auth/clients/LocalAuthClient.py",
+            "start_line": 25,
+            "max_lines": 30
+          },
+          {
+            "path": "src/auth/clients/NangoAuthClient.py",
+            "start_line": 170,
+            "max_lines": 55
+          },
+          {
+            "path": "src/servers/peakflo/main.py",
+            "start_line": 760,
+            "max_lines": 87
+          }
+        ],
+        "mode": "public_evidence",
+        "file_selection": "explicit",
+        "compare_parent": false
+      },
+      "elapsed_seconds": 0.070396,
+      "tool_text_utf8_bytes": 13023,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 971774821,
+          "full_name": "peakflo/pfMCP",
+          "fork": true,
+          "stars": 21,
+          "default_branch": "main",
+          "license_spdx": "GPL-3.0",
+          "parent": "andrewtdiz/guMCP",
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+          "sha": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+          "tree_sha": "060ec432370b3f41345b8f59f1416549b4b02cfd",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 782,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "src/auth/clients/LocalAuthClient.py",
+            "src/auth/clients/NangoAuthClient.py",
+            "src/servers/peakflo/main.py"
+          ]
+        },
+        "file_selection": {
+          "strategy": "explicit",
+          "selected": [
+            {
+              "path": "src/auth/clients/LocalAuthClient.py",
+              "start_line": 25,
+              "max_lines": 30
+            },
+            {
+              "path": "src/auth/clients/NangoAuthClient.py",
+              "start_line": 170,
+              "max_lines": 55
+            },
+            {
+              "path": "src/servers/peakflo/main.py",
+              "start_line": 760,
+              "max_lines": 87
+            }
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP",
+            "params": {},
+            "attempted_at": "2026-10-16T23:21:15.128953+00:00",
+            "fetched_at": "2026-10-16T23:21:15.148465+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 23,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/commits/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+            "params": {},
+            "attempted_at": "2026-10-16T23:21:15.148726+00:00",
+            "fetched_at": "2026-10-16T23:21:15.156062+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 22,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/git/trees/060ec432370b3f41345b8f59f1416549b4b02cfd",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T23:21:15.156239+00:00",
+            "fetched_at": "2026-10-16T23:21:15.167451+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 21,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/auth/clients/LocalAuthClient.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:15.168142+00:00",
+            "fetched_at": "2026-10-16T23:21:15.173069+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 20,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/auth/clients/NangoAuthClient.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:15.173572+00:00",
+            "fetched_at": "2026-10-16T23:21:15.179092+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 19,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/peakflo/pfMCP/contents/src/servers/peakflo/main.py",
+            "params": {
+              "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb"
+            },
+            "attempted_at": "2026-10-16T23:21:15.180628+00:00",
+            "fetched_at": "2026-10-16T23:21:15.186883+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 18,
+              "x-ratelimit-reset": 1792194550
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 6,
+          "max_requests": 12,
+          "response_bytes": 310035,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "src/auth/clients/LocalAuthClient.py",
+            "blob_sha": "e5dd6ada43b0618a44563111787c0405d40a22dd",
+            "content_sha256": "371083414a88f6ec36638dffb626a96a9715bfa79119f3bf6257a0b638c43b7c",
+            "source": 3,
+            "total_lines": 122,
+            "start_line": 25,
+            "end_line": 54,
+            "returned_lines": 30,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 25,
+              "max_lines": 30
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/LocalAuthClient.py#L25-L54",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/auth/clients/NangoAuthClient.py",
+            "blob_sha": "f00ea5db900433d9c6d0e6e5ced810e872518d50",
+            "content_sha256": "0a2e5cac34094dcb8aaa64bc6af96c2207c0f7e1c7feea415e563c470eec13d5",
+            "source": 4,
+            "total_lines": 535,
+            "start_line": 170,
+            "end_line": 224,
+            "returned_lines": 55,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 170,
+              "max_lines": 55
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/NangoAuthClient.py#L170-L224",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/servers/peakflo/main.py",
+            "blob_sha": "de5cc0a1ee5afdd51c3f1d5a4faeece885670e3f",
+            "content_sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768",
+            "source": 5,
+            "total_lines": 941,
+            "start_line": 760,
+            "end_line": 846,
+            "returned_lines": 87,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 760,
+              "max_lines": 87
+            },
+            "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py#L760-L846",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "imap-write-gate",
+      "arguments": {
+        "owner": "bradsjm",
+        "repo": "mail-imap-mcp-rs",
+        "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+        "evidence_files": [
+          {
+            "path": "src/config.rs",
+            "start_line": 107,
+            "max_lines": 44
+          },
+          {
+            "path": "src/server/write_ops.rs",
+            "start_line": 45,
+            "max_lines": 40
+          },
+          {
+            "path": "src/server/validation.rs",
+            "start_line": 404,
+            "max_lines": 8
+          }
+        ],
+        "mode": "public_evidence",
+        "file_selection": "explicit",
+        "compare_parent": false
+      },
+      "elapsed_seconds": 0.660168,
+      "tool_text_utf8_bytes": 9439,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 1168569818,
+          "full_name": "bradsjm/mail-imap-mcp-rs",
+          "fork": false,
+          "stars": 0,
+          "default_branch": "main",
+          "license_spdx": "MIT",
+          "parent": null,
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+          "sha": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+          "tree_sha": "e7d66b2da80572410744bfdea7c9859dae17da13",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 68,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "src/config.rs",
+            "src/server/validation.rs",
+            "src/server/write_ops.rs"
+          ]
+        },
+        "file_selection": {
+          "strategy": "explicit",
+          "selected": [
+            {
+              "path": "src/config.rs",
+              "start_line": 107,
+              "max_lines": 44
+            },
+            {
+              "path": "src/server/write_ops.rs",
+              "start_line": 45,
+              "max_lines": 40
+            },
+            {
+              "path": "src/server/validation.rs",
+              "start_line": 404,
+              "max_lines": 8
+            }
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs",
+            "params": {},
+            "attempted_at": "2026-10-16T23:21:15.201489+00:00",
+            "fetched_at": "2026-10-16T23:21:15.335975+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 17,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/commits/10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+            "params": {},
+            "attempted_at": "2026-10-16T23:21:15.336121+00:00",
+            "fetched_at": "2026-10-16T23:21:15.457665+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 16,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/git/trees/e7d66b2da80572410744bfdea7c9859dae17da13",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T23:21:15.457905+00:00",
+            "fetched_at": "2026-10-16T23:21:15.562140+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 15,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/src/config.rs",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T23:21:15.562353+00:00",
+            "fetched_at": "2026-10-16T23:21:15.647327+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 14,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/src/server/write_ops.rs",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T23:21:15.648778+00:00",
+            "fetched_at": "2026-10-16T23:21:15.743001+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 13,
+              "x-ratelimit-reset": 1792194550
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/bradsjm/mail-imap-mcp-rs/contents/src/server/validation.rs",
+            "params": {
+              "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13"
+            },
+            "attempted_at": "2026-10-16T23:21:15.760436+00:00",
+            "fetched_at": "2026-10-16T23:21:15.848919+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 12,
+              "x-ratelimit-reset": 1792194550
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 6,
+          "max_requests": 12,
+          "response_bytes": 167116,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "src/config.rs",
+            "blob_sha": "db8fd82e4dffe85620c3c9ab1388ea5452deee69",
+            "content_sha256": "6f8e07f729dee2fe3644b6142a09449096694b08557856b057bee88ad7099e48",
+            "source": 3,
+            "total_lines": 452,
+            "start_line": 107,
+            "end_line": 150,
+            "returned_lines": 44,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 107,
+              "max_lines": 44
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/config.rs#L107-L150",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/server/write_ops.rs",
+            "blob_sha": "381c8ec500783019a379e0624b592f7c6022dc1a",
+            "content_sha256": "6f96db0b5112165878727d4303062ffc840e216be7d7fdcd0195d1d1e599500a",
+            "source": 4,
+            "total_lines": 1563,
+            "start_line": 45,
+            "end_line": 84,
+            "returned_lines": 40,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 45,
+              "max_lines": 40
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/write_ops.rs#L45-L84",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          },
+          {
+            "path": "src/server/validation.rs",
+            "blob_sha": "11d2975dee1aa8b2f1443565fc0547f865fe9c1a",
+            "content_sha256": "ef6ea3c30f5df426b0d66e5876cac6396fa4fc4eb9562008756bfd55ca1499bb",
+            "source": 5,
+            "total_lines": 739,
+            "start_line": 404,
+            "end_line": 411,
+            "returned_lines": 8,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "range_selection": {
+              "strategy": "explicit",
+              "start_line": 404,
+              "max_lines": 8
+            },
+            "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/validation.rs#L404-L411",
+            "untrusted_source_text": true,
+            "planning_bytes_match_verified_content_sha256": true
+          }
+        ]
+      }
+    }
+  ],
+  "planning_reads": {
+    "records": [
+      {
+        "url": "https://raw.githubusercontent.com/peakflo/pfMCP/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/LocalAuthClient.py",
+        "path": "src/auth/clients/LocalAuthClient.py",
+        "repo": "peakflo/pfMCP",
+        "observed_at": "2026-10-16T23:19:49.190551+00:00",
+        "status": 200,
+        "bytes": 4320,
+        "sha256": "371083414a88f6ec36638dffb626a96a9715bfa79119f3bf6257a0b638c43b7c"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/peakflo/pfMCP/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/GumloopAuthClient.py",
+        "path": "src/auth/clients/GumloopAuthClient.py",
+        "repo": "peakflo/pfMCP",
+        "observed_at": "2026-10-16T23:19:49.292242+00:00",
+        "status": 200,
+        "bytes": 1951,
+        "sha256": "79239f1f76cf207da260ccff1a6e6946fd025159cfe4967f9e381afffa178f0d"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/peakflo/pfMCP/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/NangoAuthClient.py",
+        "path": "src/auth/clients/NangoAuthClient.py",
+        "repo": "peakflo/pfMCP",
+        "observed_at": "2026-10-16T23:19:49.375352+00:00",
+        "status": 200,
+        "bytes": 20347,
+        "sha256": "0a2e5cac34094dcb8aaa64bc6af96c2207c0f7e1c7feea415e563c470eec13d5"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/peakflo/pfMCP/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/credential_broker.py",
+        "path": "src/servers/peakflo/credential_broker.py",
+        "repo": "peakflo/pfMCP",
+        "observed_at": "2026-10-16T23:19:49.442336+00:00",
+        "status": 200,
+        "bytes": 2746,
+        "sha256": "86375a4cc7112e297a9644dfce323fd3de8fbba11b3b6287bea09e237d090a21"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/peakflo/pfMCP/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/tools/peakflo_api.py",
+        "path": "src/servers/peakflo/tools/peakflo_api.py",
+        "repo": "peakflo/pfMCP",
+        "observed_at": "2026-10-16T23:19:49.529025+00:00",
+        "status": 200,
+        "bytes": 18127,
+        "sha256": "2e6de5a3b039849acd47763ef5269760e0357c7db627b210520cff643ffd3cec"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/peakflo/pfMCP/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py",
+        "path": "src/servers/peakflo/main.py",
+        "repo": "peakflo/pfMCP",
+        "observed_at": "2026-10-16T23:19:49.628651+00:00",
+        "status": 200,
+        "bytes": 37397,
+        "sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/bradsjm/mail-imap-mcp-rs/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/config.rs",
+        "path": "src/config.rs",
+        "repo": "bradsjm/mail-imap-mcp-rs",
+        "observed_at": "2026-10-16T23:19:49.704913+00:00",
+        "status": 200,
+        "bytes": 16702,
+        "sha256": "6f8e07f729dee2fe3644b6142a09449096694b08557856b057bee88ad7099e48"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/bradsjm/mail-imap-mcp-rs/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/write_ops.rs",
+        "path": "src/server/write_ops.rs",
+        "repo": "bradsjm/mail-imap-mcp-rs",
+        "observed_at": "2026-10-16T23:19:49.795635+00:00",
+        "status": 200,
+        "bytes": 57471,
+        "sha256": "6f96db0b5112165878727d4303062ffc840e216be7d7fdcd0195d1d1e599500a"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/bradsjm/mail-imap-mcp-rs/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/validation.rs",
+        "path": "src/server/validation.rs",
+        "repo": "bradsjm/mail-imap-mcp-rs",
+        "observed_at": "2026-10-16T23:19:49.890403+00:00",
+        "status": 200,
+        "bytes": 24679,
+        "sha256": "ef6ea3c30f5df426b0d66e5876cac6396fa4fc4eb9562008756bfd55ca1499bb"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/bradsjm/mail-imap-mcp-rs/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/provider.rs",
+        "path": "src/server/provider.rs",
+        "repo": "bradsjm/mail-imap-mcp-rs",
+        "observed_at": "2026-10-16T23:19:49.972814+00:00",
+        "status": 200,
+        "bytes": 5504,
+        "sha256": "541050757f42d7474657eda6f2a298f1a0a1cb54cd1b568f59e4232fdaf61952"
+      }
+    ],
+    "total_bytes": 189244,
+    "identity_and_blob_verified": false,
+    "purpose": "Path/range planning only. Final evidence requires independent Git tree/blob/Contents verification."
+  },
+  "protocol": {
+    "planned_at": "2026-10-16T23:19:49.155821+00:00",
+    "scope": "Question-led follow-up on two known regression repositories, not discovery/held-out/runtime validation.",
+    "max_raw_gets": 10,
+    "max_file_bytes": 131072,
+    "max_total_bytes": 1048576,
+    "execute_source": false,
+    "cases": [
+      {
+        "owner": "peakflo",
+        "repo": "pfMCP",
+        "sha": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+        "questions": [
+          "Where are credentials stored/retrieved?",
+          "How are Nango/Gumloop responses checked?",
+          "Which request constraints and write operations appear in the Peakflo call chain?"
+        ],
+        "paths": [
+          "src/auth/clients/LocalAuthClient.py",
+          "src/auth/clients/GumloopAuthClient.py",
+          "src/auth/clients/NangoAuthClient.py",
+          "src/servers/peakflo/credential_broker.py",
+          "src/servers/peakflo/tools/peakflo_api.py",
+          "src/servers/peakflo/main.py"
+        ]
+      },
+      {
+        "owner": "bradsjm",
+        "repo": "mail-imap-mcp-rs",
+        "sha": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+        "questions": [
+          "What are write defaults and validation gates?",
+          "Which operation paths check them?",
+          "Do provider boundaries enforce the same gates?"
+        ],
+        "paths": [
+          "src/config.rs",
+          "src/server/write_ops.rs",
+          "src/server/validation.rs",
+          "src/server/provider.rs"
+        ]
+      }
+    ]
+  },
+  "explicit_range_plan": {
+    "planned_at": "2026-10-16T23:21:13.979817+00:00",
+    "scope": "Ranges selected by analyst after bounded raw planning reads; not independent/automated relevance validation.",
+    "cases": [
+      {
+        "id": "pf-auth-and-routing",
+        "owner": "peakflo",
+        "repo": "pfMCP",
+        "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+        "evidence_files": [
+          {
+            "path": "src/auth/clients/LocalAuthClient.py",
+            "start_line": 74,
+            "max_lines": 49
+          },
+          {
+            "path": "src/auth/clients/GumloopAuthClient.py",
+            "start_line": 18,
+            "max_lines": 41
+          },
+          {
+            "path": "src/auth/clients/NangoAuthClient.py",
+            "start_line": 47,
+            "max_lines": 32
+          },
+          {
+            "path": "src/servers/peakflo/credential_broker.py",
+            "start_line": 19,
+            "max_lines": 65
+          },
+          {
+            "path": "src/servers/peakflo/main.py",
+            "start_line": 323,
+            "max_lines": 41
+          },
+          {
+            "path": "src/servers/peakflo/tools/peakflo_api.py",
+            "start_line": 229,
+            "max_lines": 48
+          }
+        ]
+      },
+      {
+        "id": "pf-storage-retries-and-http",
+        "owner": "peakflo",
+        "repo": "pfMCP",
+        "ref": "25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb",
+        "evidence_files": [
+          {
+            "path": "src/auth/clients/LocalAuthClient.py",
+            "start_line": 25,
+            "max_lines": 30
+          },
+          {
+            "path": "src/auth/clients/NangoAuthClient.py",
+            "start_line": 170,
+            "max_lines": 55
+          },
+          {
+            "path": "src/servers/peakflo/main.py",
+            "start_line": 760,
+            "max_lines": 87
+          }
+        ]
+      },
+      {
+        "id": "imap-write-gate",
+        "owner": "bradsjm",
+        "repo": "mail-imap-mcp-rs",
+        "ref": "10a73f41b3851e3cd7e3a07ba823088e1a264d13",
+        "evidence_files": [
+          {
+            "path": "src/config.rs",
+            "start_line": 107,
+            "max_lines": 44
+          },
+          {
+            "path": "src/server/write_ops.rs",
+            "start_line": 45,
+            "max_lines": 40
+          },
+          {
+            "path": "src/server/validation.rs",
+            "start_line": 404,
+            "max_lines": 8
+          }
+        ]
+      }
+    ]
+  },
+  "claim_ledger": [
+    {
+      "id": "local-json",
+      "level": "static_observation",
+      "text": "Local client joins a credentials directory, service name and user-id filename, reads JSON and writes serialized credentials with open(...,\"w\"). Directory defaults/configuration are visible; effective permissions and deployment exposure are unknown.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/auth/clients/LocalAuthClient.py",
+          "start_line": 74,
+          "end_line": 122,
+          "content_sha256": "371083414a88f6ec36638dffb626a96a9715bfa79119f3bf6257a0b638c43b7c",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/LocalAuthClient.py#L74-L122"
+        },
+        {
+          "case_id": "pf-storage-retries-and-http",
+          "path": "src/auth/clients/LocalAuthClient.py",
+          "start_line": 25,
+          "end_line": 54,
+          "content_sha256": "371083414a88f6ec36638dffb626a96a9715bfa79119f3bf6257a0b638c43b7c",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/LocalAuthClient.py#L25-L54"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "gumloop-http",
+      "level": "static_observation",
+      "text": "The shown Gumloop requests.get passes a Bearer header but no explicit timeout argument; non-200 responses are logged with response.text and return None.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/auth/clients/GumloopAuthClient.py",
+          "start_line": 35,
+          "end_line": 58,
+          "content_sha256": "79239f1f76cf207da260ccff1a6e6946fd025159cfe4967f9e381afffa178f0d",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/GumloopAuthClient.py#L35-L58"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "nango-retries",
+      "level": "static_observation",
+      "text": "Shown Nango sync fetch uses request timeout=10 seconds, up to 3 attempts, a 404 return-None branch and doubling sleep delay between eligible attempts. Retryable status-set values and async behavior were not returned in these windows.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/auth/clients/NangoAuthClient.py",
+          "start_line": 54,
+          "end_line": 60,
+          "content_sha256": "0a2e5cac34094dcb8aaa64bc6af96c2207c0f7e1c7feea415e563c470eec13d5",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/NangoAuthClient.py#L54-L60"
+        },
+        {
+          "case_id": "pf-storage-retries-and-http",
+          "path": "src/auth/clients/NangoAuthClient.py",
+          "start_line": 170,
+          "end_line": 224,
+          "content_sha256": "0a2e5cac34094dcb8aaa64bc6af96c2207c0f7e1c7feea415e563c470eec13d5",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/auth/clients/NangoAuthClient.py#L170-L224"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "broker-client",
+      "level": "static_observation",
+      "text": "Broker client requires base URL and service secret, POSTs tenantId/sourceSystem/purpose with Bearer auth and a 10-second timeout, accepts 2xx and returns response.json(); non-2xx raises ValueError containing response.text. Server-side authorization/refresh/token lifetime are not verified.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/servers/peakflo/credential_broker.py",
+          "start_line": 19,
+          "end_line": 83,
+          "content_sha256": "86375a4cc7112e297a9644dfce323fd3de8fbba11b3b6287bea09e237d090a21",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/credential_broker.py#L19-L83"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "tenant-routing-guard",
+      "level": "static_observation",
+      "text": "Routing helper checks tenantId presence and matching sourceSystem before constructing an inner server with a credential resolver and dispatching a prefixed tool. Tenant-context resolution and downstream authorization remain unverified.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/servers/peakflo/main.py",
+          "start_line": 323,
+          "end_line": 363,
+          "content_sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py#L323-L363"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "financial-tool-surface",
+      "level": "static_observation",
+      "text": "Tool declarations include internal task creation, bill/PO matching and collection-workflow edits. A separate request branch sets POST for create_cash_advance_payment; declarations are not proof of successful business actions.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/servers/peakflo/tools/peakflo_api.py",
+          "start_line": 229,
+          "end_line": 276,
+          "content_sha256": "2e6de5a3b039849acd47763ef5269760e0357c7db627b210520cff643ffd3cec",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/tools/peakflo_api.py#L229-L276"
+        },
+        {
+          "case_id": "pf-storage-retries-and-http",
+          "path": "src/servers/peakflo/main.py",
+          "start_line": 788,
+          "end_line": 791,
+          "content_sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py#L788-L791"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "http-response-logging",
+      "level": "review_question",
+      "text": "The shown request path logs response.text, returns parsed/raw response data and uses a 60-second timeout. Review log access, retention and redaction before production; no real secret disclosure was demonstrated.",
+      "evidence": [
+        {
+          "case_id": "pf-storage-retries-and-http",
+          "path": "src/servers/peakflo/main.py",
+          "start_line": 799,
+          "end_line": 831,
+          "content_sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py#L799-L831"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "imap-default-write-off",
+      "level": "static_observation",
+      "text": "Environment loader calls parse_bool_env(\"MAIL_IMAP_WRITE_ENABLED\", false). Exact boolean-parser semantics were not included in this follow-up.",
+      "evidence": [
+        {
+          "case_id": "imap-write-gate",
+          "path": "src/config.rs",
+          "start_line": 132,
+          "end_line": 135,
+          "content_sha256": "6f8e07f729dee2fe3644b6142a09449096694b08557856b057bee88ad7099e48",
+          "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/config.rs#L132-L135"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "imap-entry-gates",
+      "level": "static_observation",
+      "text": "The three shown mutation entry methods invoke require_write_enabled before validation/preflight/start; the shown helper returns an error when config.write_enabled is false. This is not exhaustive reachability/bypass analysis.",
+      "evidence": [
+        {
+          "case_id": "imap-write-gate",
+          "path": "src/server/write_ops.rs",
+          "start_line": 45,
+          "end_line": 84,
+          "content_sha256": "6f96db0b5112165878727d4303062ffc840e216be7d7fdcd0195d1d1e599500a",
+          "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/write_ops.rs#L45-L84"
+        },
+        {
+          "case_id": "imap-write-gate",
+          "path": "src/server/validation.rs",
+          "start_line": 404,
+          "end_line": 411,
+          "content_sha256": "ef6ea3c30f5df426b0d66e5876cac6396fa4fc4eb9562008756bfd55ca1499bb",
+          "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/server/validation.rs#L404-L411"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    },
+    {
+      "id": "business-hypothesis",
+      "level": "commercial_hypothesis",
+      "text": "A tenant-context finance workflow connector may support a more domain-specific offering than generic repository summaries; a write-disabled-by-default mail connector may fit read-first mail workflows. This is a hypothesis, not demand, revenue, legal or competitive validation.",
+      "evidence": [
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/servers/peakflo/main.py",
+          "start_line": 323,
+          "end_line": 363,
+          "content_sha256": "5ed1e9842fcddc21946ccffb7aa5cc8469a76e9ad70edab2fc5ac66a2ed03768",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/main.py#L323-L363"
+        },
+        {
+          "case_id": "pf-auth-and-routing",
+          "path": "src/servers/peakflo/tools/peakflo_api.py",
+          "start_line": 229,
+          "end_line": 276,
+          "content_sha256": "2e6de5a3b039849acd47763ef5269760e0357c7db627b210520cff643ffd3cec",
+          "url": "https://github.com/peakflo/pfMCP/blob/25b8cb988d6e0ca23dce445bc2bdb47fb897fdfb/src/servers/peakflo/tools/peakflo_api.py#L229-L276"
+        },
+        {
+          "case_id": "imap-write-gate",
+          "path": "src/config.rs",
+          "start_line": 132,
+          "end_line": 135,
+          "content_sha256": "6f8e07f729dee2fe3644b6142a09449096694b08557856b057bee88ad7099e48",
+          "url": "https://github.com/bradsjm/mail-imap-mcp-rs/blob/10a73f41b3851e3cd7e3a07ba823088e1a264d13/src/config.rs#L132-L135"
+        }
+      ],
+      "semantic_claim_automatically_verified": false
+    }
+  ],
+  "unknowns": [
+    "Broker server implementation, credential expiry/refresh and tenant-token binding",
+    "Effective filesystem permissions, path-input trust boundaries and log redaction/retention",
+    "Actual upstream API and IMAP behavior; complete mutation path and caller-authorization coverage",
+    "Fork-versus-parent differences, originality and license suitability for a product",
+    "Market demand, willingness to pay, competition and unit economics"
+  ],
+  "verification": {
+    "full_tests_passed": 850,
+    "extracted_sdist_tests_passed": 850,
+    "network_gets": 21,
+    "response_body_bytes": 821951,
+    "mcp_text_bytes": 42340,
+    "source_windows": 12,
+    "raw_planning_reads": 10,
+    "planning_response_bytes": 189244,
+    "runtime_changed": false,
+    "foreign_code_executed": false,
+    "independent_held_out": false,
+    "registry_counts": {
+      "default": 113,
+      "all_enabled": 143
+    },
+    "local_document_links_checked": 119,
+    "build_artifacts": [
+      "mcp_github_server-0.4.3.tar.gz",
+      "mcp_github_server-0.4.3-py3-none-any.whl"
+    ]
+  }
+}

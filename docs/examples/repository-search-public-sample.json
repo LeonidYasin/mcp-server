@@ -1,0 +1,778 @@
+{
+  "kind": "manual_local_dispatch_repository_discovery_sample_not_global_report_or_deployment",
+  "measured_started_at": "2026-10-16T20:49:46.800903+00:00",
+  "candidate_base_commit": "0c12a3753efe749c4f16b751da569f4461d83a15",
+  "candidate_file_sha256": {
+    "mcp_server/tools/github/search.py": "cb325eb1e7ec204d4ea4ea1cb5cca5dcc1d5c2296b3dabee42287067cd200d4e",
+    "mcp_server/tools/github/repository_search.py": "cc642e23fe78b8f29220aa5b5824d563322f2326c66f21211caab077b0fed6c8"
+  },
+  "topic_scope": "model context protocol; deliberately one thematic test, not all GitHub topics",
+  "planned_queries": 3,
+  "executed_task_calls": 3,
+  "unattempted_query_labels": [],
+  "local_discovery_calls": 1,
+  "local_catalog_tools": 113,
+  "local_catalog_http_body_bytes": 113592,
+  "selected_tool_definition_compact_utf8_bytes": 1100,
+  "anonymous_github_gets": 3,
+  "github_calls": [
+    {
+      "method": "GET",
+      "url": "https://api.github.com/search/repositories?q=%22model+context+protocol%22+stars%3A0+fork%3Atrue&per_page=5&page=1&sort=updated&order=desc",
+      "authorization_forwarded": false,
+      "cookie_forwarded": false,
+      "http_status": 200
+    },
+    {
+      "method": "GET",
+      "url": "https://api.github.com/search/repositories?q=%22model+context+protocol%22+fork%3Aonly&per_page=5&page=1&sort=updated&order=desc",
+      "authorization_forwarded": false,
+      "cookie_forwarded": false,
+      "http_status": 200
+    },
+    {
+      "method": "GET",
+      "url": "https://api.github.com/search/repositories?q=%22model+context+protocol%22+created%3A%3E%3D2026-10-09+fork%3Atrue&per_page=5&page=1&sort=updated&order=desc",
+      "authorization_forwarded": false,
+      "cookie_forwarded": false,
+      "http_status": 200
+    }
+  ],
+  "records": [
+    {
+      "label": "zero_star",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": {
+          "name": "search_repositories",
+          "arguments": {
+            "query": "\"model context protocol\" stars:0 fork:true",
+            "mode": "public",
+            "limit": 5,
+            "page": 1,
+            "sort": "updated",
+            "order": "desc"
+          }
+        }
+      },
+      "elapsed_task_seconds": 0.5438,
+      "request_http_body_bytes": 222,
+      "response_http_body_bytes": 6390,
+      "tool_result_utf8_bytes": 5747,
+      "local_http_status": 200,
+      "local_protocol_error": null,
+      "result": {
+        "schema_version": 1,
+        "mode": "public_repository_search_page",
+        "state": "observed",
+        "items": [
+          {
+            "id": 1409472803,
+            "full_name": "Furox-Art/scientific-toolkit",
+            "url": "https://github.com/Furox-Art/scientific-toolkit",
+            "owner": {
+              "id": 177975472,
+              "login": "Furox-Art",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "Python",
+            "topics": [
+              "ai-agents",
+              "api",
+              "cross-platform",
+              "integration",
+              "interoperability",
+              "mcp",
+              "model-context-protocol",
+              "open-source",
+              "python",
+              "research",
+              "research-tools",
+              "scientific-computing",
+              "scientific-workflows",
+              "unified-toolkit"
+            ],
+            "description": "A unified open-source scientific toolkit integrating seven research and AI software projects through the Model Context Protocol (MCP).",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-07T23:10:05+00:00",
+            "updated_at": "2026-10-16T20:47:18+00:00",
+            "pushed_at": "2026-10-16T20:47:14+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1378439235,
+            "full_name": "api-evangelist/tooloracle-io",
+            "url": "https://github.com/api-evangelist/tooloracle-io",
+            "owner": {
+              "id": 3026872,
+              "login": "api-evangelist",
+              "type": "Organization"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": null,
+            "topics": [
+              "a2a",
+              "agent-discovery",
+              "agent-infrastructure",
+              "apis-json",
+              "blockchain",
+              "company",
+              "compliance",
+              "germany",
+              "mcp",
+              "micropayments",
+              "regtech",
+              "sanctions-screening",
+              "x402"
+            ],
+            "description": "FeedOracle Technologies (Herford, Germany) operates two agent-facing brands on one shared OAuth 2.1 identity layer. ToolOracle / OracleNet at tooloracle.io is a",
+            "description_truncated": true,
+            "untrusted_source_text": true,
+            "created_at": "2026-09-20T14:42:34+00:00",
+            "updated_at": "2026-10-16T20:46:39+00:00",
+            "pushed_at": "2026-10-16T20:46:35+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422638720,
+            "full_name": "nguyenkmb/skills-integrate-mcp-with-copilot",
+            "url": "https://github.com/nguyenkmb/skills-integrate-mcp-with-copilot",
+            "owner": {
+              "id": 67290615,
+              "login": "nguyenkmb",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "JavaScript",
+            "topics": [],
+            "description": "Exercise: Integrate Model Context Protocol with GitHub Copilot",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:24:19+00:00",
+            "updated_at": "2026-10-16T20:45:40+00:00",
+            "pushed_at": "2026-10-16T20:45:36+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1234530131,
+            "full_name": "Vocametrix/vocametrix-mcp",
+            "url": "https://github.com/Vocametrix/vocametrix-mcp",
+            "owner": {
+              "id": 308531717,
+              "login": "Vocametrix",
+              "type": "Organization"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "TypeScript",
+            "topics": [
+              "acoustic-analysis",
+              "agentic",
+              "ai-agents",
+              "avqi",
+              "claude",
+              "claude-desktop",
+              "cursor",
+              "dysphonia",
+              "healthcare-api",
+              "llm-tools",
+              "mcp",
+              "mcp-server",
+              "model-context-protocol",
+              "praat",
+              "pronunciation-assessment",
+              "slp",
+              "speech-therapy",
+              "vocametrix",
+              "voice-analysis",
+              "zed"
+            ],
+            "description": "Official Model Context Protocol (MCP) server for Vocametrix — bring clinical voice analysis (AVQI, DSI, jitter/shimmer, pronunciation assessment, prosody simila",
+            "description_truncated": true,
+            "untrusted_source_text": true,
+            "created_at": "2026-05-10T09:59:09+00:00",
+            "updated_at": "2026-10-16T20:45:27+00:00",
+            "pushed_at": "2026-10-16T20:46:20+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1272186831,
+            "full_name": "OneZero-Network/mcp-threat-intel",
+            "url": "https://github.com/OneZero-Network/mcp-threat-intel",
+            "owner": {
+              "id": 220872393,
+              "login": "OneZero-Network",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": null,
+            "topics": [],
+            "description": "Daily automated OWASP vulnerability scans for open-source Model Context Protocol (MCP) tools.",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-06-17T11:20:12+00:00",
+            "updated_at": "2026-10-16T20:44:57+00:00",
+            "pushed_at": "2026-10-16T20:44:53+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          }
+        ],
+        "reported_total_count": 124306,
+        "incomplete_results": false,
+        "returned": 5,
+        "raw_received": 5,
+        "excluded": 0,
+        "duplicates": 0,
+        "source": {
+          "url": "https://api.github.com/search/repositories",
+          "query": {
+            "q": "\"model context protocol\" stars:0 fork:true",
+            "per_page": 5,
+            "page": 1,
+            "sort": "updated",
+            "order": "desc"
+          },
+          "attempted_at": "2026-10-16T20:49:46.844254+00:00",
+          "fetched_at": "2026-10-16T20:49:47.385306+00:00",
+          "http_status": 200,
+          "error": null,
+          "rate_hints": {
+            "x-ratelimit-limit": 10,
+            "x-ratelimit-remaining": 9,
+            "x-ratelimit-reset": 1792183846
+          }
+        },
+        "next_request": {
+          "query": "\"model context protocol\" stars:0 fork:true",
+          "mode": "public",
+          "limit": 5,
+          "page": 2,
+          "sort": "updated",
+          "order": "desc"
+        },
+        "error": null,
+        "coverage": {
+          "global_complete": false,
+          "complete_query_results": false,
+          "has_more": true,
+          "search_result_window": 1000,
+          "search_window_limited": true,
+          "stop_reason": "next_page_observed"
+        },
+        "budget": {
+          "requests": 1,
+          "max_requests": 1,
+          "body_cap_bytes": 1048576,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 8,
+          "socket_timeout_seconds_max": 5,
+          "response_bytes": 29929
+        },
+        "limitations": [
+          "One live Search page, not a catalog, snapshot history, trend or similarity engine.",
+          "Provider query defines scope. Fork inclusion requires an explicit supported query qualifier such as fork:true.",
+          "No implicit star threshold, automatic pagination, retries, parent lookup, code/README fetch or writes.",
+          "Search indexing/visibility and cross-page mutation limit coverage; empty results do not prove no analogs.",
+          "Descriptions/topics/names are untrusted data. Literal credential exclusion is not semantic sanitization.",
+          "Owner type does not prove solo authorship; fork originality/parent are not checked."
+        ]
+      }
+    },
+    {
+      "label": "forks",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+          "name": "search_repositories",
+          "arguments": {
+            "query": "\"model context protocol\" fork:only",
+            "mode": "public",
+            "limit": 5,
+            "page": 1,
+            "sort": "updated",
+            "order": "desc"
+          }
+        }
+      },
+      "elapsed_task_seconds": 0.3035,
+      "request_http_body_bytes": 214,
+      "response_http_body_bytes": 5643,
+      "tool_result_utf8_bytes": 5083,
+      "local_http_status": 200,
+      "local_protocol_error": null,
+      "result": {
+        "schema_version": 1,
+        "mode": "public_repository_search_page",
+        "state": "observed",
+        "items": [
+          {
+            "id": 1397244103,
+            "full_name": "adeyholar/python-sdk",
+            "url": "https://github.com/adeyholar/python-sdk",
+            "owner": {
+              "id": 190180664,
+              "login": "adeyholar",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": true,
+            "archived": false,
+            "language": "Python",
+            "topics": [],
+            "description": "The official Python SDK for Model Context Protocol servers and clients",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-09-30T07:05:50+00:00",
+            "updated_at": "2026-10-16T20:27:34+00:00",
+            "pushed_at": "2026-10-16T20:27:17+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422631447,
+            "full_name": "Johnmelo/codebadger-mola",
+            "url": "https://github.com/Johnmelo/codebadger-mola",
+            "owner": {
+              "id": 4473723,
+              "login": "Johnmelo",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": true,
+            "archived": false,
+            "language": "Python",
+            "topics": [],
+            "description": "🦡 codebadger is a containerized Model Context Protocol (MCP) server that gives AI agents and LLMs deep, queryable access to a codebase's structure and data flow",
+            "description_truncated": true,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:15:21+00:00",
+            "updated_at": "2026-10-16T20:17:26+00:00",
+            "pushed_at": "2026-10-16T20:17:20+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1271891836,
+            "full_name": "allisonbraz/notebooklm-mcp-cli",
+            "url": "https://github.com/allisonbraz/notebooklm-mcp-cli",
+            "owner": {
+              "id": 215260299,
+              "login": "allisonbraz",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": true,
+            "archived": false,
+            "language": "Python",
+            "topics": [],
+            "description": "Programmatic access to Google NotebookLM — via command-line interface (CLI), Model Context Protocol (MCP) server, and AI agent skills.",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-06-17T05:23:37+00:00",
+            "updated_at": "2026-10-16T20:15:16+00:00",
+            "pushed_at": "2026-10-16T20:14:32+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422647978,
+            "full_name": "tourhabk-ui/mcphq-awesome-mcp-servers",
+            "url": "https://github.com/tourhabk-ui/mcphq-awesome-mcp-servers",
+            "owner": {
+              "id": 281047888,
+              "login": "tourhabk-ui",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": true,
+            "archived": false,
+            "language": null,
+            "topics": [],
+            "description": "A curated catalog of Model Context Protocol (MCP) servers for discovering and integrating AI tools, data sources, and services. Explore MCP servers across datab",
+            "description_truncated": true,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:35:59+00:00",
+            "updated_at": "2026-10-16T20:35:59+00:00",
+            "pushed_at": "2026-10-16T20:36:25+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422639098,
+            "full_name": "player4sir/Godot-MCP",
+            "url": "https://github.com/player4sir/Godot-MCP",
+            "owner": {
+              "id": 31569037,
+              "login": "player4sir",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": true,
+            "archived": false,
+            "language": null,
+            "topics": [],
+            "description": "Godot-MCP — Model Context Protocol (MCP) integration for the Godot Engine. AI tools for the Godot Editor in C#, with cloud connection to ai-game.dev. Apache-2.0",
+            "description_truncated": true,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:24:48+00:00",
+            "updated_at": "2026-10-16T20:24:48+00:00",
+            "pushed_at": "2026-10-16T20:02:22+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          }
+        ],
+        "reported_total_count": 106567,
+        "incomplete_results": false,
+        "returned": 5,
+        "raw_received": 5,
+        "excluded": 0,
+        "duplicates": 0,
+        "source": {
+          "url": "https://api.github.com/search/repositories",
+          "query": {
+            "q": "\"model context protocol\" fork:only",
+            "per_page": 5,
+            "page": 1,
+            "sort": "updated",
+            "order": "desc"
+          },
+          "attempted_at": "2026-10-16T20:49:47.387605+00:00",
+          "fetched_at": "2026-10-16T20:49:47.689573+00:00",
+          "http_status": 200,
+          "error": null,
+          "rate_hints": {
+            "x-ratelimit-limit": 10,
+            "x-ratelimit-remaining": 8,
+            "x-ratelimit-reset": 1792183846
+          }
+        },
+        "next_request": {
+          "query": "\"model context protocol\" fork:only",
+          "mode": "public",
+          "limit": 5,
+          "page": 2,
+          "sort": "updated",
+          "order": "desc"
+        },
+        "error": null,
+        "coverage": {
+          "global_complete": false,
+          "complete_query_results": false,
+          "has_more": true,
+          "search_result_window": 1000,
+          "search_window_limited": true,
+          "stop_reason": "next_page_observed"
+        },
+        "budget": {
+          "requests": 1,
+          "max_requests": 1,
+          "body_cap_bytes": 1048576,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 8,
+          "socket_timeout_seconds_max": 5,
+          "response_bytes": 28371
+        },
+        "limitations": [
+          "One live Search page, not a catalog, snapshot history, trend or similarity engine.",
+          "Provider query defines scope. Fork inclusion requires an explicit supported query qualifier such as fork:true.",
+          "No implicit star threshold, automatic pagination, retries, parent lookup, code/README fetch or writes.",
+          "Search indexing/visibility and cross-page mutation limit coverage; empty results do not prove no analogs.",
+          "Descriptions/topics/names are untrusted data. Literal credential exclusion is not semantic sanitization.",
+          "Owner type does not prove solo authorship; fork originality/parent are not checked."
+        ]
+      }
+    },
+    {
+      "label": "recently_created",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+          "name": "search_repositories",
+          "arguments": {
+            "query": "\"model context protocol\" created:>=2026-10-09 fork:true",
+            "mode": "public",
+            "limit": 5,
+            "page": 1,
+            "sort": "updated",
+            "order": "desc"
+          }
+        }
+      },
+      "elapsed_task_seconds": 0.2502,
+      "request_http_body_bytes": 235,
+      "response_http_body_bytes": 5731,
+      "tool_result_utf8_bytes": 5157,
+      "local_http_status": 200,
+      "local_protocol_error": null,
+      "result": {
+        "schema_version": 1,
+        "mode": "public_repository_search_page",
+        "state": "observed",
+        "items": [
+          {
+            "id": 1422638720,
+            "full_name": "nguyenkmb/skills-integrate-mcp-with-copilot",
+            "url": "https://github.com/nguyenkmb/skills-integrate-mcp-with-copilot",
+            "owner": {
+              "id": 67290615,
+              "login": "nguyenkmb",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "JavaScript",
+            "topics": [],
+            "description": "Exercise: Integrate Model Context Protocol with GitHub Copilot",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:24:19+00:00",
+            "updated_at": "2026-10-16T20:45:40+00:00",
+            "pushed_at": "2026-10-16T20:45:36+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422647959,
+            "full_name": "eaglelandsonce/skills-integrate-mcp-with-copilot6",
+            "url": "https://github.com/eaglelandsonce/skills-integrate-mcp-with-copilot6",
+            "owner": {
+              "id": 66654533,
+              "login": "eaglelandsonce",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "JavaScript",
+            "topics": [],
+            "description": "Exercise: Integrate Model Context Protocol with GitHub Copilot",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:35:58+00:00",
+            "updated_at": "2026-10-16T20:36:31+00:00",
+            "pushed_at": "2026-10-16T20:36:25+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422615544,
+            "full_name": "Primexz/netops-mcp",
+            "url": "https://github.com/Primexz/netops-mcp",
+            "owner": {
+              "id": 76482511,
+              "login": "Primexz",
+              "type": "User"
+            },
+            "stars": 1,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "Go",
+            "topics": [],
+            "description": "Manage Securepoint UTM firewalls and MikroTik routers with AI assistants through the Model Context Protocol (MCP).",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T19:55:59+00:00",
+            "updated_at": "2026-10-16T20:35:08+00:00",
+            "pushed_at": "2026-10-16T20:48:59+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422636894,
+            "full_name": "laraskak/skills-integrate-mcp-with-copilot",
+            "url": "https://github.com/laraskak/skills-integrate-mcp-with-copilot",
+            "owner": {
+              "id": 60237758,
+              "login": "laraskak",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "JavaScript",
+            "topics": [],
+            "description": "Exercise: Integrate Model Context Protocol with GitHub Copilot",
+            "description_truncated": false,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:22:06+00:00",
+            "updated_at": "2026-10-16T20:32:52+00:00",
+            "pushed_at": "2026-10-16T20:32:48+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          },
+          {
+            "id": 1422619828,
+            "full_name": "MA5K-Buccaneer/intro_to_model_context_protocol",
+            "url": "https://github.com/MA5K-Buccaneer/intro_to_model_context_protocol",
+            "owner": {
+              "id": 188892025,
+              "login": "MA5K-Buccaneer",
+              "type": "User"
+            },
+            "stars": 0,
+            "forks": 0,
+            "fork": false,
+            "archived": false,
+            "language": "Python",
+            "topics": [
+              "anthropic",
+              "chatbot",
+              "claude",
+              "cli",
+              "gemini",
+              "llm",
+              "mcp",
+              "model-context-protocol",
+              "openai-api",
+              "python"
+            ],
+            "description": "My completed project for Anthropic Claude Academy's \"Introduction to Model Context Protocol\" course, upgraded to MCP Python SDK v2 and extended to run on OpenAI",
+            "description_truncated": true,
+            "untrusted_source_text": true,
+            "created_at": "2026-10-16T20:01:03+00:00",
+            "updated_at": "2026-10-16T20:29:43+00:00",
+            "pushed_at": "2026-10-16T20:29:39+00:00",
+            "parent": null,
+            "fork_originality": "not_checked",
+            "solo_author_verified": false,
+            "source": 0
+          }
+        ],
+        "reported_total_count": 2825,
+        "incomplete_results": false,
+        "returned": 5,
+        "raw_received": 5,
+        "excluded": 0,
+        "duplicates": 0,
+        "source": {
+          "url": "https://api.github.com/search/repositories",
+          "query": {
+            "q": "\"model context protocol\" created:>=2026-10-09 fork:true",
+            "per_page": 5,
+            "page": 1,
+            "sort": "updated",
+            "order": "desc"
+          },
+          "attempted_at": "2026-10-16T20:49:47.691254+00:00",
+          "fetched_at": "2026-10-16T20:49:47.939965+00:00",
+          "http_status": 200,
+          "error": null,
+          "rate_hints": {
+            "x-ratelimit-limit": 10,
+            "x-ratelimit-remaining": 7,
+            "x-ratelimit-reset": 1792183846
+          }
+        },
+        "next_request": {
+          "query": "\"model context protocol\" created:>=2026-10-09 fork:true",
+          "mode": "public",
+          "limit": 5,
+          "page": 2,
+          "sort": "updated",
+          "order": "desc"
+        },
+        "error": null,
+        "coverage": {
+          "global_complete": false,
+          "complete_query_results": false,
+          "has_more": true,
+          "search_result_window": 1000,
+          "search_window_limited": true,
+          "stop_reason": "next_page_observed"
+        },
+        "budget": {
+          "requests": 1,
+          "max_requests": 1,
+          "body_cap_bytes": 1048576,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 8,
+          "socket_timeout_seconds_max": 5,
+          "response_bytes": 30920
+        },
+        "limitations": [
+          "One live Search page, not a catalog, snapshot history, trend or similarity engine.",
+          "Provider query defines scope. Fork inclusion requires an explicit supported query qualifier such as fork:true.",
+          "No implicit star threshold, automatic pagination, retries, parent lookup, code/README fetch or writes.",
+          "Search indexing/visibility and cross-page mutation limit coverage; empty results do not prove no analogs.",
+          "Descriptions/topics/names are untrusted data. Literal credential exclusion is not semantic sanitization.",
+          "Owner type does not prove solo authorship; fork originality/parent are not checked."
+        ]
+      }
+    }
+  ],
+  "automatic_next_page_requests": 0,
+  "host_tokens": null,
+  "host_credits": null,
+  "paid_model_invocations_in_harness": 0,
+  "boundaries": [
+    "Candidate Flask dispatcher plus real public GitHub; non-secret local dispatcher placeholder, not a deployed MCP-host/security/usage test.",
+    "Only three explicit first-page queries at most; no retries, auth fallback or automatic continuation. Stop on401/403/429.",
+    "No full-catalog/trend/similarity/originality/solo-author or absence-of-analogs claim. Query/topic/description/index bias remains.",
+    "No code/README/parent fetch, embeddings/models, writes to GitHub, deployment, database, VPS scan or cleanup.",
+    "Measured byte/time components exclude imports/model synthesis and are not token/credit or savings evidence."
+  ]
+}

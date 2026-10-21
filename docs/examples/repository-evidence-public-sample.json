@@ -1,0 +1,1028 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-16T21:24:46.036713+00:00",
+  "scope": "Three explicitly selected public repositories, candidate-local Flask MCP dispatcher, anonymous upstream. Not deployed-host validation.",
+  "runtime_files_sha256": {
+    "mcp_server/tools/github/repository_evidence.py": "8983757b04707378265078d572ee2799a27436682900cf94d61ff1bfb07c2169",
+    "mcp_server/tools/github/repo.py": "3c7565d9b37e53f7a2a8b7d0b883ad97029477c9088bcef218fbf2ae6493e892"
+  },
+  "verbatim_source_excerpts_committed": false,
+  "cases": [
+    {
+      "arguments": {
+        "owner": "Furox-Art",
+        "repo": "scientific-toolkit",
+        "ref": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4",
+        "mode": "public_evidence",
+        "compare_parent": false,
+        "evidence_files": [
+          {
+            "path": "README.md",
+            "start_line": 1,
+            "max_lines": 45
+          },
+          {
+            "path": "pyproject.toml",
+            "start_line": 1,
+            "max_lines": 80
+          },
+          {
+            "path": "scientific_toolkit_mcp/catalog.py",
+            "start_line": 1,
+            "max_lines": 100
+          },
+          {
+            "path": "scientific_toolkit_mcp/tools.py",
+            "start_line": 165,
+            "max_lines": 100
+          }
+        ]
+      },
+      "elapsed_seconds": 0.853746,
+      "tool_text_utf8_bytes": 17666,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 1409472803,
+          "full_name": "Furox-Art/scientific-toolkit",
+          "fork": false,
+          "stars": 0,
+          "default_branch": "main",
+          "license_spdx": "Apache-2.0",
+          "parent": null,
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4",
+          "sha": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4",
+          "tree_sha": "603948f4c8c4e00321032fe5546938f111ca31b2",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 47,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "README.md",
+            "pyproject.toml",
+            "scientific_toolkit_mcp/catalog.py",
+            "scientific_toolkit_mcp/tools.py"
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:42.682879+00:00",
+            "fetched_at": "2026-10-16T21:24:42.799330+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 52,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit/commits/3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:42.799643+00:00",
+            "fetched_at": "2026-10-16T21:24:42.925836+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 51,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit/git/trees/603948f4c8c4e00321032fe5546938f111ca31b2",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T21:24:42.926114+00:00",
+            "fetched_at": "2026-10-16T21:24:43.081204+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 50,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit/contents/README.md",
+            "params": {
+              "ref": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4"
+            },
+            "attempted_at": "2026-10-16T21:24:43.081448+00:00",
+            "fetched_at": "2026-10-16T21:24:43.190975+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 49,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit/contents/pyproject.toml",
+            "params": {
+              "ref": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4"
+            },
+            "attempted_at": "2026-10-16T21:24:43.192491+00:00",
+            "fetched_at": "2026-10-16T21:24:43.287600+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 48,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit/contents/scientific_toolkit_mcp/catalog.py",
+            "params": {
+              "ref": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4"
+            },
+            "attempted_at": "2026-10-16T21:24:43.288567+00:00",
+            "fetched_at": "2026-10-16T21:24:43.359656+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 47,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Furox-Art/scientific-toolkit/contents/scientific_toolkit_mcp/tools.py",
+            "params": {
+              "ref": "3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4"
+            },
+            "attempted_at": "2026-10-16T21:24:43.360005+00:00",
+            "fetched_at": "2026-10-16T21:24:43.477645+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 46,
+              "x-ratelimit-reset": 1792186163
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 7,
+          "max_requests": 12,
+          "response_bytes": 75029,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "README.md",
+            "blob_sha": "10d2f3ae29a2e420629751d1c9190bae0f328e2b",
+            "content_sha256": "b33175ff40d3ca1df2fe90fd7f24dfe8a787bc239629301817570dd46745da68",
+            "source": 3,
+            "total_lines": 306,
+            "start_line": 1,
+            "end_line": 45,
+            "returned_lines": 45,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Furox-Art/scientific-toolkit/blob/3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4/README.md#L1-L45",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "pyproject.toml",
+            "blob_sha": "3e58ec06d5162899d5a33302acdd32bc5c4d0be3",
+            "content_sha256": "af3456087d3a274eba873536e53984f3b9d4be99369b38e225a3c5fdcf3a5dbf",
+            "source": 4,
+            "total_lines": 40,
+            "start_line": 1,
+            "end_line": 40,
+            "returned_lines": 40,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "url": "https://github.com/Furox-Art/scientific-toolkit/blob/3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4/pyproject.toml#L1-L40",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "scientific_toolkit_mcp/catalog.py",
+            "blob_sha": "19f73937448f010a25be00e9ac86c43680cc7cba",
+            "content_sha256": "ad4d9d01298a49acf56fadb26fa41c7e0963b3b0b2f65d26bc4a4f27515f1b3a",
+            "source": 5,
+            "total_lines": 50,
+            "start_line": 1,
+            "end_line": 50,
+            "returned_lines": 50,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "url": "https://github.com/Furox-Art/scientific-toolkit/blob/3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4/scientific_toolkit_mcp/catalog.py#L1-L50",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "scientific_toolkit_mcp/tools.py",
+            "blob_sha": "8fe58ee7366ef3587ca0774473b2e647519b32ef",
+            "content_sha256": "acaf48831dbe9f6c33d23be74b6492f0dd23bac25be536aca70edeb994afd523",
+            "source": 6,
+            "total_lines": 339,
+            "start_line": 165,
+            "end_line": 264,
+            "returned_lines": 100,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Furox-Art/scientific-toolkit/blob/3f8fb75a917d02128e1fe3e1dfe4edcb5a6599c4/scientific_toolkit_mcp/tools.py#L165-L264",
+            "untrusted_source_text": true
+          }
+        ]
+      }
+    },
+    {
+      "arguments": {
+        "owner": "Primexz",
+        "repo": "netops-mcp",
+        "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401",
+        "mode": "public_evidence",
+        "compare_parent": false,
+        "evidence_files": [
+          {
+            "path": "README.md",
+            "start_line": 1,
+            "max_lines": 60
+          },
+          {
+            "path": "go.mod",
+            "start_line": 1,
+            "max_lines": 60
+          },
+          {
+            "path": "internal/mikrotik/config/config.go",
+            "start_line": 1,
+            "max_lines": 100
+          },
+          {
+            "path": "internal/mikrotik/engine/engine.go",
+            "start_line": 1,
+            "max_lines": 100
+          },
+          {
+            "path": "internal/securepoint/engine/engine.go",
+            "start_line": 317,
+            "max_lines": 100
+          },
+          {
+            "path": "docs/mikrotik/coverage.md",
+            "start_line": 1,
+            "max_lines": 80
+          }
+        ]
+      },
+      "elapsed_seconds": 0.911639,
+      "tool_text_utf8_bytes": 25578,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 1422615544,
+          "full_name": "Primexz/netops-mcp",
+          "fork": false,
+          "stars": 1,
+          "default_branch": "develop",
+          "license_spdx": "MIT",
+          "parent": null,
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401",
+          "sha": "748bf3aaa14454e48a1ddb4320fcdde35b99e401",
+          "tree_sha": "49471afd54f6ab2abf1c89634bb11c8dbbfe8d86",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 127,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "README.md",
+            "docs/mikrotik/coverage.md",
+            "go.mod",
+            "internal/mikrotik/config/config.go",
+            "internal/mikrotik/engine/engine.go",
+            "internal/securepoint/engine/engine.go"
+          ]
+        },
+        "fork_comparison": null,
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:43.495550+00:00",
+            "fetched_at": "2026-10-16T21:24:43.652062+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 45,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/commits/748bf3aaa14454e48a1ddb4320fcdde35b99e401",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:43.652324+00:00",
+            "fetched_at": "2026-10-16T21:24:43.770264+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 44,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/git/trees/49471afd54f6ab2abf1c89634bb11c8dbbfe8d86",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T21:24:43.770599+00:00",
+            "fetched_at": "2026-10-16T21:24:43.868142+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 43,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/contents/README.md",
+            "params": {
+              "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401"
+            },
+            "attempted_at": "2026-10-16T21:24:43.868574+00:00",
+            "fetched_at": "2026-10-16T21:24:43.943063+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 42,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/contents/go.mod",
+            "params": {
+              "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401"
+            },
+            "attempted_at": "2026-10-16T21:24:43.954619+00:00",
+            "fetched_at": "2026-10-16T21:24:44.025142+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 41,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/contents/internal/mikrotik/config/config.go",
+            "params": {
+              "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401"
+            },
+            "attempted_at": "2026-10-16T21:24:44.025654+00:00",
+            "fetched_at": "2026-10-16T21:24:44.132217+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 40,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/contents/internal/mikrotik/engine/engine.go",
+            "params": {
+              "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401"
+            },
+            "attempted_at": "2026-10-16T21:24:44.132835+00:00",
+            "fetched_at": "2026-10-16T21:24:44.212605+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 39,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/contents/internal/securepoint/engine/engine.go",
+            "params": {
+              "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401"
+            },
+            "attempted_at": "2026-10-16T21:24:44.213260+00:00",
+            "fetched_at": "2026-10-16T21:24:44.299187+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 38,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Primexz/netops-mcp/contents/docs/mikrotik/coverage.md",
+            "params": {
+              "ref": "748bf3aaa14454e48a1ddb4320fcdde35b99e401"
+            },
+            "attempted_at": "2026-10-16T21:24:44.301857+00:00",
+            "fetched_at": "2026-10-16T21:24:44.383182+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 37,
+              "x-ratelimit-reset": 1792186163
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 9,
+          "max_requests": 12,
+          "response_bytes": 104292,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "README.md",
+            "blob_sha": "61dd80ae417d4353135bbc5041a5700ea2cc6a7a",
+            "content_sha256": "11cfdd470af0f454cae8af65d11e759b212dacc390c42b4d6229076fc5b59b5f",
+            "source": 3,
+            "total_lines": 62,
+            "start_line": 1,
+            "end_line": 60,
+            "returned_lines": 60,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Primexz/netops-mcp/blob/748bf3aaa14454e48a1ddb4320fcdde35b99e401/README.md#L1-L60",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "go.mod",
+            "blob_sha": "d079a5ad31428e45b4ad9ef1c119a181f2e67881",
+            "content_sha256": "659910c24f2ac4ebbc03abf736d9f4cf89cee4745c608a1d25c6278dd707addb",
+            "source": 4,
+            "total_lines": 23,
+            "start_line": 1,
+            "end_line": 23,
+            "returned_lines": 23,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "url": "https://github.com/Primexz/netops-mcp/blob/748bf3aaa14454e48a1ddb4320fcdde35b99e401/go.mod#L1-L23",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "internal/mikrotik/config/config.go",
+            "blob_sha": "ed5a707d22a4e7ab3a287548d064da8a43d61304",
+            "content_sha256": "56c3262df4d3c1bc2dae7e852bbdc020be3150a118f760becea3f6c279c4c718",
+            "source": 5,
+            "total_lines": 127,
+            "start_line": 1,
+            "end_line": 100,
+            "returned_lines": 100,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Primexz/netops-mcp/blob/748bf3aaa14454e48a1ddb4320fcdde35b99e401/internal/mikrotik/config/config.go#L1-L100",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "internal/mikrotik/engine/engine.go",
+            "blob_sha": "081c0d647862bc8e42404dea68724066836d0206",
+            "content_sha256": "b56c7c8093797316472c32a95f14f7dca8e2140097f7c098a71eff29b858e744",
+            "source": 6,
+            "total_lines": 191,
+            "start_line": 1,
+            "end_line": 100,
+            "returned_lines": 100,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Primexz/netops-mcp/blob/748bf3aaa14454e48a1ddb4320fcdde35b99e401/internal/mikrotik/engine/engine.go#L1-L100",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "internal/securepoint/engine/engine.go",
+            "blob_sha": "efa6fdbbf0cae87894fd5bdd8558ce0a8026ef51",
+            "content_sha256": "4405204675f05f308d821993d3cf38b6a0907d00a27fe61459c80b02d306e275",
+            "source": 7,
+            "total_lines": 665,
+            "start_line": 317,
+            "end_line": 416,
+            "returned_lines": 100,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Primexz/netops-mcp/blob/748bf3aaa14454e48a1ddb4320fcdde35b99e401/internal/securepoint/engine/engine.go#L317-L416",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "docs/mikrotik/coverage.md",
+            "blob_sha": "ab04dc1fc0048365764ca30a10f51fe9ed6c3cac",
+            "content_sha256": "93955ca481fdb06252b4b7052d4a7cbe21e9cf02d909fba59263cf38e0734822",
+            "source": 8,
+            "total_lines": 40,
+            "start_line": 1,
+            "end_line": 40,
+            "returned_lines": 40,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "url": "https://github.com/Primexz/netops-mcp/blob/748bf3aaa14454e48a1ddb4320fcdde35b99e401/docs/mikrotik/coverage.md#L1-L40",
+            "untrusted_source_text": true
+          }
+        ]
+      }
+    },
+    {
+      "arguments": {
+        "owner": "Johnmelo",
+        "repo": "codebadger-mola",
+        "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f",
+        "mode": "public_evidence",
+        "compare_parent": true,
+        "evidence_files": [
+          {
+            "path": "README.md",
+            "start_line": 1,
+            "max_lines": 40
+          },
+          {
+            "path": "pyproject.toml",
+            "start_line": 1,
+            "max_lines": 80
+          },
+          {
+            "path": "docs/architecture.md",
+            "start_line": 1,
+            "max_lines": 80
+          },
+          {
+            "path": "src/tools/queries/android_intent_injection.scala",
+            "start_line": 1,
+            "max_lines": 100
+          },
+          {
+            "path": "src/tools/queries/android_webview_sinks.scala",
+            "start_line": 1,
+            "max_lines": 100
+          },
+          {
+            "path": "src/services/query_executor.py",
+            "start_line": 146,
+            "max_lines": 40
+          }
+        ]
+      },
+      "elapsed_seconds": 1.638385,
+      "tool_text_utf8_bytes": 28910,
+      "response_http_status": 200,
+      "evidence": {
+        "state": "observed",
+        "repository": {
+          "id": 1422631447,
+          "full_name": "Johnmelo/codebadger-mola",
+          "fork": true,
+          "stars": 0,
+          "default_branch": "main",
+          "license_spdx": "GPL-3.0",
+          "parent": "qcri/codebadger",
+          "source": 0
+        },
+        "revision": {
+          "requested_ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f",
+          "sha": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f",
+          "tree_sha": "8f9c6e370a3d17ea6e7f4668252cb49c9586da26",
+          "source": 1
+        },
+        "selection_tree": {
+          "source": 2,
+          "entries_received": 187,
+          "provider_truncated": false,
+          "selected_regular_files": [
+            "README.md",
+            "docs/architecture.md",
+            "pyproject.toml",
+            "src/services/query_executor.py",
+            "src/tools/queries/android_intent_injection.scala",
+            "src/tools/queries/android_webview_sinks.scala"
+          ]
+        },
+        "fork_comparison": {
+          "parent": {
+            "id": 1067656065,
+            "full_name": "qcri/codebadger",
+            "fork": false,
+            "stars": 175,
+            "default_branch": "main",
+            "license_spdx": "GPL-3.0",
+            "parent": null,
+            "source": 9
+          },
+          "base": {
+            "requested_ref": "main",
+            "sha": "857adcabe38677c53d068b310ab4f6ca51828c61",
+            "tree_sha": "2c8e58de687480e2766194a75eca543e2e4d45f3",
+            "source": 10
+          },
+          "head_sha": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f",
+          "merge_base_sha": "857adcabe38677c53d068b310ab4f6ca51828c61",
+          "source": 11,
+          "ahead_by": 12,
+          "behind_by": 0,
+          "total_commits": 12,
+          "files": [
+            {
+              "path": ".env.example",
+              "status": "modified"
+            },
+            {
+              "path": ".gitignore",
+              "status": "modified"
+            },
+            {
+              "path": "docker-compose.yml",
+              "status": "modified"
+            },
+            {
+              "path": "docs/security.md",
+              "status": "modified"
+            },
+            {
+              "path": "main.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/defaults.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/models.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/services/joern_client.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/services/joern_server_manager.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/services/query_executor.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/tools/core_tools.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/tools/custom_tools.py",
+              "status": "modified"
+            },
+            {
+              "path": "src/tools/queries/android_intent_injection.scala",
+              "status": "added"
+            },
+            {
+              "path": "src/tools/queries/android_webview_sinks.scala",
+              "status": "added"
+            },
+            {
+              "path": "tests/test_backing_service_url_defaults.py",
+              "status": "added"
+            },
+            {
+              "path": "tests/test_config.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_joern_server_manager_path.py",
+              "status": "added"
+            },
+            {
+              "path": "tests/test_mcp_tools.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_memory_admission.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_query_executor_limits.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_query_loader.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_restart_scheduling.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_toctou.py",
+              "status": "modified"
+            },
+            {
+              "path": "tests/test_watchdog_busy_guard.py",
+              "status": "added"
+            }
+          ],
+          "files_returned_by_provider": 24,
+          "files_displayed": 24,
+          "file_list_complete": false,
+          "patch_read": false,
+          "semantics": "three-dot changes since merge-base; not proof of originality or features",
+          "url": "https://github.com/Johnmelo/codebadger-mola/compare/857adcabe38677c53d068b310ab4f6ca51828c61...9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+        },
+        "sources": [
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:44.425102+00:00",
+            "fetched_at": "2026-10-16T21:24:44.603198+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 36,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/commits/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:44.603349+00:00",
+            "fetched_at": "2026-10-16T21:24:44.810195+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 35,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/git/trees/8f9c6e370a3d17ea6e7f4668252cb49c9586da26",
+            "params": {
+              "recursive": "1"
+            },
+            "attempted_at": "2026-10-16T21:24:44.810436+00:00",
+            "fetched_at": "2026-10-16T21:24:44.944154+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 34,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/contents/README.md",
+            "params": {
+              "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+            },
+            "attempted_at": "2026-10-16T21:24:44.944466+00:00",
+            "fetched_at": "2026-10-16T21:24:45.036138+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 33,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/contents/pyproject.toml",
+            "params": {
+              "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+            },
+            "attempted_at": "2026-10-16T21:24:45.036547+00:00",
+            "fetched_at": "2026-10-16T21:24:45.147121+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 32,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/contents/docs/architecture.md",
+            "params": {
+              "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+            },
+            "attempted_at": "2026-10-16T21:24:45.147450+00:00",
+            "fetched_at": "2026-10-16T21:24:45.232876+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 31,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/contents/src/tools/queries/android_intent_injection.scala",
+            "params": {
+              "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+            },
+            "attempted_at": "2026-10-16T21:24:45.233720+00:00",
+            "fetched_at": "2026-10-16T21:24:45.316263+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 30,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/contents/src/tools/queries/android_webview_sinks.scala",
+            "params": {
+              "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+            },
+            "attempted_at": "2026-10-16T21:24:45.316645+00:00",
+            "fetched_at": "2026-10-16T21:24:45.397707+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 29,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/contents/src/services/query_executor.py",
+            "params": {
+              "ref": "9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f"
+            },
+            "attempted_at": "2026-10-16T21:24:45.398385+00:00",
+            "fetched_at": "2026-10-16T21:24:45.492681+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 28,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/qcri/codebadger",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:45.494024+00:00",
+            "fetched_at": "2026-10-16T21:24:45.615237+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 27,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/qcri/codebadger/commits/main",
+            "params": {},
+            "attempted_at": "2026-10-16T21:24:45.615367+00:00",
+            "fetched_at": "2026-10-16T21:24:45.768285+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 26,
+              "x-ratelimit-reset": 1792186163
+            }
+          },
+          {
+            "url": "https://api.github.com/repos/Johnmelo/codebadger-mola/compare/857adcabe38677c53d068b310ab4f6ca51828c61...9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f",
+            "params": {
+              "per_page": 1,
+              "page": 1
+            },
+            "attempted_at": "2026-10-16T21:24:45.768486+00:00",
+            "fetched_at": "2026-10-16T21:24:46.033125+00:00",
+            "http_status": 200,
+            "error": null,
+            "rate_hints": {
+              "x-ratelimit-remaining": 25,
+              "x-ratelimit-reset": 1792186163
+            }
+          }
+        ],
+        "gaps": [],
+        "error": null,
+        "budget": {
+          "requests": 12,
+          "max_requests": 12,
+          "response_bytes": 316808,
+          "per_response_cap_bytes": 262144,
+          "total_response_cap_bytes": 2097152,
+          "output_cap_bytes": 65536,
+          "checked_deadline_seconds": 30,
+          "socket_timeout_seconds_max": 5
+        },
+        "coverage": {
+          "global_complete": false,
+          "repository_complete": false,
+          "runtime_verified": false,
+          "security_audit_complete": false,
+          "ci_checked": false
+        },
+        "files": [
+          {
+            "path": "README.md",
+            "blob_sha": "0a556cf92d100dd8905901dcded92eb7e64f3cbd",
+            "content_sha256": "ef7645fd8b1723ffbf3b70a21fdd5a5fec94b72ced2dfca6bb1fa41561a3362e",
+            "source": 3,
+            "total_lines": 59,
+            "start_line": 1,
+            "end_line": 40,
+            "returned_lines": 40,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Johnmelo/codebadger-mola/blob/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f/README.md#L1-L40",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "pyproject.toml",
+            "blob_sha": "3964a9062ad7361c983c4fb0adb091af0730fa33",
+            "content_sha256": "20165cd6a5305b407b22b2563e29fdf7003838a61616004911e235476b7e4bda",
+            "source": 4,
+            "total_lines": 71,
+            "start_line": 1,
+            "end_line": 71,
+            "returned_lines": 71,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "url": "https://github.com/Johnmelo/codebadger-mola/blob/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f/pyproject.toml#L1-L71",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "docs/architecture.md",
+            "blob_sha": "586da3576a6ef6eb8f93037b924efc33bdc1c207",
+            "content_sha256": "fe716d1f16a508c126dc1267cf0e310c736707d9e62cf099d18a26d93faaba4a",
+            "source": 5,
+            "total_lines": 165,
+            "start_line": 1,
+            "end_line": 80,
+            "returned_lines": 80,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Johnmelo/codebadger-mola/blob/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f/docs/architecture.md#L1-L80",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/tools/queries/android_intent_injection.scala",
+            "blob_sha": "075b7c357df15b2236892f2174903a45bd371aac",
+            "content_sha256": "e2614cceee8e5801d09aacb806e047d157f6c5564f143abc54bb0af6572cd7f4",
+            "source": 6,
+            "total_lines": 57,
+            "start_line": 1,
+            "end_line": 57,
+            "returned_lines": 57,
+            "requested_range_complete": true,
+            "whole_file_included": true,
+            "url": "https://github.com/Johnmelo/codebadger-mola/blob/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f/src/tools/queries/android_intent_injection.scala#L1-L57",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/tools/queries/android_webview_sinks.scala",
+            "blob_sha": "9b03c96267f29a0138c6bf9cc3f1bb47b86ef97c",
+            "content_sha256": "8dc93db2b08866b3aa54a9672b5cb154cc0538a4a8c54b4378e8bc6ac3783429",
+            "source": 7,
+            "total_lines": 110,
+            "start_line": 1,
+            "end_line": 96,
+            "returned_lines": 96,
+            "requested_range_complete": false,
+            "whole_file_included": false,
+            "url": "https://github.com/Johnmelo/codebadger-mola/blob/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f/src/tools/queries/android_webview_sinks.scala#L1-L96",
+            "untrusted_source_text": true
+          },
+          {
+            "path": "src/services/query_executor.py",
+            "blob_sha": "9bf2d93a97f5f743aa20dcb7456849f103a16250",
+            "content_sha256": "6e91d26d7ec612cebf55fd481a854cdf1c8c2165ea7d5b4f3a22edd1eec8499a",
+            "source": 8,
+            "total_lines": 336,
+            "start_line": 146,
+            "end_line": 185,
+            "returned_lines": 40,
+            "requested_range_complete": true,
+            "whole_file_included": false,
+            "url": "https://github.com/Johnmelo/codebadger-mola/blob/9fbb0b63b54a105cb14a9a7ddcdfd47dfee4217f/src/services/query_executor.py#L146-L185",
+            "untrusted_source_text": true
+          }
+        ]
+      }
+    }
+  ]
+}
