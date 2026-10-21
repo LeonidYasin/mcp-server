@@ -1,5 +1,11 @@
 # MCP GitHub Server
 
+> **Продолжение другим ИИ:** [AGENTS](AGENTS.md) → [AI handoff](docs/ai-handoff.md) →
+> [progress/evidence ledger](docs/chat-progress.md) → [machine state](docs/work-state.json).
+> Новая сводка дополняет историческую документацию ниже; незамерженные candidates,
+> main, TEST и production — разные состояния. Standalone Rooms уже выделен отдельно.
+
+
 [![version](https://img.shields.io/badge/version-0.4.3-blue)](pyproject.toml)
 [![tools](https://img.shields.io/badge/tools-runtime_registry-brightgreen)](TOOLS.md)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
