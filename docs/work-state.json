@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "repository": "LeonidYasin/mcp-server",
+  "purpose": "Durable context consolidation; documentation only, not merge/deployment",
+  "snapshot_main_sha": "8c2aa3ac6972e680cd9df7af982e66731d21f2ce",
+  "documentation_branch": "docs/chat-progress-ai-handoff",
+  "read_first": [
+    "AGENTS.md",
+    "docs/ai-handoff.md",
+    "docs/chat-progress.md",
+    "docs/work-state.json",
+    "docs/project-map.md"
+  ],
+  "source_checkpoints": [
+    {
+      "id": "research",
+      "branch": "feat/idea-analog-workflow",
+      "sha": "10aa6909b2e945b42dd48740bad5ef1f0056301e",
+      "pr": 112,
+      "stage": "SOURCE_WITH_HISTORICAL_CI_AND_PARTIAL_TEST",
+      "evidence_url": "https://github.com/LeonidYasin/mcp-server/blob/10aa6909b2e945b42dd48740bad5ef1f0056301e/docs/idea-analog-external-acceptance.md"
+    },
+    {
+      "id": "binary",
+      "branch": "feat/binary-upload-staging-88",
+      "sha": "4edf84e3c67809122ec41d6b3de98970bb840f34",
+      "pr": 91,
+      "stage": "PARTIAL_HISTORICAL_TEST",
+      "evidence_url": "https://github.com/LeonidYasin/mcp-server/blob/4edf84e3c67809122ec41d6b3de98970bb840f34/docs/upload-acceptance.md"
+    },
+    {
+      "id": "embedded_rooms",
+      "branch": "feat/115-agent-rooms-sqlite",
+      "sha": "3f3002aaa065f85175e799ec3522c574f685ee7b",
+      "pr": 116,
+      "stage": "PARTIAL_HISTORICAL_TEST",
+      "evidence_url": "https://github.com/LeonidYasin/mcp-server/blob/3f3002aaa065f85175e799ec3522c574f685ee7b/docs/agent-rooms-distinct-owner-evidence.md"
+    }
+  ],
+  "related_rooms": {
+    "repository": "LeonidYasin/mcp-rooms",
+    "branch": "feat/standalone-identity",
+    "pr": 1,
+    "documentation_sha": "c92d5036c7dc6c8686d31cbb14dc72c1f7369798",
+    "accepted_source_sha": "fc96fe641092b1cfc07c6fa25cc2d3a65d0a88ac",
+    "evidence_url": "https://github.com/LeonidYasin/mcp-rooms/blob/c92d5036c7dc6c8686d31cbb14dc72c1f7369798/docs/ci-f3c1.md",
+    "next": "F3c.2 operator/resources; read that repo current work-state first",
+    "not_a_server_deployment": true
+  },
+  "runtime": {
+    "not_a_current_probe": true,
+    "embedded_test_last_reported_composite": "3c4eb8405c413a49374a17b73c973dbb9aeda9a6",
+    "embedded_rooms_source": "75555c3ebee335a151be3ebdcb6af2bfdc0b767a",
+    "tools_reported": 128,
+    "standalone_rooms_last_known": "stopped; temporary HTTPS route removed; operator report",
+    "production": "Separate dated deployment-status.md; not re-probed"
+  },
+  "verification": {
+    "local": "static/text/AST only",
+    "runtime": "GitHub Actions only",
+    "writes": "expected_head_sha CAS; never force"
+  },
+  "permission_gates": [
+    "Each remote shell/SSH/run_python/run_command/process operation requires separate explicit owner approval AND special password.",
+    "No main merge/tag/release/deploy/Caddy/live DB/real credentials or public publication without separate approval."
+  ],
+  "unresolved": [
+    "Other-chat changes not inspected; reconcile current branch diffs before deployment.",
+    "Research ConstruBot explicit pinned path-walk live lines21-40 stopped at rate budget.",
+    "Search global semantic recall and auto file-selection quality not established.",
+    "Binary cross-owner/byte quota/TTL/retention/~41MiB and private Release-Actions bytes E2E pending.",
+    "Embedded third owner/short-restart cadence/full restore/off-host/capacity/production gates pending."
+  ],
+  "next_server_task": {
+    "id": "RESEARCH-PATHWALK-RECHECK",
+    "contract_url": "https://github.com/LeonidYasin/mcp-server/blob/10aa6909b2e945b42dd48740bad5ef1f0056301e/docs/idea-analog-external-acceptance.md",
+    "requires_remote_execution": false,
+    "acceptance": [
+      "Use ordinary MCP public read tools only; stop at quota without bypass.",
+      "Pin ConstruBot ee3d69e0f6c721207ab66ceef2d830a316d80d52 and backend/app/main.py lines21-40.",
+      "Record linked tree/blob provenance and returned content or exact refusal.",
+      "Do not reinterpret runtime deployment as full semantic/relevance coverage."
+    ]
+  },
+  "current_owner_order": [
+    "Save server durable handoff in reviewed PR, not main merge.",
+    "Then continue MCP Rooms F3c.2 in its own repository."
+  ]
+}

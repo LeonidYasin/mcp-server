@@ -1,5 +1,11 @@
 # ROADMAP — расширение MCP-сервера
 
+> **Продолжение другим ИИ:** [AGENTS](AGENTS.md) → [AI handoff](docs/ai-handoff.md) →
+> [progress/evidence ledger](docs/chat-progress.md) → [machine state](docs/work-state.json).
+> Новая сводка дополняет историческую документацию ниже; незамерженные candidates,
+> main, TEST и production — разные состояния. Standalone Rooms уже выделен отдельно.
+
+
 Дорожная карта развития **mcp-server**. Цель — превратить сервер из GitHub-обёртки в универсальный «швейцарский нож» для агента.
 
 > **Source of truth:** версия — `mcp_server/__init__.py` (dynamic version в `pyproject.toml`); список инструментов — рантайм `list_my_tools` + [`TOOLS.md`](TOOLS.md).
